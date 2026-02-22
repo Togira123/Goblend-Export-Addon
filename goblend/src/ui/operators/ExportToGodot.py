@@ -293,6 +293,6 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             log(traceback.format_exc(), "ERROR")
             log("An error happend while trying to export. Check the logs above for more info. If you believe this is a bug, read the docs first. If you are fairly certain it still is, feel free to open an issue.", "ERROR")
             def draw_error(self, _context):
-                self.layout.label(text="Undo (Ctrl/Cmd + z) return to your previous state. Check the log file for more details. If there is no log file, make sure to enable it in the addon preferences")
+                self.layout.label(text="Undo (Ctrl/Cmd + z) to return to your previous state. Check the log file for more details. If there is no log file, make sure to enable it in the addon preferences")
             bpy.context.window_manager.popup_menu(draw_error, title="An Error happened", icon="ERROR")
         return {"FINISHED"}

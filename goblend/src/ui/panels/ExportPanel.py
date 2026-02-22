@@ -1,7 +1,7 @@
 import bpy
 
 class SCENE_PT_ExportPanel(bpy.types.Panel):
-    bl_label = "Export to Godot"
+    bl_label = "Goblend: Export to Godot"
     bl_idname = "SCENE_PT_export_to_godot"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
