@@ -1,7 +1,8 @@
 import bpy
+from ... import __package__ as base_package
 
 class AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = "goblend"
+    bl_idname = base_package
     
     godot_file_path: bpy.props.StringProperty(
         name="Godot Executable",

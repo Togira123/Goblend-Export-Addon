@@ -7,6 +7,8 @@ from ...config import abs_path, get_config
 from ...export.export import export
 from ...export.setup import save_path_keys, save_path_hierarchy_keys, save_path_uses_filename
 from ...log import log
+from .... import __package__ as base_package
+
 
 
 class SCENE_OT_RootExportToGodot(bpy.types.Operator):
@@ -31,7 +33,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         scene = context.scene
         props = scene.panel_props
         default_collision_props = scene.default_collision_panel_props
-        addon_prefs = bpy.context.preferences.addons["goblend"].preferences
+        addon_prefs = bpy.context.preferences.addons[base_package].preferences
 
         if addon_prefs.godot_file_path == "":
             log("Please specify the path to the Godot Executable in the Add-on preferences (Edit > Preferences > Add-ons)", "ERROR")

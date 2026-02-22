@@ -1,4 +1,4 @@
-from io import TextIOWrapper
+from .. import __package__ as base_package
 
 import bpy
 import datetime
@@ -36,7 +36,7 @@ def log(message, type="INFO"):
     now = datetime.datetime.now()
     msg = ("[%02d:%02d:%02d] (BLEND) " % (now.hour, now.minute, now.second)) + msg
     print(msg)
-    addon_prefs = bpy.context.preferences.addons["goblend"].preferences
+    addon_prefs = bpy.context.preferences.addons[base_package].preferences
     if addon_prefs.create_log_file:
         if init_log_file():
             log_file.write(msg + "\n")
