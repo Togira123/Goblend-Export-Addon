@@ -1,0 +1,53 @@
+{
+    "collisions": {
+        "groups": [
+            {
+                "display_name": "Enemy",
+                "godot_group_name": "enemy",
+                "description": "Assigned to all enemies"
+            }
+        ],
+        "layers": [
+            {
+                "bit": 0,
+                "display_name": "Level"
+            },
+            {
+                "bit": 1,
+                "display_name": "Players"
+            },
+            {
+                "bit": 2,
+                "display_name": "Hitbox"
+            }
+        ]
+    },
+    "godot_scenes": [
+        {
+            "display_name": "My Scene",
+            "name": "my_scene",
+            "godot_scene_path": "res://scenes/MyScene.tscn"
+        }
+    ],
+    "defaults": {
+        "paths": {
+            "same_hierarchy_target": "res://assets/blender",
+            "scene_save_path": "res://scenes/",
+            "scene_use_same_hierarchy": true,
+            "material_save_path": "res://resources/materials/",
+            "material_use_same_hierarchy": true,
+            "texture_save_path": "res://assets/textures/",
+            "texture_use_same_hierarchy": true,
+            "animation_library_save_path": "res://resources/animation_libraries/",
+            "animation_library_use_same_hierarchy": true,
+            "animation_save_path": "res://resources/animations/",
+            "animation_use_same_hierarchy": true,
+            "shader_save_path": "res://resources/shaders/",
+            "shader_use_same_hierarchy": true,
+            "collision_shapes_save_path": "res://resources/collision_shapes",
+            "reuse_collision_shapes": true
+        },
+        "collision_layers": [0, 2],
+        "collision_mask": []
+    }
+}
