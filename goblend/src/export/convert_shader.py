@@ -51,12 +51,19 @@ def add_line(str, const, top = False):
             fragment_code += "\t" + str + "\n"
 
 def add_uv_line(name, uv_index):
+    subtract_str = ""
+    if not is_right_after_bake:
+        subtract_str = "1.0 - "
     if uv_index == 0:
-        add_line("vec2 " + name + " = vec2(UV.x, UV.y);", True, True)
+        add_line("vec2 " + name + " = vec2(UV.x, " + subtract_str + "UV.y);", True, True)
     elif uv_index == 1:
-        add_line("vec2 " + name + " = vec2(UV2.x, UV2.y);", True, True)
+        add_line("vec2 " + name + " = vec2(UV2.x, " + subtract_str + "UV2.y);", True, True)
     else:
-        add_line("vec2 " + name + " = CUSTOM" + str((uv_index / 2) - 1) + (".xy" if uv_index % 2 == 0 else ".zw") + ";", True, True)
+        custom = "CUSTOM" + str((uv_index / 2) - 1)
+        if uv_index % 2 == 0:
+            add_line("vec2 " + name + " = vec2(" + custom + ".x, " + subtract_str + custom + ".y);", True, True)
+        else:
+            add_line("vec2 " + name + " = vec2(" + custom + ".z, " + subtract_str + custom + ".w);", True, True)
     if not "uv" in special_vars:
         special_vars["uv"] = {}
     special_vars["uv"][uv_index] = name

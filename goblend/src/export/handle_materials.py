@@ -276,9 +276,9 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot):
                     cull_mode,
                     limit_normal,
                     True,
-                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Base Color"], obj),
-                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Metallic/Roughness"], obj),
-                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Normal"], obj),
+                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Base Color"], uv_map_override[obj_name][mat_name]["obj"]),
+                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Metallic/Roughness"], uv_map_override[obj_name][mat_name]["obj"]),
+                    get_uv_index_from_name(uv_map_override[obj_name][mat_name]["Normal"], uv_map_override[obj_name][mat_name]["obj"]),
                 )
                 shader_count += 1
                 cmd_line_shader_data.append(mat_name)
