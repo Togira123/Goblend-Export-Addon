@@ -183,7 +183,7 @@ def export(godot_exec_path, texture_dim, uv_map_override, uv_group_assignments, 
     tmp = [str(len(tmp) // 3)] + tmp
     cmd_line_animation_data = tmp + cmd_line_animation_data
 
-    check_convert_to_shader(settings_for_godot, cmd_line_shader_data, converted_mat_names)
+    check_convert_to_shader(settings_for_godot, cmd_line_shader_data, converted_mat_names, objects)
 
     cmd_line_args_light_settings = get_light_cmd_line_args(settings_for_godot)
 

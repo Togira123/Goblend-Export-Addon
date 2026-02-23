@@ -223,10 +223,13 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
     
 
 
-def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_converted_mats):
+def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_converted_mats, objects):
     shader_count = 0
     for mat_name, obj in settings_for_godot["use_shader_mats"].items():
         if mat_name in already_converted_mats:
+            continue
+        # do not do anything with objects that aren't exported
+        if not obj in objects:
             continue
         cull_mode = ""
         if mat_name in settings_for_godot["material_cull_mode_overrides"]:
@@ -252,13 +255,16 @@ def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_co
     total_shader_count = int(cmd_line_shader_data[0]) + shader_count
     cmd_line_shader_data[0] = str(total_shader_count)
 
-def check_early_convert_to_shader(uv_map_override, settings_for_godot):
+def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
     cmd_line_shader_data = []
     shader_count = 0
     seen_mat_names = set()
     for obj_name in uv_map_override:
         for mat_name in uv_map_override[obj_name]:
             if mat_name in seen_mat_names or mat_name in settings_for_godot["use_shader_mats"]:
+                continue
+            # do not do anything with objects that aren't exported
+            if not uv_map_override[obj_name][mat_name]["obj"] in objects:
                 continue
             seen_mat_names.add(mat_name)
             cull_mode = ""
@@ -538,6 +544,6 @@ def handle_materials(uv_map_override, objects, paths, uv_group_assignments, sett
     inputs = connect_image_textures(objects, created_tex_nodes_per_mat_per_obj, tex_node_to_normal_dict, tex_node_to_separate_metallic_dict, tex_node_to_combine_metallic_dict, tex_node_to_separate_roughness_dict, tex_node_to_combine_roughness_dict)
 
     # if either limiting normal effect with disabled use shader or separate UV maps are set, we have to convert to a shader here
-    cmd_line_shader_data, converted_mat_names = check_early_convert_to_shader(uv_map_override, settings_for_godot)
+    cmd_line_shader_data, converted_mat_names = check_early_convert_to_shader(uv_map_override, settings_for_godot, objects)
 
     return extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj, cmd_line_shader_data, converted_mat_names, cmd_line_args_path, cmd_line_args, images_created
