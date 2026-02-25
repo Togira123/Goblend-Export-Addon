@@ -85,7 +85,6 @@ class UnsupportedSocket(Exception):
     def __init__(self, node, socket_name):
         super().__init__("Connecting " + socket_name + " on " + node.bl_idname + " is not supported")
 
-
 class DataTypes(Enum):
     FLOAT = "float"
     INT = "int"
@@ -94,7 +93,6 @@ class DataTypes(Enum):
     VEC4 = "vec4"
     BSDF = "BSDF"
     SAMPLER2D = "sampler2D"
-
 
 def input_to_data_type(input):
     match input.type:
@@ -117,7 +115,6 @@ def input_to_data_type(input):
         case _:
             raise Exception("Unsupported type: " + type)
 
-
 # pass None as output to indicate a helper variable
 def create_var(node, output, type):
     global next_num
@@ -131,7 +128,6 @@ def create_var(node, output, type):
     nodes_to_vars[node][output] = {"name": name, "type": type}
     return name
 
-
 def add_prop_to_var(node, output, key, val):
     if not node in special_var_props:
         special_var_props[node] = dict()
@@ -139,7 +135,6 @@ def add_prop_to_var(node, output, key, val):
         special_var_props[node][output][key] = val
     else:
         special_var_props[node][output] = dict([(key, val)])
-
 
 def get_prop_from_var(node, output, key):
     if not node in special_var_props or not output in special_var_props[node]:
@@ -158,7 +153,6 @@ def get_prop_from_any_child_of_var(node, output, key):
         return (None, False)
     return (special_var_props[node][output][key], True)
 
-
 def set_var(node, output, type, name):
     if not node in nodes_to_vars:
         nodes_to_vars[node] = dict()
@@ -167,7 +161,6 @@ def set_var(node, output, type, name):
 
 def set_var_as_uniform(name, type, linkTo): # linkTo can for example be the name of the image for samplers
     uniform_vars.add((name, type, linkTo))
-
 
 def get_var(node, input):
     # find the output that connects to this input
@@ -180,10 +173,8 @@ def get_var(node, input):
         raise Exception("Variable that is needed for node " + node.name + ", input " + input.name + " does not exist")
     return nodes_to_vars[output_node][output]
 
-
 def get_var_name(node, input):
     return get_var(node, input)["name"]
-
 
 def get_var_data_type(node, input):
     return get_var(node, input)["type"]
@@ -216,7 +207,6 @@ def get_constant(node, input):
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
-
 def get_data_type(node, input):
     match input.type:
         case "VALUE":
@@ -236,11 +226,9 @@ def get_data_type(node, input):
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
-
 def reset_is_constant():
     global is_constant
     is_constant = True
-
 
 def get_casted_var_or_constant(node, input, needed_data_type):
     if input.is_linked:
@@ -249,7 +237,6 @@ def get_casted_var_or_constant(node, input, needed_data_type):
         var = get_var(node, input)
         return cast(var["type"], needed_data_type, var["name"])
     return cast(get_data_type(node, input), needed_data_type, get_constant(node, input))
-
 
 def cast(actual, needed, str):
     match actual:
@@ -309,7 +296,6 @@ def cast(actual, needed, str):
                     return str
     raise Exception("Unsupported cast: Cannot cast from " + actual.name + " to " + needed.name)
 
-
 def socket_is_zero(input):
     if input.is_linked:
         return False  # if socket is connected assume for simplicity that it's not 0
@@ -332,7 +318,6 @@ def socket_is_zero(input):
                     return False
         case _:
             return False
-
 
 def socket_is_one(input):
     if input.is_linked:
@@ -357,7 +342,6 @@ def socket_is_one(input):
         case _:
             return False
 
-
 def init_tex_coord(node, uv_index):
     if node.from_instancer:
         raise Exception('Setting "From Instancer" on Texture Coordinate Node is not supported')
@@ -381,7 +365,6 @@ def init_tex_coord(node, uv_index):
                     add_line("vec3 " + var_name + " = vec3(vertex_local.x, -vertex_local.z, vertex_local.y);", False)
                 case _:
                     raise UnsupportedSocket(node, output.name)
-
 
 def init_math(node):
     line = ""
@@ -500,7 +483,6 @@ def init_math(node):
             raise UnsupportedSocket(node, node.operation)
 
     add_line(line + ";", is_constant)
-
 
 def init_mapping(node):
     if node.vector_type != "POINT":
@@ -636,10 +618,7 @@ def init_normal_map(node):
         add_line("NORMAL_MAP_DEPTH = " + strength + ";", False)
     # pass the color variable along, no need to create a new one
     set_var(node, node.outputs[0], DataTypes.VEC3, color)
-    
-    
-    
-    
+
 def init_uv_map(node, uv_index):
     if node.from_instancer:
         raise Exception("Using 'from_instancer' on a UV Map node is not supported: " + node.name)
@@ -657,7 +636,6 @@ def init_uv_map(node, uv_index):
     else:
         uv = create_var(node, node.outputs[0], DataTypes.VEC2)
         add_uv_line(uv, uv_index)
-
 
 def init_bsdf_principled(node):
     base_color = node.inputs.get("Base Color")
@@ -704,7 +682,6 @@ def init_bsdf_principled(node):
         + ");"
     )
     add_line(line, is_constant)
-
 
 def init_output_material(node):
     if not node.is_active_output:
@@ -753,10 +730,8 @@ def init_output_material(node):
             add_line("}", False)
     add_line("EMISSION = " + bsdf + ".EMISSION;", False)
 
-
 def init_value(node):
     add_line("float " + create_var(node, node.outputs[0], DataTypes.FLOAT) + " = " + get_constant(node, node.outputs[0]) + ";", True)
-
 
 def init_mix(node):
     match node.data_type:
@@ -830,9 +805,6 @@ def init_mix(node):
 def init_rgb(node):
     add_line("vec3 " + create_var(node, node.outputs[0], DataTypes.VEC3) + " = " + get_constant(node, node.outputs[0]) + ";", True)
 
-
-
-
 def init_group(node, type):
     group_nodes_stack.append(node)
     group_output = node.node_tree.nodes.get("Group Output")
@@ -854,7 +826,6 @@ def init_group(node, type):
             var = create_var(node, node.outputs[i], type)
             add_line(type.value + " " + var + " = " + get_constant(group_output, group_output.inputs[i]) + ";", True)
 
-
 def init_group_input(node):
     group_node = group_nodes_stack[len(group_nodes_stack) - 1]
     # -1 because one input is a NodeSocketVirtual input, which is used to create new outputs
@@ -868,10 +839,8 @@ def init_group_input(node):
             var = create_var(node, node.outputs[i], type)
             add_line(type.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";", True)
 
-
 def init_group_output(_node):
     group_nodes_stack.pop()
-
 
 supported_nodes = {
     "ShaderNodeTexCoord": init_tex_coord,
@@ -947,7 +916,6 @@ def dfs(node, path, type):
                         dfs(link.from_node, next_path, type)
 
     initialize_vars(node, type)
-
 
 def convert_to_godot_shader(object, material_name, cull_mode, limit_normal, right_after_bake, uv_base_color, uv_roughness_metallic, uv_normal):
     global fragment_code

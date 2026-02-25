@@ -11,12 +11,12 @@ class SCENE_PT_AnimationsPanel(bpy.types.Panel):
         layout = self.layout
         
         scene = context.scene
-        animations_panel_props = scene.animations_panel_props
+        animation_panel_props = scene.animation_panel_props
 
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        for item in animations_panel_props:
+        for item in animation_panel_props:
             header, panel = layout.panel_prop(item, "open")
         
             split = header.split()
@@ -29,8 +29,8 @@ class SCENE_PT_AnimationsPanel(bpy.types.Panel):
 
             row = split.row()
             row.alignment = "RIGHT"
-            row.context_pointer_set(name="animation_to_delete", data=item.animation)
-            row.operator("scene.remove_animation", text="", icon="X", emboss=False)
+            row.context_pointer_set(name="animation_to_remove", data=item.animation)
+            row.operator("scene.remove_animation_setting", text="", icon="X", emboss=False)
             
             if panel:
                 panel.use_property_split = True

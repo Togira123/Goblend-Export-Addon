@@ -128,9 +128,7 @@ func run_import(ind: int):
 	for i in number_of_objects:
 		var object_name := args[ind].validate_node_name()
 		var number_of_material_slots := int(args[ind + 1])
-		var uv_group := args[ind + 2]
-		var is_in_uv_group := uv_group != "null"
-		var shadow_cast_mode := args[ind + 3]
+		var shadow_cast_mode := args[ind + 2]
 		var setting: GeometryInstance3D.ShadowCastingSetting
 		match shadow_cast_mode:
 			"OFF":
@@ -141,7 +139,7 @@ func run_import(ind: int):
 				setting = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
 			"SHADOWS_ONLY":
 				setting = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
-		ind += 4
+		ind += 3
 		
 		var node := find_node(scene, object_name)
 		if node == null:
@@ -156,8 +154,6 @@ func run_import(ind: int):
 			var material_name := args[ind]
 			var actual_material_name := args[ind]
 			log_msg(material_name + " at " + str(j))
-			if is_in_uv_group:
-				material_name = uv_group
 			blender_to_actual_mat_name[actual_material_name] = material_name
 			var transparency_mode := args[ind + 1]
 			var scissor_value: float
@@ -167,8 +163,13 @@ func run_import(ind: int):
 			
 			var cull_mode := args[ind + 2]
 			
-			var number_of_connected_ports := int(args[ind + 3])
-			ind += 4
+			var texture_group := args[ind + 3]
+			var is_in_uv_group := texture_group != "null"
+			if is_in_uv_group:
+				material_name = texture_group 
+			
+			var number_of_connected_ports := int(args[ind + 4])
+			ind += 5
 			var material_location: String = paths["material_save_path"] + material_name + ".tres"
 			if not DirAccess.dir_exists_absolute(paths["material_save_path"]):
 				DirAccess.make_dir_recursive_absolute(paths["material_save_path"])
@@ -230,43 +231,22 @@ func run_import(ind: int):
 			
 			if "Base Color" in tex_dict:
 				material.albedo_texture = load(tex_base_bath + tex_dict["Base Color"].file)
-				set_prop_in_import_file("compress/mode", "2", tex_base_bath + tex_dict["Base Color"].file + ".import")
-				set_prop_in_import_file("detect_3d/compress_to", "0", tex_base_bath + tex_dict["Base Color"].file + ".import")
-				set_prop_in_import_file("mipmaps/generate", "true", tex_base_bath + tex_dict["Base Color"].file + ".import")
-				
-				if material.albedo_texture.has_alpha():
-					# enable high quality if the texture has an alpha channel because it won't increase file size
-					set_prop_in_import_file("compress/high_quality", "true", tex_base_bath + tex_dict["Base Color"].file + ".import")
 			else:
 				material.albedo_texture = null
 			
 			if "Metallic" in tex_dict:
 				material.metallic_texture = load(tex_base_bath + tex_dict["Metallic"].file)
 				material.metallic_texture_channel = rgb_channel_to_flag(tex_dict["Metallic"].channel)
-				set_prop_in_import_file("compress/mode", "2", tex_base_bath + tex_dict["Metallic"].file + ".import")
-				set_prop_in_import_file("compress/channel_pack", "1", tex_base_bath + tex_dict["Metallic"].file + ".import")
-				set_prop_in_import_file("detect_3d/compress_to", "0", tex_base_bath + tex_dict["Metallic"].file + ".import")
-				set_prop_in_import_file("mipmaps/generate", "true", tex_base_bath + tex_dict["Metallic"].file + ".import")
 			else:
 				material.metallic_texture = null
 			if "Roughness" in tex_dict:
 				material.roughness_texture = load(tex_base_bath + tex_dict["Roughness"].file)
 				material.roughness_texture_channel = rgb_channel_to_flag(tex_dict["Roughness"].channel)
-				set_prop_in_import_file("compress/mode", "2", tex_base_bath + tex_dict["Roughness"].file + ".import")
-				set_prop_in_import_file("compress/channel_pack", "1", tex_base_bath + tex_dict["Roughness"].file + ".import")
-				set_prop_in_import_file("detect_3d/compress_to", "0", tex_base_bath + tex_dict["Roughness"].file + ".import")
-				set_prop_in_import_file("mipmaps/generate", "true", tex_base_bath + tex_dict["Roughness"].file + ".import")
 			else:
 				material.roughness_texture = null
 			
 			if "Normal" in tex_dict:
 				material.normal_texture = load(tex_base_bath + tex_dict["Normal"].file)
-				set_prop_in_import_file("compress/mode", "2", tex_base_bath + tex_dict["Normal"].file + ".import")
-				set_prop_in_import_file("compress/high_quality", "true", tex_base_bath + tex_dict["Normal"].file + ".import")
-				set_prop_in_import_file("compress/normal_map", "1", tex_base_bath + tex_dict["Normal"].file + ".import")
-				set_prop_in_import_file("compress/channel_pack", "1", tex_base_bath + tex_dict["Normal"].file + ".import")
-				set_prop_in_import_file("detect_3d/compress_to", "0", tex_base_bath + tex_dict["Normal"].file + ".import")
-				set_prop_in_import_file("mipmaps/generate", "true", tex_base_bath + tex_dict["Normal"].file + ".import")
 			else:
 				material.normal_enabled = false
 				material.normal_texture = null
@@ -610,17 +590,6 @@ func find_node(root: Node, s: String, max_depth := -1, current_depth := 0) -> No
 		if (found != null):
 			return found
 	return null
-
-func set_prop_in_import_file(prop: String, value: String, file_path: String) -> void:
-	var file := FileAccess.open(file_path, FileAccess.READ_WRITE)
-	var lines := file.get_as_text(true).split("\n")
-	for i in lines.size():
-		if lines[i].begins_with(prop + "="):
-			var ind := lines[i].find("=")
-			var edited_line := lines[i].substr(0, ind + 1) + value
-			lines[i] = edited_line
-			break
-	file.store_string("\n".join(lines))
 
 func get_texture_by_name(material: BaseMaterial3D, name: String) -> Texture2D:
 	match name:

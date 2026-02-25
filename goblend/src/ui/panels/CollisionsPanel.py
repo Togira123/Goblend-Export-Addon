@@ -30,8 +30,8 @@ class SCENE_PT_CollisionsPanel(bpy.types.Panel):
 
             row = split.row()
             row.alignment = "RIGHT"
-            row.context_pointer_set(name="collision_collection_to_delete", data=item.collection)
-            row.operator("scene.remove_collision", text="", icon="X", emboss=False)
+            row.context_pointer_set(name="collision_collection_to_remove", data=item.collection)
+            row.operator("scene.remove_collision_setting", text="", icon="X", emboss=False)
         
             if panel:
                 panel.use_property_split = True

@@ -1,7 +1,6 @@
 import bpy
 from ...ui.lists.DefaultCollisionLayersList import DefaultCollisionLayerListItem
 from ...ui.lists.GroupList import GroupListItem
-from ...ui.lists.CollisionLayersList import CollisionLayerListItem
 from ...ui.lists.CollisionMasksList import CollisionMaskListItem
 
 from .enum_items import physics_objects

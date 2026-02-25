@@ -4,12 +4,12 @@ def is_not_action_picked_already(self, action):
     if action.library != None:
         return False
     scene = bpy.context.scene
-    for item in scene.animations_panel_props:
+    for item in scene.animation_panel_props:
         if item.animation == action:
             return False
     return True
 
-class AnimationsPanelProperties(bpy.types.PropertyGroup):
+class AnimationPanelProperties(bpy.types.PropertyGroup):
     open: bpy.props.BoolProperty(default=True)
     animation: bpy.props.PointerProperty(
         name="Animation",

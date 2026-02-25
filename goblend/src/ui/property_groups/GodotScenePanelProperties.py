@@ -1,9 +1,7 @@
 import bpy
 
 from ...config import get_config
-from ...ui.lists.GroupList import GroupListItem
-from ...ui.lists.CollisionLayersList import CollisionLayerListItem
-from ...ui.lists.CollisionMasksList import CollisionMaskListItem
+from ..lists.GroupList import GroupListItem
 
 from .enum_items import physics_objects
 
@@ -28,7 +26,7 @@ def scenes(_self, _context):
     
     return enum
 
-class GodotScenesPanelProperties(bpy.types.PropertyGroup):
+class GodotScenePanelProperties(bpy.types.PropertyGroup):
     open: bpy.props.BoolProperty(default=True)
     obj: bpy.props.PointerProperty(
         name="Target Object",

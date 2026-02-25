@@ -4,31 +4,29 @@ from .enum_items import transparency_enum_items, culling_enum_items
 
 def can_add_material(self, material):
     scene = bpy.context.scene
-    obj_mats = set()
-    for slot in self.obj.material_slots:
-        obj_mats.add(slot.material)
-    panel = None
-    for item in scene.object_constraints_panel_props:
-        if item.obj == self.obj:
-            panel = item
-            break
-    if panel == None:
-        return False
-    
-    for override in panel.material_overrides:
-        obj_mats.discard(override.mat)
-    return material in obj_mats
+    for mat_setting in scene.material_panel_props:
+        if mat_setting.mat == material:
+            return False
+    return True
 
-class MaterialOverrideProperties(bpy.types.PropertyGroup):
+class MaterialPanelProperties(bpy.types.PropertyGroup):
     open: bpy.props.BoolProperty(default=True)
-    obj: bpy.props.PointerProperty(
-        name="Object",
-        type=bpy.types.Object,
-    )
     mat: bpy.props.PointerProperty(
         name="Material",
         type=bpy.types.Material,
         poll=can_add_material
+    )
+
+    force_texture_group_disabled: bpy.props.StringProperty(
+        name="Texture Group",
+        description="Texture group cannot be used together with the 'Use Godot Shader' option",
+        default=""
+    )
+
+    texture_group: bpy.props.StringProperty(
+        name="Texture Group",
+        description="Materials with the same texture group will bake textures to the same image file. Not compatible with 'Use Godot Shader'",
+        default=""
     )
     
     use_shader: bpy.props.BoolProperty(
@@ -50,6 +48,25 @@ class MaterialOverrideProperties(bpy.types.PropertyGroup):
         subtype="COORDINATES",
         default=(1024, 1024),
         min=0
+    )
+
+    force_override_bake_margin_disabled: bpy.props.BoolProperty(
+        name="Override Bake Margin",
+        description="Bake margin cannot be used together with the 'Use Godot Shader' option",
+        default=False 
+    )
+    
+    override_bake_margin: bpy.props.BoolProperty(
+        name="Override Bake Margin",
+        description="Change the bake margin used when baking this material to textures. Not compatible with 'Use Godot Shader'",
+        default=False
+    )
+
+    bake_margin: bpy.props.IntProperty(
+        name="Bake Margin",
+        description="The bake margin to use when baking this material",
+        min=0,
+        default=4
     )
     
     transparency_mode: bpy.props.EnumProperty(
@@ -73,46 +90,6 @@ class MaterialOverrideProperties(bpy.types.PropertyGroup):
         default="DEFAULT"
     )
 
-    uv_map_enabled: bpy.props.BoolProperty(
-        name="Override UV Map",
-        description="Whether to use a separate UV Map as bake target",
-        default=False
-    )
-
-    force_uv_map_disabled: bpy.props.BoolProperty(
-        name="Override UV Map",
-        description="Disabled: Incompatible with the 'Use Shader' Setting. Set the UV Map on the Shader itself instead, or disable 'Use Shader'.",
-        default=False
-    )
-    
-    uv_map_per_texture_enabled: bpy.props.BoolProperty(
-        name="Per Texture",
-        description="Whether to use a different UV map per texture",
-        default=False
-    )
-    
-    def uvmaps(self, context):
-        if self.obj:
-            return [(uv.name, uv.name, "") for uv in self.obj.data.uv_layers][:8]  # godot only allows up to 8 uv maps
-        return []
-    
-    uv_map: bpy.props.EnumProperty(
-        name="UV Map",
-        items=uvmaps
-    )
-    uv_map_base_color: bpy.props.EnumProperty(
-        name="Base Color",
-        items=uvmaps
-    )
-    uv_map_metallic_roughness: bpy.props.EnumProperty(
-        name="Metallic/Roughness",
-        items=uvmaps
-    )
-    uv_map_normal: bpy.props.EnumProperty(
-        name="Normal",
-        items=uvmaps
-    )
-    
     limit_uv_effect_normal: bpy.props.BoolProperty(
         name="Limit Normal UV Effect",
         description="Define boundaries in which the normal map is applied",

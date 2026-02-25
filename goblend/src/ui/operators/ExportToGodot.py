@@ -43,9 +43,11 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         texture_dim = {"x": props.texture_dim[0], "y": props.texture_dim[1]}
 
         uv_map_override = {}
-        uv_groups = {}
+        texture_groups = {}
 
         texture_overrides = {}
+
+        bake_margins = {}
 
         config = get_config()
 
@@ -105,58 +107,57 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         }
         
 
-        for item in scene.object_constraints_panel_props:
+        for item in scene.object_panel_props:
             if not item.enabled:
                 continue
             if not item.obj:
                 continue
-            if item.uv_group != "":
-                uv_groups[item.obj.name] = item.uv_group
-            settings_for_godot["shadow_cast_mode"][item.obj.name] = item.shadow_cast_mode
-            for mat in item.material_overrides:
-                if not mat.mat:
-                    continue
-                if mat.uv_map_enabled:
-                    if not item.obj.name in uv_map_override:
-                        uv_map_override[item.obj.name] = {}
-                    if mat.uv_map_per_texture_enabled:
-                        uv_map_override[item.obj.name][mat.mat.name] = {
-                            "Base Color": mat.uv_map_base_color,
-                            "Metallic/Roughness": mat.uv_map_metallic_roughness,
-                            "Normal": mat.uv_map_normal,
-                            "obj": item.obj
-                        }
-                    else:
-                        uv_map_override[item.obj.name][mat.mat.name] = {
-                            "Base Color": mat.uv_map,
-                            "Metallic/Roughness": mat.uv_map,
-                            "Normal": mat.uv_map,
-                            "obj": item.obj
-                        }
-
-                if mat.override_quality:
-                    if not item.obj.name in texture_overrides:
-                        texture_overrides[item.obj.name] = {}
-                    texture_overrides[item.obj.name][mat.mat.name] = [mat.texture_dim[0], mat.texture_dim[1]]
-                    
-                if mat.transparency_mode != "DEFAULT":
-                    settings_for_godot["material_transparency_mode_overrides"][mat.mat.name] = {
-                        "mode": mat.transparency_mode,
-                        "scissor": mat.transparency_alpha_scissor_threshold
+            if item.uv_map_enabled:
+                if item.uv_map_per_texture_enabled:
+                    uv_map_override[item.obj.name] = {
+                        "Base Color": item.uv_map_base_color,
+                        "Metallic/Roughness": item.uv_map_metallic_roughness,
+                        "Normal": item.uv_map_normal,
+                        "obj": item.obj
                     }
-                if mat.cull_mode != "DEFAULT":
-                    settings_for_godot["material_cull_mode_overrides"][mat.mat.name] = mat.cull_mode
-                if mat.use_shader:
-                    settings_for_godot["use_shader_mats"][mat.mat.name] = item.obj
+                else:
+                    uv_map_override[item.obj.name] = {
+                        "Base Color": item.uv_map,
+                        "Metallic/Roughness": item.uv_map,
+                        "Normal": item.uv_map,
+                        "obj": item.obj
+                    }
+            settings_for_godot["shadow_cast_mode"][item.obj.name] = item.shadow_cast_mode
+        for mat in scene.material_panel_props:
+            if not mat.mat:
+                continue
 
-                if mat.limit_uv_effect_normal:
-                    settings_for_godot["limit_uv_effect_normal"][mat.mat.name] = {
-                    "min_x": mat.limit_uv_effect_normal_x_min,
-                    "max_x": mat.limit_uv_effect_normal_x_max,
-                    "min_y": mat.limit_uv_effect_normal_y_min,
-                    "max_y": mat.limit_uv_effect_normal_y_max,
-                    "obj": item.obj
+            if mat.override_quality:
+                texture_overrides[mat.mat.name] = [mat.texture_dim[0], mat.texture_dim[1]]
+                
+            if mat.transparency_mode != "DEFAULT":
+                settings_for_godot["material_transparency_mode_overrides"][mat.mat.name] = {
+                    "mode": mat.transparency_mode,
+                    "scissor": mat.transparency_alpha_scissor_threshold
                 }
+            if mat.cull_mode != "DEFAULT":
+                settings_for_godot["material_cull_mode_overrides"][mat.mat.name] = mat.cull_mode
+            if mat.use_shader:
+                settings_for_godot["use_shader_mats"][mat.mat.name] = item.obj
+            else:
+                if mat.texture_group != "":
+                    texture_groups[mat.mat.name] = mat.texture_group
+                if mat.override_bake_margin:
+                    bake_margins[mat.mat.name] = mat.bake_margin
+
+            if mat.limit_uv_effect_normal:
+                settings_for_godot["limit_uv_effect_normal"][mat.mat.name] = {
+                "min_x": mat.limit_uv_effect_normal_x_min,
+                "max_x": mat.limit_uv_effect_normal_x_max,
+                "min_y": mat.limit_uv_effect_normal_y_min,
+                "max_y": mat.limit_uv_effect_normal_y_max,
+                "obj": item.obj
+            }
 
         for item in scene.collision_panel_props:
             if item.collection == None:
@@ -195,7 +196,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             
             settings_for_godot["collisions"].append(obj)
         
-        for item in scene.animations_panel_props:
+        for item in scene.animation_panel_props:
             if item.animation == None:
                 continue
             settings_for_godot["animations"][item.animation.name] = {
@@ -286,7 +287,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             paths[save_path] = abs_path(path)
             idx += 1
         try:
-            export(addon_prefs.godot_file_path, texture_dim, uv_map_override, uv_groups, texture_overrides, settings_for_godot, paths)
+            export(addon_prefs.godot_file_path, texture_dim, uv_map_override, bake_margins, texture_groups, texture_overrides, settings_for_godot, paths)
             if scene.is_root_scene:
                 log("------------ EXPORT DONE ------------")
             else:

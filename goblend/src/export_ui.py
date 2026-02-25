@@ -7,34 +7,34 @@ from .ui.lists.DefaultCollisionLayersList import DefaultCollisionLayerListItem, 
 from .ui.lists.DefaultCollisionMaskList import DefaultCollisionMaskListItem, LIST_OT_AddItemToDefaultMasksList, LIST_OT_RemoveItemFromDefaultMasksList, SCENE_UL_DefaultCollisionMasksList
 from .ui.lists.DefaultGroupList import DefaultGroupListItem, LIST_OT_AddItemToDefaultGroupList, LIST_OT_RemoveItemFromDefaultGroupList, SCENE_UL_DefaultGroupList
 from .ui.lists.GroupList import GroupListItem, LIST_OT_AddItemToGroupsList, LIST_OT_RemoveItemFromGroupsList, SCENE_UL_GroupsList
-from .ui.operators.AddAnimationPanel import SCENE_OT_AddAnimationPanel
-from .ui.operators.AddCollisionPanel import SCENE_OT_AddCollisionPanel
-from .ui.operators.AddGodotScenesPanel import SCENE_OT_AddGodotScenesPanel
-from .ui.operators.AddLightsPanel import SCENE_OT_AddLightsPanel
-from .ui.operators.AddObjectConstraints import SCENE_OT_AddObjectConstraints
-from .ui.operators.AddObjectConstraintsMaterial import SCENE_OT_AddObjectConstraintsMaterial
+from .ui.operators.AddAnimationSetting import SCENE_OT_AddAnimationSetting
+from .ui.operators.AddCollisionSetting import SCENE_OT_AddCollisionSetting
+from .ui.operators.AddGodotScenesSetting import SCENE_OT_AddGodotScenesSetting
+from .ui.operators.AddLightsSetting import SCENE_OT_AddLightsSetting
+from .ui.operators.AddObjectSetting import SCENE_OT_AddObjectSetting
+from .ui.operators.AddMaterialSetting import SCENE_OT_AddMaterialSetting
 from .ui.operators.ExportToGodot import SCENE_OT_ExportToGodot, SCENE_OT_RootExportToGodot
-from .ui.operators.RemoveAnimationPanel import SCENE_OT_RemoveAnimationPanel
-from .ui.operators.RemoveCollision import SCENE_OT_RemoveCollision
-from .ui.operators.RemoveGodotScenesPanel import SCENE_OT_RemoveGodotScenesPanel
-from .ui.operators.RemoveLights import SCENE_OT_RemoveLight
-from .ui.operators.RemoveObjectConstraints import SCENE_OT_RemoveObjectConstraints
-from .ui.operators.RemoveObjectConstraintsMaterial import SCENE_OT_RemoveObjectConstraintsMaterial
+from .ui.operators.RemoveAnimationSetting import SCENE_OT_RemoveAnimationSetting
+from .ui.operators.RemoveCollisionSetting import SCENE_OT_RemoveCollisionSetting
+from .ui.operators.RemoveGodotScenesSetting import SCENE_OT_RemoveGodotScenesSetting
+from .ui.operators.RemoveLightSetting import SCENE_OT_RemoveLightSetting
+from .ui.operators.RemoveObjectSetting import SCENE_OT_RemoveObjectSetting
+from .ui.operators.RemoveMaterialSetting import SCENE_OT_RemoveMaterialSetting
 from .ui.operators.SyncLights import SCENE_OT_SyncLights
-from .ui.operators.SyncMaterialConstraints import SCENE_OT_SyncMaterialConstraints
 from .ui.panels.AnimationsPanel import SCENE_PT_AnimationsPanel
 from .ui.panels.CollisionsPanel import SCENE_PT_CollisionsPanel
 from .ui.panels.ExportPanel import SCENE_PT_ExportPanel
 from .ui.panels.GodotScenesPanel import SCENE_PT_GodotScenesPanel
 from .ui.panels.LightsPanel import SCENE_PT_LightsPanel
 from .ui.panels.ObjectsPanel import SCENE_PT_ObjectsPanel
-from .ui.property_groups.AnimationsPanelProperties import AnimationsPanelProperties
+from .ui.panels.MaterialsPanel import SCENE_PT_MaterialsPanel
+from .ui.property_groups.AnimationPanelProperties import AnimationPanelProperties
 from .ui.property_groups.CollisionPanelProperties import CollisionPanelProperties
 from .ui.property_groups.DefaultCollisionPanelProperties import DefaultCollisionPanelProperties
-from .ui.property_groups.GodotScenesPanelProperties import GodotScenesPanelProperties
+from .ui.property_groups.GodotScenePanelProperties import GodotScenePanelProperties
 from .ui.property_groups.LightPanelProperties import LightPanelProperties
-from .ui.property_groups.MaterialOverrideProperties import MaterialOverrideProperties
-from .ui.property_groups.ObjectConstraintsPanelProperties import ObjectConstraintsPanelProperties
+from .ui.property_groups.MaterialPanelProperties import MaterialPanelProperties
+from .ui.property_groups.ObjectPanelProperties import ObjectPanelProperties
 from .ui.property_groups.PanelProperties import PanelProperties
 
 classes = (
@@ -64,34 +64,34 @@ classes = (
     LIST_OT_RemoveItemFromDefaultGroupList,
     AddonPreferences,
     PanelProperties,
-    MaterialOverrideProperties, 
-    ObjectConstraintsPanelProperties,
+    MaterialPanelProperties, 
+    ObjectPanelProperties,
     CollisionPanelProperties,
     DefaultCollisionPanelProperties,
     SCENE_OT_RootExportToGodot,
     SCENE_OT_ExportToGodot,
-    SCENE_OT_AddObjectConstraints,
-    SCENE_OT_AddObjectConstraintsMaterial,
-    SCENE_OT_RemoveObjectConstraints,
-    SCENE_OT_RemoveObjectConstraintsMaterial,
-    SCENE_OT_RemoveCollision,
-    SCENE_OT_AddCollisionPanel,
-    SCENE_OT_SyncMaterialConstraints,
-    SCENE_OT_AddGodotScenesPanel,
+    SCENE_OT_AddObjectSetting,
+    SCENE_OT_AddMaterialSetting,
+    SCENE_OT_RemoveObjectSetting,
+    SCENE_OT_RemoveMaterialSetting,
+    SCENE_OT_RemoveCollisionSetting,
+    SCENE_OT_AddCollisionSetting,
+    SCENE_OT_AddGodotScenesSetting,
     SCENE_OT_SyncLights,
-    SCENE_OT_RemoveGodotScenesPanel,
-    SCENE_OT_AddLightsPanel,
-    SCENE_OT_RemoveLight,
+    SCENE_OT_RemoveGodotScenesSetting,
+    SCENE_OT_AddLightsSetting,
+    SCENE_OT_RemoveLightSetting,
     SCENE_PT_ExportPanel,
     SCENE_PT_ObjectsPanel,
+    SCENE_PT_MaterialsPanel,
     SCENE_PT_CollisionsPanel,
     SCENE_PT_AnimationsPanel,
     SCENE_PT_GodotScenesPanel,
     SCENE_PT_LightsPanel,
-    SCENE_OT_AddAnimationPanel,
-    SCENE_OT_RemoveAnimationPanel,
-    AnimationsPanelProperties,
-    GodotScenesPanelProperties,
+    SCENE_OT_AddAnimationSetting,
+    SCENE_OT_RemoveAnimationSetting,
+    AnimationPanelProperties,
+    GodotScenePanelProperties,
     LightPanelProperties
 )
 
@@ -100,11 +100,12 @@ def register():
         bpy.utils.register_class(c)
 
     bpy.types.Scene.panel_props = bpy.props.PointerProperty(type=PanelProperties)
-    bpy.types.Scene.object_constraints_panel_props = bpy.props.CollectionProperty(type=ObjectConstraintsPanelProperties)
+    bpy.types.Scene.object_panel_props = bpy.props.CollectionProperty(type=ObjectPanelProperties)
+    bpy.types.Scene.material_panel_props = bpy.props.CollectionProperty(type=MaterialPanelProperties)
     bpy.types.Scene.collision_panel_props = bpy.props.CollectionProperty(type=CollisionPanelProperties)
-    bpy.types.Scene.animations_panel_props = bpy.props.CollectionProperty(type=AnimationsPanelProperties)
+    bpy.types.Scene.animation_panel_props = bpy.props.CollectionProperty(type=AnimationPanelProperties)
     bpy.types.Scene.default_collision_panel_props = bpy.props.PointerProperty(type=DefaultCollisionPanelProperties)
-    bpy.types.Scene.godot_scene_panel_props = bpy.props.CollectionProperty(type=GodotScenesPanelProperties)
+    bpy.types.Scene.godot_scene_panel_props = bpy.props.CollectionProperty(type=GodotScenePanelProperties)
     bpy.types.Scene.light_panel_props = bpy.props.CollectionProperty(type=LightPanelProperties)
     bpy.types.Scene.show_all_light_settings = bpy.props.BoolProperty(
         name="Show All Light Settings",
@@ -117,9 +118,10 @@ def unregister():
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
     del bpy.types.Scene.panel_props
-    del bpy.types.Scene.object_constraints_panel_props
+    del bpy.types.Scene.object_panel_props
+    del bpy.types.Scene.material_panel_props
     del bpy.types.Scene.collision_panel_props
-    del bpy.types.Scene.animations_panel_props
+    del bpy.types.Scene.animation_panel_props
     del bpy.types.Scene.default_collision_panel_props
     del bpy.types.Scene.godot_scene_panel_props
     del bpy.types.Scene.light_panel_props

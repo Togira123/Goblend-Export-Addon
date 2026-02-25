@@ -73,7 +73,7 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, cmd_line_args_scene_i
                 cmd_line_args_scene_instances.append(cube.name)
     return collision_collection
 
-def get_objects_to_export(uv_group_assignments, uv_groups):
+def get_objects_to_export(texture_groups):
     objects = []
     hidden_objects = set()
     for obj in bpy.data.objects:
@@ -86,12 +86,10 @@ def get_objects_to_export(uv_group_assignments, uv_groups):
         else:
             continue
 
-        if obj.name in uv_group_assignments and len(obj.material_slots) > 1:
-            raise Exception("Objects that have a uv group cannot have more than 1 material (could be added though probably if really needed)")
         for slot in obj.material_slots:
-            for grp in uv_groups:
+            for grp in texture_groups:
                 if slot.material.name == grp:
-                    raise Exception("There is a material named" + slot.material.name + " which conflicts with a uv_group name")
+                    raise Exception("There is a material named" + slot.material.name + " which conflicts with a texture group name")
     return objects, hidden_objects
 
 def get_collision_objects(collision_collection, objects):
@@ -127,7 +125,7 @@ def remove_godot_scene_objects(objects):
     
     return godot_scene_nodes
 
-def setup(uv_group_assignments, settings_for_godot):
+def setup(texture_group_assignments, settings_for_godot):
     log("Running export for: " + os.path.normcase(bpy.data.filepath))
 
     selected_objects = bpy.context.selected_objects.copy()
@@ -167,14 +165,14 @@ def setup(uv_group_assignments, settings_for_godot):
     
     loop_layer_collections(bpy.context.view_layer.layer_collection) # this is the root collection
 
-    uv_groups = set()
+    texture_groups = set()
 
-    for val in uv_group_assignments.values():
-        if not val in uv_groups:
-            log("INFO: Found uv_group " + val)
-            uv_groups.add(val)
+    for val in texture_group_assignments.values():
+        if not val in texture_groups:
+            log("INFO: Found  " + val)
+            texture_groups.add(val)
     
-    objects, hidden_objects = get_objects_to_export(uv_group_assignments, uv_groups)
+    objects, hidden_objects = get_objects_to_export(texture_groups)
 
     collision_objects = get_collision_objects(collision_collection, objects)
 

@@ -2,10 +2,6 @@ import bpy
 
 from math import radians
 
-from .MaterialOverrideProperties import MaterialOverrideProperties
-
-from .enum_items import shadow_cast_enum_items
-
 def can_add_light(self, obj):
     if obj.type != "LIGHT":
         return False

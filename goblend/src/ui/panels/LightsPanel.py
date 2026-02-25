@@ -33,8 +33,8 @@ class SCENE_PT_LightsPanel(bpy.types.Panel):
 
             row = split.row()
             row.alignment = "RIGHT"
-            row.context_pointer_set(name="light_to_delete", data=item.light)
-            row.operator("scene.remove_light", text="", icon="X", emboss=False)
+            row.context_pointer_set(name="light_setting_to_remove", data=item.light)
+            row.operator("scene.remove_light_setting", text="", icon="X", emboss=False)
             
             if panel:
                 panel.use_property_split = True

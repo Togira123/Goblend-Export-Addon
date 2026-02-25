@@ -1,7 +1,5 @@
 import bpy
 
-from .MaterialOverrideProperties import MaterialOverrideProperties
-
 from .enum_items import shadow_cast_enum_items
 
 def can_add_object_constraint(self, object):
@@ -13,35 +11,56 @@ def can_add_object_constraint(self, object):
     collision_collection = bpy.data.collections.get("Collisions")
     if collision_collection and object.name in collision_collection.all_objects:
         return False
-    for item in scene.object_constraints_panel_props:
+    for item in scene.object_panel_props:
         if item.obj == object:
             return False
     return True
 
-def on_update(self, _context):
-    for override in self.material_overrides:
-        override.mat = None
-        override.obj = self.obj
-
-
-class ObjectConstraintsPanelProperties(bpy.types.PropertyGroup):
+class ObjectPanelProperties(bpy.types.PropertyGroup):
     open: bpy.props.BoolProperty(default=True)
     obj: bpy.props.PointerProperty(
         name="Object",
         type=bpy.types.Object,
         poll=can_add_object_constraint,
-        update=on_update
     )
     enabled: bpy.props.BoolProperty(
         name="Enable Constraint",
         description="Whether this constraint should be enabled",
         default=True
     )
+
+    def uvmaps(self, context):
+        if self.obj:
+            return [(uv.name, uv.name, "") for uv in self.obj.data.uv_layers][:8]  # godot only allows up to 8 uv maps
+        return []
     
-    uv_group: bpy.props.StringProperty(
-        name="UV Group",
-        description="Objects with the same UV Group will bake textures to the same image file",
-        default=""
+    uv_map_enabled: bpy.props.BoolProperty(
+        name="Override UV Map",
+        description="Whether to use a separate UV Map as bake target",
+        default=False
+    )
+
+    uv_map_per_texture_enabled: bpy.props.BoolProperty(
+        name="Per Texture",
+        description="Whether to use a different UV map per texture",
+        default=False
+    )
+
+    uv_map: bpy.props.EnumProperty(
+        name="UV Map",
+        items=uvmaps
+    )
+    uv_map_base_color: bpy.props.EnumProperty(
+        name="Base Color",
+        items=uvmaps
+    )
+    uv_map_metallic_roughness: bpy.props.EnumProperty(
+        name="Metallic/Roughness",
+        items=uvmaps
+    )
+    uv_map_normal: bpy.props.EnumProperty(
+        name="Normal",
+        items=uvmaps
     )
     
     shadow_cast_mode: bpy.props.EnumProperty(
@@ -50,5 +69,3 @@ class ObjectConstraintsPanelProperties(bpy.types.PropertyGroup):
         items=shadow_cast_enum_items,
         default="ON"
     )
-    
-    material_overrides: bpy.props.CollectionProperty(type=MaterialOverrideProperties)

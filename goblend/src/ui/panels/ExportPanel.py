@@ -102,12 +102,14 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
         layout.operator("scene.root_export_to_godot", icon="RENDER_STILL")
 
         # add object constraints
-        layout.operator("scene.add_object_constraints", icon="ADD")
-        
-        layout.operator("scene.add_collision_panel", icon="ADD")
-        
-        layout.operator("scene.add_animation_panel", icon="ADD")
+        layout.operator("scene.add_object_setting", icon="ADD")
 
-        layout.operator("scene.add_godot_scene_panel", icon="ADD")
+        layout.operator("scene.add_material_setting", icon="ADD")
+        
+        layout.operator("scene.add_collision_setting", icon="ADD")
+        
+        layout.operator("scene.add_animation_setting", icon="ADD")
 
-        layout.operator("scene.add_lights_panel", icon="ADD")
+        layout.operator("scene.add_godot_scene_setting", icon="ADD")
+
+        layout.operator("scene.add_lights_setting", icon="ADD")

@@ -153,9 +153,9 @@ def get_light_cmd_line_args(settings_for_godot):
         
     return [str(cnt)] + cmd_line_args_light_settings
 
-def export(godot_exec_path, texture_dim, uv_map_override, uv_group_assignments, texture_overrides, settings_for_godot, paths):
-    objects, found_col_objects, collision_objects, collision_collection, export_path_glb, cmd_line_args_scene_instances, godot_scene_nodes, selected_objects, hidden_layer_collections, hidden_objects = setup(uv_group_assignments, settings_for_godot)
-    extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj, cmd_line_shader_data, converted_mat_names, cmd_line_args_path, cmd_line_args, images_created = handle_materials(uv_map_override, objects, paths, uv_group_assignments, settings_for_godot, 6, texture_dim, texture_overrides)
+def export(godot_exec_path, texture_dim, uv_map_override, bake_margins, texture_groups, texture_overrides, settings_for_godot, paths):
+    objects, found_col_objects, collision_objects, collision_collection, export_path_glb, cmd_line_args_scene_instances, godot_scene_nodes, selected_objects, hidden_layer_collections, hidden_objects = setup(texture_groups, settings_for_godot)
+    extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj, cmd_line_shader_data, converted_mat_names, cmd_line_args_path, cmd_line_args, images_created = handle_materials(uv_map_override, objects, paths, texture_groups, settings_for_godot, bake_margins, texture_dim, texture_overrides)
 
     blend_path = os.path.normcase(bpy.data.filepath)
     filename = os.path.basename(blend_path)

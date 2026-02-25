@@ -29,8 +29,8 @@ class SCENE_PT_GodotScenesPanel(bpy.types.Panel):
 
             row = split.row()
             row.alignment = "RIGHT"
-            row.context_pointer_set(name="godot_scene_to_delete", data=item.obj)
-            row.operator("scene.remove_godot_scene", text="", icon="X", emboss=False)
+            row.context_pointer_set(name="godot_scene_to_remove", data=item.obj)
+            row.operator("scene.remove_godot_scene_setting", text="", icon="X", emboss=False)
             
             if panel:
                 panel.use_property_split = True

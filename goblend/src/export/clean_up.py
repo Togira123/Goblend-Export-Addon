@@ -15,7 +15,7 @@ def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_ma
         for slot in obj.material_slots:
             mat = slot.material
             for inp in inputs:
-                if inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
+                if obj in created_tex_nodes_per_mat_per_obj and mat in created_tex_nodes_per_mat_per_obj[obj] and inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
                     mat.node_tree.links.new(created_tex_nodes_per_mat_per_obj[obj][mat][inp][2], created_tex_nodes_per_mat_per_obj[obj][mat][inp][1])
 
     # reapply old meshes for every object
