@@ -4,6 +4,8 @@ from .enum_items import transparency_enum_items, culling_enum_items
 
 def can_add_material(self, material):
     scene = bpy.context.scene
+    if material.library != None:
+        return False
     for mat_setting in scene.material_panel_props:
         if mat_setting.mat == material:
             return False
