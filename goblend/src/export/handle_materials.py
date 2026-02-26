@@ -452,6 +452,10 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
             poly_indices[poly.index] = poly.material_index
         
         for mat in materials:
+            if mat.name in settings_for_godot["use_shader_mats"]:
+                settings_for_godot["use_shader_mats"][mat.name] = obj
+            if mat.name in settings_for_godot["limit_uv_effect_normal"]:
+                settings_for_godot["limit_uv_effect_normal"][mat.name]["obj"] = obj
             material_output_and_bsdf = prepare_material(obj, mat, poly_indices)
             if not material_output_and_bsdf:
                 continue

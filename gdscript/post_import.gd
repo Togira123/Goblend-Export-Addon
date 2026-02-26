@@ -154,7 +154,6 @@ func run_import(ind: int):
 			var material_name := args[ind]
 			var actual_material_name := args[ind]
 			log_msg(material_name + " at " + str(j))
-			blender_to_actual_mat_name[actual_material_name] = material_name
 			var transparency_mode := args[ind + 1]
 			var scissor_value: float
 			if transparency_mode == "SCISSOR":
@@ -164,10 +163,11 @@ func run_import(ind: int):
 			var cull_mode := args[ind + 2]
 			
 			var texture_group := args[ind + 3]
-			var is_in_uv_group := texture_group != "null"
-			if is_in_uv_group:
+			var is_in_texture_group := texture_group != "null"
+			if is_in_texture_group:
 				material_name = texture_group 
 			
+			blender_to_actual_mat_name[actual_material_name] = material_name
 			var number_of_connected_ports := int(args[ind + 4])
 			ind += 5
 			var material_location: String = paths["material_save_path"] + material_name + ".tres"
@@ -260,7 +260,7 @@ func run_import(ind: int):
 						material.refraction_enabled = true
 						material.refraction_scale = 0.0
 			
-			if is_in_uv_group:
+			if is_in_texture_group:
 				material.resource_name = material_name
 				node.mesh.surface_set_name(j, material_name)
 				# otherwise it already has the correct name
@@ -652,22 +652,6 @@ func get_line_number(source: String, line: String) -> int:
 		if lines[i].strip_edges() == line.strip_edges():
 			return i
 	return -1
-
-func convert_material_to_shader(material: StandardMaterial3D, code: String) -> ShaderMaterial:
-	var shader_mat := ShaderMaterial.new()
-	shader_mat.shader = Shader.new()
-	shader_mat.shader.code = code
-	# choosing to do everything via uniforms to enable editing via code
-	# if not needed in the end we can always write a script that rewrites
-	# the shaders to use constant values instead of uniforms for better performance
-	var param_list := RenderingServer.get_shader_parameter_list(shader_mat.shader.get_rid())
-	for param in param_list:
-		if param.type == 24: # 24 is type Texture2D
-			shader_mat.set_shader_parameter(param.name, get_texture_by_name(material, param.name))
-		else:
-			var value = RenderingServer.material_get_param(material.get_rid(), param.name)
-			shader_mat.set_shader_parameter(param.name, value)
-	return shader_mat
 
 func free_node_and_children(node: Node) -> void:
 	for child in node.get_children():

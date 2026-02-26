@@ -143,7 +143,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             if mat.cull_mode != "DEFAULT":
                 settings_for_godot["material_cull_mode_overrides"][mat.mat.name] = mat.cull_mode
             if mat.use_shader:
-                settings_for_godot["use_shader_mats"][mat.mat.name] = item.obj
+                settings_for_godot["use_shader_mats"][mat.mat.name] = None # object, will be set when iterating over materials
             else:
                 if mat.texture_group != "":
                     texture_groups[mat.mat.name] = mat.texture_group
@@ -156,7 +156,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 "max_x": mat.limit_uv_effect_normal_x_max,
                 "min_y": mat.limit_uv_effect_normal_y_min,
                 "max_y": mat.limit_uv_effect_normal_y_max,
-                "obj": item.obj
+                "obj": None # object, will be set when iterating over materials
             }
 
         for item in scene.collision_panel_props:
