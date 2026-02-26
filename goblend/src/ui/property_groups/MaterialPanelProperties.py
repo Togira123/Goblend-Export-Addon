@@ -37,6 +37,12 @@ class MaterialPanelProperties(bpy.types.PropertyGroup):
         default=False
     )
 
+    force_override_texture_size_disabled: bpy.props.BoolProperty(
+        name="Override Texture Size",
+        description="You cannot override texture size when using the 'Use Godot Shader' option, as no textures are baked when using it",
+        default=False
+    )
+
     override_texture_size: bpy.props.BoolProperty(
         name="Override Texture Size",
         description="Override texture size for this material",

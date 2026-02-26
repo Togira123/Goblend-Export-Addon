@@ -43,14 +43,15 @@ class SCENE_PT_MaterialsPanel(bpy.types.Panel):
                     col2.enabled = False
                     col2.prop(mat, "force_texture_group_disabled")
                     col2.prop(mat, "force_override_bake_margin_disabled")
+                    col2.prop(mat, "force_override_texture_size_disabled")
                 else:
                     col.prop(mat, "texture_group")
                     col.prop(mat, "override_bake_margin")
                     if mat.override_bake_margin:
                         col.prop(mat, "bake_margin")
-                col.prop(mat, "override_texture_size")
-                if mat.override_texture_size:
-                    col.prop(mat, "texture_dim")
+                    col.prop(mat, "override_texture_size")
+                    if mat.override_texture_size:
+                        col.prop(mat, "texture_dim")
                 col.prop(mat, "use_shader")
                 col.prop(mat, "limit_uv_effect_normal")
                 if mat.limit_uv_effect_normal:
