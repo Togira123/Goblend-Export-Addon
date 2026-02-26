@@ -37,9 +37,9 @@ class MaterialPanelProperties(bpy.types.PropertyGroup):
         default=False
     )
 
-    override_quality: bpy.props.BoolProperty(
-        name="Override Texture Quality",
-        description="Override texture quality by adjusting the texture size",
+    override_texture_size: bpy.props.BoolProperty(
+        name="Override Texture Size",
+        description="Override texture size for this material",
         default=False
     )
 

@@ -107,9 +107,6 @@ class PanelProperties(bpy.types.PropertyGroup):
         default="DEFAULT"
     )
 
-
-
-
     texture_dim: bpy.props.IntVectorProperty(
         name="Dimensions",
         description="Dimensions of the generated texture",

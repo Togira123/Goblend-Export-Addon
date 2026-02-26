@@ -48,8 +48,8 @@ class SCENE_PT_MaterialsPanel(bpy.types.Panel):
                     col.prop(mat, "override_bake_margin")
                     if mat.override_bake_margin:
                         col.prop(mat, "bake_margin")
-                col.prop(mat, "override_quality")
-                if mat.override_quality:
+                col.prop(mat, "override_texture_size")
+                if mat.override_texture_size:
                     col.prop(mat, "texture_dim")
                 col.prop(mat, "use_shader")
                 col.prop(mat, "limit_uv_effect_normal")

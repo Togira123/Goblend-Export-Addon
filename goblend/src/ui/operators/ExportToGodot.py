@@ -132,7 +132,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             if not mat.mat:
                 continue
 
-            if mat.override_quality:
+            if mat.override_texture_size:
                 texture_overrides[mat.mat.name] = [mat.texture_dim[0], mat.texture_dim[1]]
                 
             if mat.transparency_mode != "DEFAULT":
