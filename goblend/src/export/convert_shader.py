@@ -159,8 +159,8 @@ def set_var(node, output, type, name):
 
     nodes_to_vars[node][output] = {"name": name, "type": type}
 
-def set_var_as_uniform(name, type, linkTo): # linkTo can for example be the name of the image for samplers
-    uniform_vars.add((name, type, linkTo))
+def set_var_as_uniform(name, type, linkTo, use_source_color_hint): # linkTo can for example be the name of the image for samplers
+    uniform_vars.add((name, type, linkTo, use_source_color_hint))
 
 def get_var(node, input):
     # find the output that connects to this input
@@ -581,7 +581,7 @@ def init_separate_xyz(node):
         varz = create_var(node, node.outputs[2], DataTypes.FLOAT)
         add_line("float " + varz + " = " + vec + ".z;", False)
 
-def init_tex_image(node, uv_index):
+def init_tex_image(node, uv_index, type):
     if node.image is None:
         raise Exception("No Image set in Texture Image Shader node " + node.name)
     if node.image.source != "FILE":
@@ -589,7 +589,8 @@ def init_tex_image(node, uv_index):
     sampler = create_var(node, None, DataTypes.SAMPLER2D)
     abs_filepath = os.path.normcase(bpy.path.abspath(node.image.filepath))
     log("Reading TextureImage Node with filepath " + abs_filepath)
-    set_var_as_uniform(sampler, DataTypes.SAMPLER2D.value, abs_filepath)
+    # samplers using sRGB color data needs source_color hint: https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html#using-source-color
+    set_var_as_uniform(sampler, DataTypes.SAMPLER2D.value, abs_filepath, type == "BaseColor")
     vec = None
     if node.inputs[0].is_linked:
         vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
@@ -863,8 +864,9 @@ supported_nodes = {
     "NodeGroupOutput": init_group_output,
 }
 
-needs_uv = set(("ShaderNodeTexCoord", "ShaderNodeTexImage", "ShaderNodeUVMap"))
+needs_uv = set(("ShaderNodeTexCoord", "ShaderNodeUVMap"))
 needs_type = set(["ShaderNodeGroup"])
+needs_uv_and_type = set(["ShaderNodeTexImage"])
 
 def initialize_vars(node, type):
     if node.bl_idname in supported_nodes:
@@ -882,6 +884,20 @@ def initialize_vars(node, type):
             else:
                 # this is the material how it originally was, we take the UV from the object data
                 supported_nodes[node.bl_idname](node, obj.data.uv_layers.active_index)
+        elif node.bl_idname in needs_uv_and_type:
+            if is_right_after_bake:
+                # we just baked the textures, so we should also take the UVs that we baked them with
+                if type == "BaseColor":
+                    supported_nodes[node.bl_idname](node, uv_base_color_idx, type)
+                elif type == "Metallic/Roughness":
+                    supported_nodes[node.bl_idname](node, uv_roughness_metallic_idx, type)
+                elif type == "Normal":
+                    supported_nodes[node.bl_idname](node, uv_normal_idx, type)
+                else:
+                    raise Exception("Unknown UV type encountered: " + type)
+            else:
+                # this is the material how it originally was, we take the UV from the object data
+                supported_nodes[node.bl_idname](node, obj.data.uv_layers.active_index, type)
         elif node.bl_idname in needs_type:
             supported_nodes[node.bl_idname](node, type)
         else:
@@ -980,7 +996,10 @@ def convert_to_godot_shader(object, material_name, cull_mode, limit_normal, righ
         code += "cull_back, "
     code += "diffuse_lambert, specular_schlick_ggx;\n\n"
     for uniform in uniform_vars:
-        code += "uniform " + uniform[1] + " " + uniform[0] + ";\n"
+        source_color = ""
+        if uniform[3]:
+            source_color = ": source_color"
+        code += "uniform " + uniform[1] + " " + uniform[0] + source_color + ";\n"
         uniforms.append([uniform[0], uniform[2]]) # name and linkTo
 
     code += structs_code + "\n"
