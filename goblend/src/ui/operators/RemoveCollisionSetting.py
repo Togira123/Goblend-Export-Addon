@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveCollisionSetting(bpy.types.Operator):
     bl_idname = "scene.remove_collision_setting"
     bl_label = "Remove Collision"

@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_PT_ObjectsPanel(bpy.types.Panel):
     bl_parent_id = "SCENE_PT_export_to_godot"
     bl_label = "Objects"

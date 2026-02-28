@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_AddLightsSetting(bpy.types.Operator):
     bl_idname = "scene.add_lights_setting"
     bl_label = "Add Light Setting"

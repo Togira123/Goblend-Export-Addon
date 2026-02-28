@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_AddGodotScenesSetting(bpy.types.Operator):
     bl_idname = "scene.add_godot_scene_setting"
     bl_label = "Add Godot Scene"

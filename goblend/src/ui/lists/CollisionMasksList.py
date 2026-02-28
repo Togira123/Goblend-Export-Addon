@@ -1,4 +1,3 @@
-
 import bpy
 
 from ...config import get_config
@@ -6,20 +5,12 @@ from ...ui.lists.CollisionLayersList import layer_items
 
 
 class CollisionMaskListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(
-        name="Enable",
-        description="Enable or disable this mask",
-        default=True
-    )
+    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this mask", default=True)
     force_disabled: bpy.props.BoolProperty(
-        name="Force Disabled",
-        description="There exists another override for this mask already",
-        default=False
+        name="Force Disabled", description="There exists another override for this mask already", default=False
     )
-    mask: bpy.props.EnumProperty(
-        name="Mask",
-        items=layer_items
-    )
+    mask: bpy.props.EnumProperty(name="Mask", items=layer_items)
+
 
 class SCENE_UL_CollisionMasksList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -50,7 +41,7 @@ class LIST_OT_AddItemToMasksList(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return len(context.list.masks_override_list) < len(layer_items(cls, context))
-    
+
     def execute(self, context):
         # find first unused mask
         existing = set()
@@ -63,6 +54,7 @@ class LIST_OT_AddItemToMasksList(bpy.types.Operator):
                 item.mask = mask[0]
                 break
         return {"FINISHED"}
+
 
 class LIST_OT_RemoveItemFromMasksList(bpy.types.Operator):
     bl_idname = "collision_masks_list.remove_item"

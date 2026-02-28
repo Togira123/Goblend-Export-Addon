@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveGodotScenesSetting(bpy.types.Operator):
     bl_idname = "scene.remove_godot_scene_setting"
     bl_label = "Remove Godot Scene"

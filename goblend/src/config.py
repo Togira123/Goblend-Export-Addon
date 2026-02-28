@@ -11,6 +11,7 @@ root_dir = None
 
 prev_filepath = ""
 
+
 def get_root_dir():
     global root_dir
     global was_empty_filepath
@@ -35,6 +36,7 @@ def get_root_dir():
         raise Exception("No Godot project found")
     return root_dir
 
+
 def get_collision_groups(collision_config):
     groups = []
     if "groups" in collision_config:
@@ -49,10 +51,7 @@ def get_collision_groups(collision_config):
                 if not (type(group["display_name"]) is str and type(group["godot_group_name"]) is str):
                     raise Exception("Incorrect type for 'display_name' or 'godot_group_name'")
                 seen_names.add(group["godot_group_name"])
-                obj = {
-                    "display_name": group["display_name"],
-                    "godot_group_name": group["godot_group_name"]
-                }
+                obj = {"display_name": group["display_name"], "godot_group_name": group["godot_group_name"]}
                 if "description" in group and type(group["description"]) is str:
                     obj["description"] = group["description"]
                 else:
@@ -61,6 +60,7 @@ def get_collision_groups(collision_config):
             else:
                 raise Exception("Malformed collision group")
     return groups
+
 
 def get_collision_layers(collision_config):
     layers = []
@@ -75,10 +75,7 @@ def get_collision_layers(collision_config):
                     raise Exception("Duplicate bit used in layers")
                 if not (type(layer["bit"]) is int and type(layer["display_name"]) is str):
                     raise Exception("Incorrect type for 'bit' or 'display_name'")
-                layers.append({
-                    "bit": layer["bit"],
-                    "display_name": layer["display_name"]
-                })
+                layers.append({"bit": layer["bit"], "display_name": layer["display_name"]})
             else:
                 raise Exception("Malformed collision layer")
     return layers
@@ -91,6 +88,7 @@ def get_collision_config(config):
         return (groups, layers)
     return ([], [])
 
+
 def abs_path(path):
     if not path.endswith("/"):
         path = path + "/"
@@ -101,11 +99,13 @@ def abs_path(path):
         return path.replace("res://", root_dir, 1)
     return path
 
+
 def validate_hierarchy_props(paths_config, key, has_hierarchy):
     if not type(paths_config[key]) is bool:
         raise Exception("Incorrect type for '" + key + "', should be bool")
     if paths_config[key] and not has_hierarchy:
         raise Exception("'same_hierarchy_target' has to be set in order to use '" + key + "'")
+
 
 def get_default_paths(config):
     paths = {}
@@ -115,7 +115,7 @@ def get_default_paths(config):
         ["texture_save_path", "texture_use_same_hierarchy", "res://goblend/textures/"],
         ["animation_library_save_path", "animation_library_use_same_hierarchy", "res://goblend/animation_libraries/"],
         ["animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"],
-        ["shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"]
+        ["shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"],
     ]
     if "paths" in config:
         paths_config = config["paths"]
@@ -162,7 +162,8 @@ def get_default_paths(config):
         paths["collision_shapes_save_path"] = abs_path("res://goblend/collision_shapes")
         paths["reuse_collision_shapes"] = True
     return paths
-    
+
+
 def get_collision_defaults(config):
     layers = []
     if "collision_layers" in config:
@@ -170,7 +171,7 @@ def get_collision_defaults(config):
             layers = config["collision_layers"]
         else:
             raise Exception("Incorrect type for 'collision_layers', should be list")
-    
+
     masks = []
     if "collision_masks" in config:
         if type(config["collision_masks"]) is list:
@@ -178,7 +179,6 @@ def get_collision_defaults(config):
         else:
             raise Exception("Incorrect type for 'collision_masks', should be list")
     return (layers, masks)
-
 
 
 def get_defaults(config):
@@ -189,13 +189,13 @@ def get_defaults(config):
         defaults["collision_layers"] = layers
         defaults["collision_masks"] = masks
     else:
-        defaults["paths"] = get_default_paths({}) # will get default paths
+        defaults["paths"] = get_default_paths({})  # will get default paths
         layers, masks = get_collision_defaults({})
         defaults["collision_layers"] = layers
         defaults["collision_masks"] = masks
 
     return defaults
-    
+
 
 def get_godot_scenes(config):
     scenes = []
@@ -204,22 +204,33 @@ def get_godot_scenes(config):
         if type(conf_scenes) is list:
             for scene in conf_scenes:
                 if type(scene) is dict and "display_name" in scene and "name" in scene and "godot_scene_path" in scene:
-                    if type(scene["display_name"]) is str and type(scene["name"]) is str and type(scene["godot_scene_path"]) is str:
-                        scenes.append({
-                            "display_name": scene["display_name"],
-                            "name": scene["name"],
-                            "godot_scene_path": scene["godot_scene_path"]
-                        })
+                    if (
+                        type(scene["display_name"]) is str
+                        and type(scene["name"]) is str
+                        and type(scene["godot_scene_path"]) is str
+                    ):
+                        scenes.append(
+                            {
+                                "display_name": scene["display_name"],
+                                "name": scene["name"],
+                                "godot_scene_path": scene["godot_scene_path"],
+                            }
+                        )
                     else:
-                        raise Exception("'display_name', 'name' and 'godot_scene_path' in 'godot_scenes' all have to be strings")
+                        raise Exception(
+                            "'display_name', 'name' and 'godot_scene_path' in 'godot_scenes' all have to be strings"
+                        )
                 else:
-                    raise Exception("'godot_scenes' array element is missing at least one required key ('display_name', 'name' and 'godot_scene_path')")
+                    raise Exception(
+                        "'godot_scenes' array element is missing at least one required key ('display_name', 'name' and 'godot_scene_path')"
+                    )
         else:
             raise Exception("Incorrect type for 'godot_scenes', should be list")
     return scenes
 
 
 config = {}
+
 
 def read_config():
     global config
@@ -233,7 +244,7 @@ def read_config():
                 groups, layers = get_collision_config(content)
                 config["collisions"] = {}
                 config["collisions"]["groups"] = groups
-                config["collisions"]["layers"] = layers 
+                config["collisions"]["layers"] = layers
                 config["defaults"] = get_defaults(content)
                 config["godot_scenes"] = get_godot_scenes(content)
                 return

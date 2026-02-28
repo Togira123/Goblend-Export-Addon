@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveLightSetting(bpy.types.Operator):
     bl_idname = "scene.remove_light_setting"
     bl_label = "Remove Light Setting"

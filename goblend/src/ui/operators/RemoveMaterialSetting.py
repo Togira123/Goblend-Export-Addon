@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveMaterialSetting(bpy.types.Operator):
     bl_idname = "scene.remove_material_setting"
     bl_label = "Remove Material"
@@ -11,4 +12,4 @@ class SCENE_OT_RemoveMaterialSetting(bpy.types.Operator):
             if context.scene.material_panel_props[i].mat == mat:
                 context.scene.material_panel_props.remove(i)
                 break
-        return {"FINISHED"} 
+        return {"FINISHED"}

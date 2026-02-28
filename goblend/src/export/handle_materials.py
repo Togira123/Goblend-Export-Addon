@@ -9,6 +9,7 @@ from .setup import save_path_keys
 from ..config import get_root_dir
 from ..log import log
 
+
 def material_prep_cmd_line_args(mat, cmd_line_args, settings_for_godot):
     cmd_line_args.append(mat.name)
     if mat.name in settings_for_godot["material_transparency_mode_overrides"]:
@@ -24,6 +25,7 @@ def material_prep_cmd_line_args(mat, cmd_line_args, settings_for_godot):
     else:
         cmd_line_args.append(settings_for_godot["cull_mode"])
 
+
 def get_bsdf_and_mat_output_node_of_mat(mat):
     mat_output_node = mat.node_tree.nodes.get("Material Output")
     if mat_output_node.type != "OUTPUT_MATERIAL":
@@ -37,6 +39,7 @@ def get_bsdf_and_mat_output_node_of_mat(mat):
         raise Exception("Material Output is connected to non-bsdf node, currently not supported")
     return mat_output_node, bsdf
 
+
 def prepare_material(obj, mat, poly_indices):
     obj.data.materials.clear()
     obj.data.materials.append(mat)
@@ -46,10 +49,11 @@ def prepare_material(obj, mat, poly_indices):
     if not mat.use_nodes:
         log("Material not using nodes", "WARNING")
         return None
-    return get_bsdf_and_mat_output_node_of_mat(mat) 
+    return get_bsdf_and_mat_output_node_of_mat(mat)
+
 
 def handle_texture_group(mat, texture_groups, seen_texture_groups, cmd_line_args):
-    is_in_texture_group = mat.name in texture_groups 
+    is_in_texture_group = mat.name in texture_groups
     texture_group = ""
     seen_group = False
     if is_in_texture_group:
@@ -65,6 +69,7 @@ def handle_texture_group(mat, texture_groups, seen_texture_groups, cmd_line_args
         cmd_line_args.append("null")  # used to indicate that the object is in no uv group
     return is_in_texture_group, texture_group, seen_group
 
+
 def should_bake_target(orig_value, orig_texture_group, texture_groups, input_name, is_equal):
     for mat_name, group_name in texture_groups.items():
         if group_name == orig_texture_group:
@@ -78,6 +83,7 @@ def should_bake_target(orig_value, orig_texture_group, texture_groups, input_nam
     # hence there is no need to bake this
     return False
 
+
 def get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group):
     base_color = bsdf.inputs.get("Base Color")
     bake_base_color = base_color.is_linked
@@ -88,27 +94,38 @@ def get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group):
         # check whether any material in the same texture group is linked or has a different value
         def is_equal(a, b):
             return a[0] == b[0] and a[1] == b[1] and a[2] == b[2] and a[3] == b[3]
-        bake_base_color = should_bake_target(base_color.default_value, mat_group_name, texture_groups, "Base Color", is_equal)
+
+        bake_base_color = should_bake_target(
+            base_color.default_value, mat_group_name, texture_groups, "Base Color", is_equal
+        )
     roughness = bsdf.inputs.get("Roughness")
     bake_roughness = roughness.is_linked
     if not bake_roughness and is_in_texture_group:
+
         def is_equal(a, b):
             return a == b
-        bake_roughness = should_bake_target(roughness.default_value, mat_group_name, texture_groups, "Roughness", is_equal) 
+
+        bake_roughness = should_bake_target(
+            roughness.default_value, mat_group_name, texture_groups, "Roughness", is_equal
+        )
     metallic = bsdf.inputs.get("Metallic")
     bake_metallic = metallic.is_linked
     if not bake_metallic and is_in_texture_group:
+
         def is_equal(a, b):
             return a == b
+
         bake_metallic = should_bake_target(metallic.default_value, mat_group_name, texture_groups, "Metallic", is_equal)
     normal = bsdf.inputs.get("Normal")
     bake_normal = normal.is_linked
     if not bake_normal and is_in_texture_group:
+
         def is_equal(a, b):
             return a[0] == b[0] and a[1] == b[1] and a[2] == b[2]
+
         bake_normal = should_bake_target(normal.default_value, mat_group_name, texture_groups, "Normal", is_equal)
     return bake_base_color, bake_roughness, bake_metallic, bake_normal
-        
+
 
 def save_mesh_and_modifiers(obj, old_meshes, orig_mod_per_obj):
     mesh_copy = obj.data.copy()
@@ -119,11 +136,7 @@ def save_mesh_and_modifiers(obj, old_meshes, orig_mod_per_obj):
     # first check for modifiers
     for m in obj.modifiers:
         # handle each modifier differently
-        mod_data = {
-            "name": m.name,
-            "type": m.type,
-            "props": {}
-        }
+        mod_data = {"name": m.name, "type": m.type, "props": {}}
         match m.type:
             case "NODES":  # geometry nodes
                 ng = m.node_group
@@ -138,6 +151,7 @@ def save_mesh_and_modifiers(obj, old_meshes, orig_mod_per_obj):
 
     orig_mod_per_obj[obj] = original_modifiers
 
+
 def prepare_object(obj):
     if obj.type != "MESH":
         return False
@@ -151,13 +165,26 @@ def prepare_object(obj):
     obj.select_set(True)
     return True
 
-def connect_image_textures(objects, created_tex_nodes_per_mat_per_obj, tex_node_to_normal_dict, tex_node_to_separate_metallic_dict, tex_node_to_combine_metallic_dict, tex_node_to_separate_roughness_dict, tex_node_to_combine_roughness_dict):
+
+def connect_image_textures(
+    objects,
+    created_tex_nodes_per_mat_per_obj,
+    tex_node_to_normal_dict,
+    tex_node_to_separate_metallic_dict,
+    tex_node_to_combine_metallic_dict,
+    tex_node_to_separate_roughness_dict,
+    tex_node_to_combine_roughness_dict,
+):
     inputs = ["Base Color", "Metallic", "Roughness", "Normal"]
     for obj in objects:
         for slot in obj.material_slots:
             mat = slot.material
             for inp in inputs:
-                if obj in created_tex_nodes_per_mat_per_obj and mat in created_tex_nodes_per_mat_per_obj[obj] and inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
+                if (
+                    obj in created_tex_nodes_per_mat_per_obj
+                    and mat in created_tex_nodes_per_mat_per_obj[obj]
+                    and inp in created_tex_nodes_per_mat_per_obj[obj][mat]
+                ):
                     img_tex_node = created_tex_nodes_per_mat_per_obj[obj][mat][inp][0]
                     bsdf = created_tex_nodes_per_mat_per_obj[obj][mat][inp][3]
                     if inp == "Normal":
@@ -190,7 +217,10 @@ def connect_image_textures(objects, created_tex_nodes_per_mat_per_obj, tex_node_
                         mat.node_tree.links.new(img_tex_node.outputs["Color"], bsdf.inputs[inp])
     return inputs
 
-def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj):
+
+def first_clean_up(
+    objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj
+):
     # deselect afterwards
     bpy.ops.object.select_all(action="DESELECT")
 
@@ -204,7 +234,10 @@ def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_ma
             mat = slot.material
             for inp in inputs:
                 if inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
-                    mat.node_tree.links.new(created_tex_nodes_per_mat_per_obj[obj][mat][inp][2], created_tex_nodes_per_mat_per_obj[obj][mat][inp][1])
+                    mat.node_tree.links.new(
+                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][2],
+                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][1],
+                    )
 
     # reapply old meshes for every object
     for obj in objects:
@@ -229,6 +262,7 @@ def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_ma
                     for identifier, val in m["props"].items():
                         mod[identifier] = val
 
+
 def last_clean_up(images_created, found_col_objects, collision_objects, export_path_glb, selected_objects):
     content = os.listdir(export_path_glb)
     for file in content:
@@ -237,12 +271,11 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
             os.remove(filepath)
         else:
             log("Temporary directory contains other directories", "ERROR")
-    
+
     try:
         os.rmdir(export_path_glb)
     except:
         log("Failed to remove temporary export directory", "ERROR")
-
 
     for mesh in bpy.data.meshes:
         if mesh.users == 0:
@@ -251,19 +284,20 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
     # clear cached image data blocks
     for img in images_created:
         bpy.data.images.remove(img)
-    
+
     # remove extra cubes
     for obj in found_col_objects:
         bpy.data.objects.remove(obj)
-    
+
     for obj in collision_objects:
         if obj.name.endswith("-convcolonly"):
-            obj.name = obj.name[:-12] # remove the last 12 chars
-    
+            obj.name = obj.name[:-12]  # remove the last 12 chars
+
     bpy.ops.object.select_all(action="DESELECT")
 
     for obj in selected_objects:
         obj.select_set(True)
+
 
 def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_converted_mats, objects):
     shader_count = 0
@@ -282,20 +316,23 @@ def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_co
             limit_normal = None
             if mat_name in settings_for_godot["limit_uv_effect_normal"]:
                 limit_normal = settings_for_godot["limit_uv_effect_normal"][mat_name]
-                # if right_after_bake is false, the 3 uv indices don't matter so we can safely pass None for them
+                # if right_after_bake is false, the 3 uv indices don't matter so we can safely pass None for them
             code, uniforms = convert_to_godot_shader(obj, mat_name, cull_mode, limit_normal, False, None, None, None)
             shader_count += 1
             cmd_line_shader_data.append(mat_name)
             cmd_line_shader_data.append(code)
             cmd_line_shader_data.append(str(len(uniforms)))
             for uniform in uniforms:
-                cmd_line_shader_data.append(uniform[0]) # var name
-                cmd_line_shader_data.append(uniform[1]) # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                cmd_line_shader_data.append(uniform[0])  # var name
+                cmd_line_shader_data.append(
+                    uniform[1]
+                )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
         except Exception as e:
             log("Exception while trying to generate shader code: " + repr(e), "ERROR")
             raise e
     total_shader_count = int(cmd_line_shader_data[0]) + shader_count
     cmd_line_shader_data[0] = str(total_shader_count)
+
 
 def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
     cmd_line_shader_data = []
@@ -340,8 +377,10 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
                 cmd_line_shader_data.append(code)
                 cmd_line_shader_data.append(str(len(uniforms)))
                 for uniform in uniforms:
-                    cmd_line_shader_data.append(uniform[0]) # var name
-                    cmd_line_shader_data.append(uniform[1]) # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                    cmd_line_shader_data.append(uniform[0])  # var name
+                    cmd_line_shader_data.append(
+                        uniform[1]
+                    )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
             except Exception as e:
                 log("Exception while trying to generate shader code: " + repr(e), "ERROR")
                 raise e
@@ -368,21 +407,26 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
                 # if there were indices specified we would've handled the material in the previous loop
                 obj.data.uv_layers.active_index,
                 obj.data.uv_layers.active_index,
-                obj.data.uv_layers.active_index
+                obj.data.uv_layers.active_index,
             )
             shader_count += 1
             cmd_line_shader_data.append(mat_name)
             cmd_line_shader_data.append(code)
             cmd_line_shader_data.append(str(len(uniforms)))
             for uniform in uniforms:
-                cmd_line_shader_data.append(uniform[0]) # var name
-                cmd_line_shader_data.append(uniform[1]) # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                cmd_line_shader_data.append(uniform[0])  # var name
+                cmd_line_shader_data.append(
+                    uniform[1]
+                )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
         except Exception as e:
             log("Exception while trying to generate shader code: " + repr(e), "ERROR")
             raise e
     return [str(shader_count)] + cmd_line_shader_data, seen_mat_names
 
-def handle_materials(uv_map_override, objects, paths, texture_groups, settings_for_godot, bake_margins, texture_dim, texture_overrides):
+
+def handle_materials(
+    uv_map_override, objects, paths, texture_groups, settings_for_godot, bake_margins, texture_dim, texture_overrides
+):
     images_created = set()
     scene = bpy.context.scene
     seen_mats = set()
@@ -412,10 +456,15 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
     cmd_line_args.append(os.path.splitext(filename)[0])
 
     # use temp file for storing paths of child scenes
-    # will be read in the gdscript script to figure out what scenes to link 
+    # will be read in the gdscript script to figure out what scenes to link
     tmp_file_path = os.path.normcase(os.path.join(root_dir, ".tmp.goblend"))
     with open(tmp_file_path, "a") as tmp_file:
-        tmp_file.write(os.path.normcase(bpy.data.filepath) + "\n" + os.path.join(paths["scene_save_path"], os.path.splitext(filename)[0]) + "\n")
+        tmp_file.write(
+            os.path.normcase(bpy.data.filepath)
+            + "\n"
+            + os.path.join(paths["scene_save_path"], os.path.splitext(filename)[0])
+            + "\n"
+        )
 
     for obj in objects:
         if not prepare_object(obj):
@@ -439,8 +488,8 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
         if obj.name in settings_for_godot["shadow_cast_mode"]:
             cmd_line_args.append(settings_for_godot["shadow_cast_mode"][obj.name])
         else:
-            cmd_line_args.append("ON") # default value for casting shadows
-        
+            cmd_line_args.append("ON")  # default value for casting shadows
+
         # store all materials in an array, remove them all from the object and always only have one material slot
         # because having multiple will result in all of them baking at the same time
         materials = []
@@ -450,7 +499,7 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
         poly_indices = {}
         for poly in obj.data.polygons:
             poly_indices[poly.index] = poly.material_index
-        
+
         for mat in materials:
             if mat.name in settings_for_godot["use_shader_mats"]:
                 settings_for_godot["use_shader_mats"][mat.name] = obj
@@ -461,12 +510,18 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
                 continue
             mat_output_node, bsdf = material_output_and_bsdf
             material_prep_cmd_line_args(mat, cmd_line_args, settings_for_godot)
-            is_in_texture_group, texture_group, seen_group = handle_texture_group(mat, texture_groups, seen_texture_groups, cmd_line_args)
+            is_in_texture_group, texture_group, seen_group = handle_texture_group(
+                mat, texture_groups, seen_texture_groups, cmd_line_args
+            )
             link_array = []
             seen_mat = False
             if mat.name in seen_mats:
                 seen_mat = True
-                log("Using the same material (" + mat.name + ") on more than one object, baking to the same image as before! If these objects have overlapping UV maps this is (potentially) bad")
+                log(
+                    "Using the same material ("
+                    + mat.name
+                    + ") on more than one object, baking to the same image as before! If these objects have overlapping UV maps this is (potentially) bad"
+                )
             else:
                 seen_mats.add(mat.name)
 
@@ -483,100 +538,106 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
             if not mat.name in settings_for_godot["use_shader_mats"]:
                 log("Checking material '" + mat.name + "' on object '" + obj.name + "'")
 
-                should_bake_base_color, should_bake_roughness, should_bake_metallic, should_bake_normal = get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group)
-                emission = None 
+                should_bake_base_color, should_bake_roughness, should_bake_metallic, should_bake_normal = (
+                    get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group)
+                )
+                emission = None
                 # bake materials
                 if should_bake_base_color:
-                    bake_base_color(obj,
-                                    mat,
-                                    scene,
-                                    bsdf,
-                                    mat_output_node,
-                                    bake_margins,
-                                    seen_mat,
-                                    alpha_input,
-                                    paths["texture_save_path"],
-                                    images_created,
-                                    link_array,
-                                    uv_map_override,
-                                    extra_shader_nodes,
-                                    created_texture_nodes,
-                                    seen_group,
-                                    is_in_texture_group,
-                                    texture_group,
-                                    texture_dim,
-                                    texture_overrides,
-                                    use_alpha_on_base_color
-                                    )
+                    bake_base_color(
+                        obj,
+                        mat,
+                        scene,
+                        bsdf,
+                        mat_output_node,
+                        bake_margins,
+                        seen_mat,
+                        alpha_input,
+                        paths["texture_save_path"],
+                        images_created,
+                        link_array,
+                        uv_map_override,
+                        extra_shader_nodes,
+                        created_texture_nodes,
+                        seen_group,
+                        is_in_texture_group,
+                        texture_group,
+                        texture_dim,
+                        texture_overrides,
+                        use_alpha_on_base_color,
+                    )
                 if should_bake_metallic:
-                    emission = bake_metallic(obj,
-                                            mat,
-                                            scene,
-                                            bsdf,
-                                            mat_output_node,
-                                            bake_margins,
-                                            seen_mat,
-                                            paths["texture_save_path"],
-                                            images_created,
-                                            link_array,
-                                            uv_map_override,
-                                            extra_shader_nodes,
-                                            created_texture_nodes,
-                                            seen_group,
-                                            is_in_texture_group,
-                                            texture_group,
-                                            texture_dim,
-                                            texture_overrides,
-                                            tex_node_to_separate_metallic_dict,
-                                            tex_node_to_combine_metallic_dict,
-                                            combine_color,
-                                            should_bake_roughness
-                                            )
+                    emission = bake_metallic(
+                        obj,
+                        mat,
+                        scene,
+                        bsdf,
+                        mat_output_node,
+                        bake_margins,
+                        seen_mat,
+                        paths["texture_save_path"],
+                        images_created,
+                        link_array,
+                        uv_map_override,
+                        extra_shader_nodes,
+                        created_texture_nodes,
+                        seen_group,
+                        is_in_texture_group,
+                        texture_group,
+                        texture_dim,
+                        texture_overrides,
+                        tex_node_to_separate_metallic_dict,
+                        tex_node_to_combine_metallic_dict,
+                        combine_color,
+                        should_bake_roughness,
+                    )
                 if should_bake_roughness:
-                    bake_roughness(obj,
-                                mat,
-                                scene,
-                                bsdf,
-                                mat_output_node,
-                                bake_margins,
-                                seen_mat,
-                                paths["texture_save_path"],
-                                images_created,
-                                link_array,
-                                uv_map_override,
-                                extra_shader_nodes,
-                                created_texture_nodes,
-                                seen_group,
-                                is_in_texture_group,
-                                texture_group,
-                                texture_dim,
-                                texture_overrides,
-                                tex_node_to_separate_roughness_dict,
-                                tex_node_to_combine_roughness_dict,
-                                combine_color,
-                                emission,
-                                should_bake_metallic
-                                )
+                    bake_roughness(
+                        obj,
+                        mat,
+                        scene,
+                        bsdf,
+                        mat_output_node,
+                        bake_margins,
+                        seen_mat,
+                        paths["texture_save_path"],
+                        images_created,
+                        link_array,
+                        uv_map_override,
+                        extra_shader_nodes,
+                        created_texture_nodes,
+                        seen_group,
+                        is_in_texture_group,
+                        texture_group,
+                        texture_dim,
+                        texture_overrides,
+                        tex_node_to_separate_roughness_dict,
+                        tex_node_to_combine_roughness_dict,
+                        combine_color,
+                        emission,
+                        should_bake_metallic,
+                    )
                 if should_bake_normal:
-                    bake_normal(obj,
-                                mat,
-                                scene,
-                                bsdf,
-                                bake_margins,
-                                seen_mat,
-                                paths["texture_save_path"],
-                                images_created,
-                                link_array,
-                                uv_map_override,
-                                extra_shader_nodes,
-                                created_texture_nodes,
-                                seen_group,
-                                is_in_texture_group,
-                                texture_group,
-                                texture_dim,
-                                texture_overrides,
-                                tex_node_to_normal_dict
-                                )
+                    bake_normal(
+                        obj,
+                        mat,
+                        scene,
+                        bsdf,
+                        bake_margins,
+                        seen_mat,
+                        paths["texture_save_path"],
+                        images_created,
+                        link_array,
+                        uv_map_override,
+                        extra_shader_nodes,
+                        created_texture_nodes,
+                        seen_group,
+                        is_in_texture_group,
+                        texture_group,
+                        texture_dim,
+                        texture_overrides,
+                        tex_node_to_normal_dict,
+                    )
 
                 # transmission
                 transmission = bsdf.inputs.get("Transmission Weight")
@@ -603,11 +664,32 @@ def handle_materials(uv_map_override, objects, paths, texture_groups, settings_f
             obj.data.materials.append(mat)
         for poly in obj.data.polygons:
             poly.material_index = poly_indices[poly.index]
-        
+
     # all textures for all materials for all objects are created, connect the image textures to the inputs of the principled bsdf
-    inputs = connect_image_textures(objects, created_tex_nodes_per_mat_per_obj, tex_node_to_normal_dict, tex_node_to_separate_metallic_dict, tex_node_to_combine_metallic_dict, tex_node_to_separate_roughness_dict, tex_node_to_combine_roughness_dict)
+    inputs = connect_image_textures(
+        objects,
+        created_tex_nodes_per_mat_per_obj,
+        tex_node_to_normal_dict,
+        tex_node_to_separate_metallic_dict,
+        tex_node_to_combine_metallic_dict,
+        tex_node_to_separate_roughness_dict,
+        tex_node_to_combine_roughness_dict,
+    )
 
     # if either limiting normal effect with disabled use shader or separate UV maps are set, we have to convert to a shader here
-    cmd_line_shader_data, converted_mat_names = check_early_convert_to_shader(uv_map_override, settings_for_godot, objects)
+    cmd_line_shader_data, converted_mat_names = check_early_convert_to_shader(
+        uv_map_override, settings_for_godot, objects
+    )
 
-    return extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj, cmd_line_shader_data, converted_mat_names, cmd_line_args_path, cmd_line_args, images_created
+    return (
+        extra_shader_nodes,
+        inputs,
+        created_tex_nodes_per_mat_per_obj,
+        old_meshes,
+        orig_mod_per_obj,
+        cmd_line_shader_data,
+        converted_mat_names,
+        cmd_line_args_path,
+        cmd_line_args,
+        images_created,
+    )

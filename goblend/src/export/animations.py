@@ -2,6 +2,7 @@ import bpy
 
 from ..log import log
 
+
 def get_data_block_at(obj, path):
     while True:
         firstDot = path.find(".")
@@ -35,7 +36,7 @@ def handle_animations():
                     if len(subarr) > 0:
                         slot_count += 1
                         arr.extend(subarr)
-    
+
     return [str(slot_count)] + arr
 
 
@@ -44,7 +45,10 @@ def handle_nodetree_animations(action, slot):
     if len(users) == 0:
         return []
     if len(users) > 1:
-        log("Animation slot '" + slot.name + "' has multiple users! Only the first one will be used in Godot", "WARNING")
+        log(
+            "Animation slot '" + slot.name + "' has multiple users! Only the first one will be used in Godot",
+            "WARNING",
+        )
     user = users[0]
     cb = action.layers[0].strips[0].channelbag(slot)
     arr = []
@@ -86,5 +90,5 @@ def handle_nodetree_animations(action, slot):
         for kf in fcurve.keyframe_points:
             arr.append(str(kf.co.x))
             arr.append(str(kf.co.y))
-            
+
     return [str(fc_count)] + arr

@@ -2,7 +2,15 @@ import bpy
 import os
 from ..log import log
 
-def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj):
+
+def first_clean_up(
+    objects,
+    extra_shader_nodes,
+    inputs,
+    created_tex_nodes_per_mat_per_obj,
+    old_meshes,
+    orig_mod_per_obj,
+):
     # deselect afterwards
     bpy.ops.object.select_all(action="DESELECT")
 
@@ -15,8 +23,15 @@ def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_ma
         for slot in obj.material_slots:
             mat = slot.material
             for inp in inputs:
-                if obj in created_tex_nodes_per_mat_per_obj and mat in created_tex_nodes_per_mat_per_obj[obj] and inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
-                    mat.node_tree.links.new(created_tex_nodes_per_mat_per_obj[obj][mat][inp][2], created_tex_nodes_per_mat_per_obj[obj][mat][inp][1])
+                if (
+                    obj in created_tex_nodes_per_mat_per_obj
+                    and mat in created_tex_nodes_per_mat_per_obj[obj]
+                    and inp in created_tex_nodes_per_mat_per_obj[obj][mat]
+                ):
+                    mat.node_tree.links.new(
+                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][2],
+                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][1],
+                    )
 
     # reapply old meshes for every object
     for obj in objects:
@@ -38,8 +53,17 @@ def first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_ma
                     for identifier, val in m["props"].items():
                         mod[identifier] = val
 
-def last_clean_up(images_created, found_col_objects, collision_objects, export_path_glb, selected_objects, hidden_layer_collections, hidden_objects):
-    
+
+def last_clean_up(
+    images_created,
+    found_col_objects,
+    collision_objects,
+    export_path_glb,
+    selected_objects,
+    hidden_layer_collections,
+    hidden_objects,
+):
+
     content = os.listdir(export_path_glb)
     for file in content:
         filepath = os.path.join(export_path_glb, file)
@@ -47,12 +71,11 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
             os.remove(filepath)
         else:
             log("Temporary directory contains other directories", "ERROR")
-    
+
     try:
         os.rmdir(export_path_glb)
     except:
         log("Failed to remove temporary export directory", "ERROR")
-
 
     for mesh in bpy.data.meshes:
         if mesh.users == 0:
@@ -61,15 +84,15 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
     # clear cached image data blocks
     for img in images_created:
         bpy.data.images.remove(img)
-    
+
     # remove extra cubes
     for obj in found_col_objects:
         bpy.data.objects.remove(obj)
-    
+
     for obj in collision_objects:
         if obj.name.endswith("-convcolonly"):
-            obj.name = obj.name[:-12] # remove the last 12 chars
-    
+            obj.name = obj.name[:-12]  # remove the last 12 chars
+
     bpy.ops.object.select_all(action="DESELECT")
 
     for obj in selected_objects:
@@ -77,7 +100,6 @@ def last_clean_up(images_created, found_col_objects, collision_objects, export_p
 
     for coll in hidden_layer_collections:
         coll.hide_viewport = True
-    
+
     for obj in hidden_objects:
         obj.hide_set(True)
-

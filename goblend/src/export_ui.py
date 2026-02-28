@@ -1,12 +1,42 @@
 import bpy
 
 from .ui.AddonPreferences import AddonPreferences
-from .ui.lists.CollisionLayersList import CollisionLayerListItem, LIST_OT_AddItemToLayersList, LIST_OT_RemoveItemFromLayersList, SCENE_UL_CollisionLayersList
-from .ui.lists.CollisionMasksList import CollisionMaskListItem, LIST_OT_AddItemToMasksList, LIST_OT_RemoveItemFromMasksList, SCENE_UL_CollisionMasksList
-from .ui.lists.DefaultCollisionLayersList import DefaultCollisionLayerListItem, LIST_OT_AddItemToDefaultLayersList, LIST_OT_RemoveItemFromDefaultLayersList, SCENE_UL_DefaultCollisionLayersList
-from .ui.lists.DefaultCollisionMaskList import DefaultCollisionMaskListItem, LIST_OT_AddItemToDefaultMasksList, LIST_OT_RemoveItemFromDefaultMasksList, SCENE_UL_DefaultCollisionMasksList
-from .ui.lists.DefaultGroupList import DefaultGroupListItem, LIST_OT_AddItemToDefaultGroupList, LIST_OT_RemoveItemFromDefaultGroupList, SCENE_UL_DefaultGroupList
-from .ui.lists.GroupList import GroupListItem, LIST_OT_AddItemToGroupsList, LIST_OT_RemoveItemFromGroupsList, SCENE_UL_GroupsList
+from .ui.lists.CollisionLayersList import (
+    CollisionLayerListItem,
+    LIST_OT_AddItemToLayersList,
+    LIST_OT_RemoveItemFromLayersList,
+    SCENE_UL_CollisionLayersList,
+)
+from .ui.lists.CollisionMasksList import (
+    CollisionMaskListItem,
+    LIST_OT_AddItemToMasksList,
+    LIST_OT_RemoveItemFromMasksList,
+    SCENE_UL_CollisionMasksList,
+)
+from .ui.lists.DefaultCollisionLayersList import (
+    DefaultCollisionLayerListItem,
+    LIST_OT_AddItemToDefaultLayersList,
+    LIST_OT_RemoveItemFromDefaultLayersList,
+    SCENE_UL_DefaultCollisionLayersList,
+)
+from .ui.lists.DefaultCollisionMaskList import (
+    DefaultCollisionMaskListItem,
+    LIST_OT_AddItemToDefaultMasksList,
+    LIST_OT_RemoveItemFromDefaultMasksList,
+    SCENE_UL_DefaultCollisionMasksList,
+)
+from .ui.lists.DefaultGroupList import (
+    DefaultGroupListItem,
+    LIST_OT_AddItemToDefaultGroupList,
+    LIST_OT_RemoveItemFromDefaultGroupList,
+    SCENE_UL_DefaultGroupList,
+)
+from .ui.lists.GroupList import (
+    GroupListItem,
+    LIST_OT_AddItemToGroupsList,
+    LIST_OT_RemoveItemFromGroupsList,
+    SCENE_UL_GroupsList,
+)
 from .ui.operators.AddAnimationSetting import SCENE_OT_AddAnimationSetting
 from .ui.operators.AddCollisionSetting import SCENE_OT_AddCollisionSetting
 from .ui.operators.AddGodotScenesSetting import SCENE_OT_AddGodotScenesSetting
@@ -64,7 +94,7 @@ classes = (
     LIST_OT_RemoveItemFromDefaultGroupList,
     AddonPreferences,
     PanelProperties,
-    MaterialPanelProperties, 
+    MaterialPanelProperties,
     ObjectPanelProperties,
     CollisionPanelProperties,
     DefaultCollisionPanelProperties,
@@ -92,8 +122,9 @@ classes = (
     SCENE_OT_RemoveAnimationSetting,
     AnimationPanelProperties,
     GodotScenePanelProperties,
-    LightPanelProperties
+    LightPanelProperties,
 )
+
 
 def register():
     for c in classes:
@@ -110,9 +141,10 @@ def register():
     bpy.types.Scene.show_all_light_settings = bpy.props.BoolProperty(
         name="Show All Light Settings",
         description="Show every available settings instead of only the most important ones. No matter whether this is turned on or off, all properties will be considered when setting these properties in Godot.",
-        default=False
+        default=False,
     )
     bpy.types.Scene.is_root_scene = bpy.props.BoolProperty(default=True)
+
 
 def unregister():
     for c in reversed(classes):

@@ -1,15 +1,16 @@
 import bpy
 
+
 class SCENE_PT_LightsPanel(bpy.types.Panel):
     bl_parent_id = "SCENE_PT_export_to_godot"
     bl_label = "Lights"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    
+
     def draw(self, context):
         layout = self.layout
-        
+
         scene = context.scene
         light_panel_props = scene.light_panel_props
         show_all_light_settings = scene.show_all_light_settings
@@ -22,20 +23,20 @@ class SCENE_PT_LightsPanel(bpy.types.Panel):
 
         for item in light_panel_props:
             header, panel = layout.panel_prop(item, "open")
-        
+
             split = header.split()
 
             col = split.column()
-            
+
             light_name = item.light.name if item.light else "No Light"
-            
+
             col.label(text=light_name)
 
             row = split.row()
             row.alignment = "RIGHT"
             row.context_pointer_set(name="light_setting_to_remove", data=item.light)
             row.operator("scene.remove_light_setting", text="", icon="X", emboss=False)
-            
+
             if panel:
                 panel.use_property_split = True
                 col = panel.column()
@@ -65,4 +66,3 @@ class SCENE_PT_LightsPanel(bpy.types.Panel):
                     col.prop(item, "light_bake_mode")
                     col.prop(item, "light_cull_mask")
                     col.prop(item, "shadow_enabled")
-                

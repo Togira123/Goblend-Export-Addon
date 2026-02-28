@@ -2,8 +2,9 @@ import bpy
 import os
 
 from ...config import abs_path, get_config
-from...log import log
+from ...log import log
 from ...parse_scene import parse_scene
+
 
 class SCENE_OT_SyncLights(bpy.types.Operator):
     bl_idname = "scene.sync_lights"
@@ -18,22 +19,24 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
             paths["same_hierarchy_target"] = props.same_hierarchy_target
         if props.scene_save_path.lower() != "default":
             paths["scene_save_path"] = abs_path(props.scene_save_path)
-        
+
         blend_path = os.path.normcase(bpy.data.filepath)
 
         hierarchy_path_start = blend_path.index(paths["same_hierarchy_target"]) + len(paths["same_hierarchy_target"])
         # remove forward and backward slashes from the beginning of the path
-        hierarchy_path = blend_path[hierarchy_path_start:len(blend_path) - len(os.path.basename(blend_path))].lstrip("/\\")
+        hierarchy_path = blend_path[hierarchy_path_start : len(blend_path) - len(os.path.basename(blend_path))].lstrip(
+            "/\\"
+        )
 
         scene_path = paths["scene_save_path"]
 
         if paths["scene_use_same_hierarchy"]:
             scene_path = abs_path(os.path.join(os.path.normcase(scene_path), hierarchy_path))
-        
+
         blend_path = os.path.normcase(bpy.data.filepath)
         filename = os.path.basename(blend_path)
         scene_path = os.path.join(scene_path, os.path.splitext(filename)[0]) + ".tscn"
-        
+
         print(scene_path)
         try:
             data = parse_scene(scene_path)
@@ -53,12 +56,12 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                     if node_type != "DirectionalLight3D" and node_type != "OmniLight3D" and node_type != "SpotLight3D":
                         continue
                     light_panel.type = node_type
-                    if not "light_specular" in node_props and nodes[validated_obj_name]["meta"]["type"] == "DirectionalLight3D":
+                    if (
+                        not "light_specular" in node_props
+                        and nodes[validated_obj_name]["meta"]["type"] == "DirectionalLight3D"
+                    ):
                         # has a different default value for DirecitonalLight3D's than OmniLight3D's or SpotLight3D's
-                        node_props["light_specular"] = {
-                            "type": "number",
-                            "value": 1.0
-                        }
+                        node_props["light_specular"] = {"type": "number", "value": 1.0}
                     if "light_cull_mask" in node_props:
                         # only store the lower 20 bits, as the rest are managed by godot internally so we never want to change them
                         lower20bits = (1 << 20) - 1
@@ -74,7 +77,15 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                                     match class_name:
                                         case "Color":
                                             print(value["value"]["args"])
-                                            setattr(light_panel, prop, [value["value"]["args"][0]["value"], value["value"]["args"][1]["value"], value["value"]["args"][2]["value"]])
+                                            setattr(
+                                                light_panel,
+                                                prop,
+                                                [
+                                                    value["value"]["args"][0]["value"],
+                                                    value["value"]["args"][1]["value"],
+                                                    value["value"]["args"][2]["value"],
+                                                ],
+                                            )
                                         case _:
                                             raise Exception("A type of class " + class_name + " is not supported")
                                 case _:

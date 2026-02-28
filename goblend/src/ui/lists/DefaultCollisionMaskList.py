@@ -1,22 +1,17 @@
-
 import bpy
 from .CollisionLayersList import layer_items
 
+
 class DefaultCollisionMaskListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(
-        name="Enable",
-        description="Enable or disable this mask",
-        default=True
-    )
+    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this mask", default=True)
     force_disabled: bpy.props.BoolProperty(
-        name="Force Disabled",
-        description="There exists another entry for this mask already",
-        default=False
+        name="Force Disabled", description="There exists another entry for this mask already", default=False
     )
     mask: bpy.props.EnumProperty(
         name="Mask",
         items=layer_items,
     )
+
 
 class SCENE_UL_DefaultCollisionMasksList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -38,7 +33,8 @@ class SCENE_UL_DefaultCollisionMasksList(bpy.types.UIList):
         col2 = row.row()
         col2.enabled = item.enabled
         col2.prop(item, "mask", text="")
-        
+
+
 class LIST_OT_AddItemToDefaultMasksList(bpy.types.Operator):
     bl_idname = "default_collision_masks_list.add_item"
     bl_label = "Add a mask"
@@ -48,7 +44,7 @@ class LIST_OT_AddItemToDefaultMasksList(bpy.types.Operator):
         return len(context.scene.default_collision_panel_props.default_masks_list) < len(layer_items(cls, context))
 
     def execute(self, context):
-        # find first unused mask 
+        # find first unused mask
         existing = set()
         for override in context.scene.default_collision_panel_props.default_masks_list:
             existing.add(override.mask)
@@ -59,6 +55,7 @@ class LIST_OT_AddItemToDefaultMasksList(bpy.types.Operator):
                 item.mask = mask[0]
                 break
         return {"FINISHED"}
+
 
 class LIST_OT_RemoveItemFromDefaultMasksList(bpy.types.Operator):
     bl_idname = "default_collision_masks_list.remove_item"

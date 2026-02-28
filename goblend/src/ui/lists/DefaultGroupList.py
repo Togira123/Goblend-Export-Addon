@@ -1,22 +1,17 @@
-
 import bpy
 from .GroupList import group_items
 
+
 class DefaultGroupListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(
-        name="Enable",
-        description="Enable or disable this group",
-        default=True
-    )
+    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this group", default=True)
     force_disabled: bpy.props.BoolProperty(
-        name="Force Disabled",
-        description="There exists another entry for this group already",
-        default=False
+        name="Force Disabled", description="There exists another entry for this group already", default=False
     )
     group: bpy.props.EnumProperty(
         name="Group",
         items=group_items,
     )
+
 
 class SCENE_UL_DefaultGroupList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -38,7 +33,8 @@ class SCENE_UL_DefaultGroupList(bpy.types.UIList):
         col2 = row.row()
         col2.enabled = item.enabled
         col2.prop(item, "group", text="")
-        
+
+
 class LIST_OT_AddItemToDefaultGroupList(bpy.types.Operator):
     bl_idname = "default_group_list.add_item"
     bl_label = "Add a group"
@@ -48,7 +44,7 @@ class LIST_OT_AddItemToDefaultGroupList(bpy.types.Operator):
         return len(context.scene.default_collision_panel_props.default_groups_list) < len(group_items(cls, context))
 
     def execute(self, context):
-        # find first unused mask 
+        # find first unused mask
         existing = set()
         for override in context.scene.default_collision_panel_props.default_groups_list:
             existing.add(override.group)
@@ -59,6 +55,7 @@ class LIST_OT_AddItemToDefaultGroupList(bpy.types.Operator):
                 item.group = group[0]
                 break
         return {"FINISHED"}
+
 
 class LIST_OT_RemoveItemFromDefaultGroupList(bpy.types.Operator):
     bl_idname = "default_group_list.remove_item"

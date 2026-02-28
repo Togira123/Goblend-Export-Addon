@@ -9,30 +9,27 @@ from .animations import handle_animations
 from ..config import get_root_dir
 from ..log import log
 
+
 def handle_collision_shapes(collision_objects):
     cmd_line_args_for_collisions = []
     obj_info = []
     for obj in collision_objects:
         if "boxshape" in obj.name.lower():
-            # use a literal box shape in godot for performance reasons
-            obj_info.append({
-                "name": obj.name,
-                "type": "box",
-                "dimensions": [obj.dimensions[0], obj.dimensions[1], obj.dimensions[2]],
-            })
+            obj_info.append(
+                {
+                    "name": obj.name,
+                    "type": "box",
+                    "dimensions": [obj.dimensions[0], obj.dimensions[1], obj.dimensions[2]],
+                }
+            )
         elif "cylshape" in obj.name.lower() or "cylindershape" in obj.name.lower():
-            obj_info.append({
-                "name": obj.name,
-                "type": "cyl",
-                "height": obj.dimensions[2],
-                "radius": obj.dimensions[0] / 2.0 # could also pick y axis, the two should be the same
-            })
+            obj_info.append(
+                {"name": obj.name, "type": "cyl", "height": obj.dimensions[2], "radius": obj.dimensions[0] / 2.0}
+            )  # could also pick y axis, the two should be the same
         elif "sphereshape" in obj.name.lower():
-            obj_info.append({
-                "name": obj.name,
-                "type": "sphere",
-                "radius": obj.dimensions[2] / 2.0 # could pick any axis
-            })
+            obj_info.append(
+                {"name": obj.name, "type": "sphere", "radius": obj.dimensions[2] / 2.0}
+            )  # could pick any axis
         else:
             # simply append -col to the name, this will make godot import it as a collision shape
             obj.name = obj.name + "-convcolonly"
@@ -51,26 +48,29 @@ def handle_collision_shapes(collision_objects):
             cmd_line_args_for_collisions.append(str(info["radius"]))
     return cmd_line_args_for_collisions
 
-def prep_for_export(objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes):
+
+def prep_for_export(
+    objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes
+):
     # select all objects since we only export selected
     for obj in objects:
         obj.select_set(True)
-    
+
     # and also select objects that hold the collections for external libraries
     # because we will later replace them with the scene instance in godot
     for obj in found_col_objects:
         obj.select_set(True)
-    
+
     # handle collision objects
     cmd_line_args_for_collisions = handle_collision_shapes(collision_objects)
     # also select them
     for obj in collision_objects:
         obj.select_set(True)
-    
+
     # and select the godot_scene_nodes
     for obj in godot_scene_nodes:
         obj.select_set(True)
-    
+
     # and create more command line args
     # first come the default collision settings
     cmd_line_args_collision_settings = [settings_for_godot["default_physics_type"]]
@@ -84,7 +84,6 @@ def prep_for_export(objects, found_col_objects, collision_objects, collision_col
     for default_group in settings_for_godot["default_groups"]:
         cmd_line_args_collision_settings.append(default_group)
 
-    
     if collision_collection == None:
         cmd_line_args_collision_settings.append("0")
     else:
@@ -99,7 +98,7 @@ def prep_for_export(objects, found_col_objects, collision_objects, collision_col
                 cmd_line_args_collision_settings.append(str(len(sett["layer_overrides"])))
                 for layer in sett["layer_overrides"]:
                     cmd_line_args_collision_settings.append(layer)
-            
+
             if sett["mask_overrides"] == None:
                 cmd_line_args_collision_settings.append("null")
             else:
@@ -122,14 +121,15 @@ def prep_for_export(objects, found_col_objects, collision_objects, collision_col
                     cmd_line_args_collision_settings.append(obj.name)
             else:
                 cmd_line_args_collision_settings.append("0")
-    
+
     # finally also add lights
     for obj in bpy.data.objects:
         if obj.type == "LIGHT" and not obj.hide_render and obj.library == None:
             obj.hide_set(False)
             obj.select_set(True)
-    
+
     return cmd_line_args_for_collisions, cmd_line_args_collision_settings
+
 
 def get_light_cmd_line_args(settings_for_godot):
     cmd_line_args_light_settings = []
@@ -145,30 +145,73 @@ def get_light_cmd_line_args(settings_for_godot):
             if type(value) is str:
                 tmp_arr.append("1")
                 tmp_arr.append(value)
-            else: # type is list
+            else:  # type is list
                 tmp_arr.append(str(len(value)))
                 for val in value:
                     tmp_arr.append(val)
         cmd_line_args_light_settings += [str(cnt2)] + tmp_arr
-        
+
     return [str(cnt)] + cmd_line_args_light_settings
 
-def export(godot_exec_path, texture_dim, uv_map_override, bake_margins, texture_groups, texture_overrides, settings_for_godot, paths):
-    objects, found_col_objects, collision_objects, collision_collection, export_path_glb, cmd_line_args_scene_instances, godot_scene_nodes, selected_objects, hidden_layer_collections, hidden_objects = setup(texture_groups, settings_for_godot)
-    extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj, cmd_line_shader_data, converted_mat_names, cmd_line_args_path, cmd_line_args, images_created = handle_materials(uv_map_override, objects, paths, texture_groups, settings_for_godot, bake_margins, texture_dim, texture_overrides)
+
+def export(
+    godot_exec_path,
+    texture_dim,
+    uv_map_override,
+    bake_margins,
+    texture_groups,
+    texture_overrides,
+    settings_for_godot,
+    paths,
+):
+    (
+        objects,
+        found_col_objects,
+        collision_objects,
+        collision_collection,
+        export_path_glb,
+        cmd_line_args_scene_instances,
+        godot_scene_nodes,
+        selected_objects,
+        hidden_layer_collections,
+        hidden_objects,
+    ) = setup(texture_groups, settings_for_godot)
+    (
+        extra_shader_nodes,
+        inputs,
+        created_tex_nodes_per_mat_per_obj,
+        old_meshes,
+        orig_mod_per_obj,
+        cmd_line_shader_data,
+        converted_mat_names,
+        cmd_line_args_path,
+        cmd_line_args,
+        images_created,
+    ) = handle_materials(
+        uv_map_override,
+        objects,
+        paths,
+        texture_groups,
+        settings_for_godot,
+        bake_margins,
+        texture_dim,
+        texture_overrides,
+    )
 
     blend_path = os.path.normcase(bpy.data.filepath)
     filename = os.path.basename(blend_path)
 
-    cmd_line_args_for_collisions, cmd_line_args_collision_settings = prep_for_export(objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes)
+    cmd_line_args_for_collisions, cmd_line_args_collision_settings = prep_for_export(
+        objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes
+    )
 
-    # export
+    # export, apply remaining modifiers
     bpy.ops.export_scene.gltf(
         filepath=export_path_glb + os.path.splitext(filename)[0] + ".glb",
         export_format="GLB",
         use_selection=True,
         export_lights=True,
-        export_apply=True # apply remaining modifiers
+        export_apply=True,
     )
 
     first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj)
@@ -191,17 +234,26 @@ def export(godot_exec_path, texture_dim, uv_map_override, bake_margins, texture_
     root_dir = get_root_dir()
 
     # this will also run post_import.gd which creates a copy of the project in a temporary folder
-    val = subprocess.run([godot_exec_path, "--path", root_dir, "--headless", "--import", "--", "true"]
-                        + cmd_line_args_path
-                        + cmd_line_args_collision_settings
-                        + cmd_line_args_for_collisions
-                        + cmd_line_args
-                        + cmd_line_animation_data
-                        + cmd_line_shader_data
-                        + cmd_line_args_light_settings
-                        + cmd_line_args_scene_instances
-                        )
+    val = subprocess.run(
+        [godot_exec_path, "--path", root_dir, "--headless", "--import", "--", "true"]
+        + cmd_line_args_path
+        + cmd_line_args_collision_settings
+        + cmd_line_args_for_collisions
+        + cmd_line_args
+        + cmd_line_animation_data
+        + cmd_line_shader_data
+        + cmd_line_args_light_settings
+        + cmd_line_args_scene_instances
+    )
     if val.returncode != 0:
         log("Running the godot executable with import resulted in an error", "WARNING")
 
-    last_clean_up(images_created, found_col_objects, collision_objects, export_path_glb, selected_objects, hidden_layer_collections, hidden_objects)
+    last_clean_up(
+        images_created,
+        found_col_objects,
+        collision_objects,
+        export_path_glb,
+        selected_objects,
+        hidden_layer_collections,
+        hidden_objects,
+    )

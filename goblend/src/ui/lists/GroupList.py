@@ -1,9 +1,9 @@
-
 import bpy
 
 from ...config import get_config
 
 enum = []
+
 
 def group_items(_self, _context):
     global enum
@@ -13,21 +13,14 @@ def group_items(_self, _context):
             enum.append((str(group["godot_group_name"]), group["display_name"], group["description"]))
     return enum
 
+
 class GroupListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(
-        name="Enabled",
-        description="Enable or disable this group",
-        default=True
-    )
+    enabled: bpy.props.BoolProperty(name="Enabled", description="Enable or disable this group", default=True)
     force_disabled: bpy.props.BoolProperty(
-        name="Force Disabled",
-        description="There exists another override for this group already",
-        default=False
+        name="Force Disabled", description="There exists another override for this group already", default=False
     )
-    group: bpy.props.EnumProperty(
-        name="Group",
-        items=group_items
-    )
+    group: bpy.props.EnumProperty(name="Group", items=group_items)
+
 
 class SCENE_UL_GroupsList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -50,6 +43,7 @@ class SCENE_UL_GroupsList(bpy.types.UIList):
         col2.enabled = item.enabled
         col2.prop(item, "group", text="")
 
+
 class LIST_OT_AddItemToGroupsList(bpy.types.Operator):
     bl_idname = "groups_list.add_item"
     bl_label = "Add a group"
@@ -57,7 +51,7 @@ class LIST_OT_AddItemToGroupsList(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return len(context.list.groups_override_list) < len(group_items(cls, context))
-    
+
     def execute(self, context):
         # find first unused group
         existing = set()
@@ -71,6 +65,7 @@ class LIST_OT_AddItemToGroupsList(bpy.types.Operator):
                 break
         return {"FINISHED"}
 
+
 class LIST_OT_RemoveItemFromGroupsList(bpy.types.Operator):
     bl_idname = "groups_list.remove_item"
     bl_label = "Remove a group"
@@ -78,7 +73,7 @@ class LIST_OT_RemoveItemFromGroupsList(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return context.list.groups_override_list
-    
+
     def execute(self, context):
         li = context.list.groups_override_list
         index = context.list.groups_list_index

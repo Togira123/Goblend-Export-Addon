@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveAnimationSetting(bpy.types.Operator):
     bl_idname = "scene.remove_animation_setting"
     bl_label = "Remove Animation Setting"

@@ -8,6 +8,7 @@ from . import config
 
 log_file = None
 
+
 def init_log_file():
     global log_file
     if log_file:
@@ -24,11 +25,13 @@ def init_log_file():
         log_file = None
         return False
 
+
 def close_log_file():
     global log_file
     if log_file:
         log_file.close()
         log_file = None
+
 
 def log(message, type="INFO"):
     global log_file

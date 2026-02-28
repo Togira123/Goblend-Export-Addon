@@ -8,23 +8,15 @@ from ...src.log import log
 
 save_path_keys = [
     "scene_save_path",
-    "material_save_path", 
+    "material_save_path",
     "texture_save_path",
     "animation_library_save_path",
     "animation_save_path",
     "shader_save_path",
-    "collision_shapes_save_path"
+    "collision_shapes_save_path",
 ]
 
-save_path_uses_filename = [
-    False,
-    True,
-    True,
-    True,
-    True,
-    True,
-    False
-]
+save_path_uses_filename = [False, True, True, True, True, True, False]
 
 save_path_hierarchy_keys = [
     "scene_use_same_hierarchy",
@@ -33,8 +25,9 @@ save_path_hierarchy_keys = [
     "animation_library_use_same_hierarchy",
     "animation_use_same_hierarchy",
     "shader_use_same_hierarchy",
-    "reuse_collision_shapes"
+    "reuse_collision_shapes",
 ]
+
 
 def find_objs_and_cols(root, found_col_objects, seen_libs, cmd_line_args_scene_instances):
     collision_collection = None
@@ -51,27 +44,35 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, cmd_line_args_scene_i
                 blender_binary_path = bpy.app.binary_path
 
                 library_blend_file = os.path.normpath(os.path.abspath(bpy.path.abspath(col.library.filepath)))
-                
+
                 bpy.ops.object.mode_set(mode="OBJECT")
-                bpy.ops.mesh.primitive_cube_add(
-                    location=obj.location,
-                    rotation=obj.rotation_euler
-                )
-                
+                bpy.ops.mesh.primitive_cube_add(location=obj.location, rotation=obj.rotation_euler)
+
                 cube = bpy.context.active_object
                 cube.name = obj.name + "__tmp_name"
-                cube.scale = obj.scale # add scale after creating because otherwise it directly applies it
-                
+                cube.scale = obj.scale  # add scale after creating because otherwise it directly applies it
+
                 found_col_objects.append(cube)
-                
+
                 if not col.library.filepath in seen_libs:
                     log("Found Library: " + col.library.name)
                     seen_libs.add(col.library.filepath)
-                    subprocess.run([blender_binary_path, "-b", "--addons", "goblend", library_blend_file, "--python-expr", "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()"])
-                
+                    subprocess.run(
+                        [
+                            blender_binary_path,
+                            "-b",
+                            "--addons",
+                            "goblend",
+                            library_blend_file,
+                            "--python-expr",
+                            "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()",
+                        ]
+                    )
+
                 cmd_line_args_scene_instances.append(library_blend_file)
                 cmd_line_args_scene_instances.append(cube.name)
     return collision_collection
+
 
 def get_objects_to_export(texture_groups):
     objects = []
@@ -81,7 +82,7 @@ def get_objects_to_export(texture_groups):
         if obj.type == "MESH" and not obj.hide_render and obj.library == None and not obj.name.endswith("__tmp_name"):
             if obj.hide_get():
                 hidden_objects.add(obj)
-            obj.hide_set(False) # make every object that we take into consideration visible
+            obj.hide_set(False)  # make every object that we take into consideration visible
             objects.append(obj)
         else:
             continue
@@ -89,12 +90,16 @@ def get_objects_to_export(texture_groups):
         for slot in obj.material_slots:
             for grp in texture_groups:
                 if slot.material.name == grp:
-                    raise Exception("There is a material named" + slot.material.name + " which conflicts with a texture group name")
+                    raise Exception(
+                        "There is a material named" + slot.material.name + " which conflicts with a texture group name"
+                    )
     return objects, hidden_objects
+
 
 def get_collision_objects(collision_collection, objects):
     collision_objects = set()
     if collision_collection != None:
+
         def remove_collision_from_render(col):
             to_remove = set()
             for obj in col.objects:
@@ -103,11 +108,12 @@ def get_collision_objects(collision_collection, objects):
             for obj in to_remove:
                 objects.remove(obj)
                 collision_objects.add(obj)
-                    
+
         remove_collision_from_render(collision_collection)
         for col in collision_collection.children_recursive:
             remove_collision_from_render(col)
     return collision_objects
+
 
 def remove_godot_scene_objects(objects):
     godot_scenes = bpy.data.collections.get("GodotScenes")
@@ -122,8 +128,9 @@ def remove_godot_scene_objects(objects):
         godot_scene_nodes.add(obj)
     for obj in to_remove:
         objects.remove(obj)
-    
+
     return godot_scene_nodes
+
 
 def setup(texture_group_assignments, settings_for_godot):
     log("Running export for: " + os.path.normcase(bpy.data.filepath))
@@ -133,14 +140,16 @@ def setup(texture_group_assignments, settings_for_godot):
     root_dir = get_root_dir()
 
     seen_libs = set()
-    
+
     # scene path, scene name
     cmd_line_args_scene_instances = []
     found_col_objects = []
 
     bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
-    
-    collision_collection = find_objs_and_cols(bpy.context.scene.collection, found_col_objects, seen_libs, cmd_line_args_scene_instances)
+
+    collision_collection = find_objs_and_cols(
+        bpy.context.scene.collection, found_col_objects, seen_libs, cmd_line_args_scene_instances
+    )
 
     cmd_line_args_scene_instances.insert(0, str(len(found_col_objects)))
 
@@ -162,8 +171,8 @@ def setup(texture_group_assignments, settings_for_godot):
         layer_coll.hide_viewport = False
         for c in layer_coll.children:
             loop_layer_collections(c)
-    
-    loop_layer_collections(bpy.context.view_layer.layer_collection) # this is the root collection
+
+    loop_layer_collections(bpy.context.view_layer.layer_collection)  # this is the root collection
 
     texture_groups = set()
 
@@ -171,7 +180,7 @@ def setup(texture_group_assignments, settings_for_godot):
         if not val in texture_groups:
             log("INFO: Found  " + val)
             texture_groups.add(val)
-    
+
     objects, hidden_objects = get_objects_to_export(texture_groups)
 
     collision_objects = get_collision_objects(collision_collection, objects)
@@ -203,6 +212,15 @@ def setup(texture_group_assignments, settings_for_godot):
     os.makedirs(export_path_glb, exist_ok=True)
     log("Setup done")
 
-    return objects, found_col_objects, collision_objects, collision_collection, export_path_glb, cmd_line_args_scene_instances, godot_scene_nodes, selected_objects, hidden_layer_collections, hidden_objects
-
-
+    return (
+        objects,
+        found_col_objects,
+        collision_objects,
+        collision_collection,
+        export_path_glb,
+        cmd_line_args_scene_instances,
+        godot_scene_nodes,
+        selected_objects,
+        hidden_layer_collections,
+        hidden_objects,
+    )

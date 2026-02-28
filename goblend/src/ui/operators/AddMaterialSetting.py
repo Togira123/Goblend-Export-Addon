@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_AddMaterialSetting(bpy.types.Operator):
     bl_idname = "scene.add_material_setting"
     bl_label = "Add Material Setting"

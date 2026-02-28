@@ -1,23 +1,18 @@
-
 import bpy
 from .CollisionLayersList import layer_items
 from ...config import get_config
 
+
 class DefaultCollisionLayerListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(
-        name="Enable",
-        description="Enable or disable this layer",
-        default=True
-    )
+    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this layer", default=True)
     force_disabled: bpy.props.BoolProperty(
-        name="Force Disabled",
-        description="There exists another entry for this layer already",
-        default=False
+        name="Force Disabled", description="There exists another entry for this layer already", default=False
     )
     layer: bpy.props.EnumProperty(
         name="Layer",
         items=layer_items,
     )
+
 
 class SCENE_UL_DefaultCollisionLayersList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -39,7 +34,8 @@ class SCENE_UL_DefaultCollisionLayersList(bpy.types.UIList):
         col2 = row.row()
         col2.enabled = item.enabled
         col2.prop(item, "layer", text="")
-        
+
+
 class LIST_OT_AddItemToDefaultLayersList(bpy.types.Operator):
     bl_idname = "default_collision_layers_list.add_item"
     bl_label = "Add a layer"
@@ -60,6 +56,7 @@ class LIST_OT_AddItemToDefaultLayersList(bpy.types.Operator):
                 item.layer = layer[0]
                 break
         return {"FINISHED"}
+
 
 class LIST_OT_RemoveItemFromDefaultLayersList(bpy.types.Operator):
     bl_idname = "default_collision_layers_list.remove_item"

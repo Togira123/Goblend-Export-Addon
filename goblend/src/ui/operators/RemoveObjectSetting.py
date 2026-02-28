@@ -1,5 +1,6 @@
 import bpy
 
+
 class SCENE_OT_RemoveObjectSetting(bpy.types.Operator):
     bl_idname = "scene.remove_object_setting"
     bl_label = "Remove Object Constraint"

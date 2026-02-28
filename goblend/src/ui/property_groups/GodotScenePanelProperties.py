@@ -5,6 +5,7 @@ from ..lists.GroupList import GroupListItem
 
 from .enum_items import physics_objects
 
+
 def is_godot_scene(self, obj):
     scene = bpy.context.scene
     for item in scene.godot_scene_panel_props:
@@ -14,8 +15,10 @@ def is_godot_scene(self, obj):
     if not godot_scenes:
         return False
     return obj.name in godot_scenes.objects
-    
+
+
 enum = []
+
 
 def scenes(_self, _context):
     global enum
@@ -23,8 +26,9 @@ def scenes(_self, _context):
         config = get_config()
         for scene in config["godot_scenes"]:
             enum.append((scene["name"], scene["display_name"], "Godot Scene at: " + scene["godot_scene_path"]))
-    
+
     return enum
+
 
 class GodotScenePanelProperties(bpy.types.PropertyGroup):
     open: bpy.props.BoolProperty(default=True)
@@ -32,10 +36,10 @@ class GodotScenePanelProperties(bpy.types.PropertyGroup):
         name="Target Object",
         description="The object to be replaced with the scene.",
         type=bpy.types.Object,
-        poll=is_godot_scene
+        poll=is_godot_scene,
     )
     scene: bpy.props.EnumProperty(
         name="Scene",
         description="The Godot Scene to place at the object's position. Use the config file to register more scenes.",
-        items=scenes
+        items=scenes,
     )

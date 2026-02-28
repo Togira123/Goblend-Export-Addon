@@ -37,7 +37,8 @@ is_right_after_bake = False
 
 separator = ""
 
-def add_line(str, const, top = False):
+
+def add_line(str, const, top=False):
     global fragment_code
     if const:
         if top:
@@ -50,6 +51,7 @@ def add_line(str, const, top = False):
         else:
             fragment_code += "\t" + str + "\n"
 
+
 def add_uv_line(name, uv_index):
     subtract_str = ""
     if not is_right_after_bake:
@@ -61,12 +63,21 @@ def add_uv_line(name, uv_index):
     else:
         custom = "CUSTOM" + str((uv_index / 2) - 1)
         if uv_index % 2 == 0:
-            add_line("vec2 " + name + " = vec2(" + custom + ".x, " + subtract_str + custom + ".y);", True, True)
+            add_line(
+                "vec2 " + name + " = vec2(" + custom + ".x, " + subtract_str + custom + ".y);",
+                True,
+                True,
+            )
         else:
-            add_line("vec2 " + name + " = vec2(" + custom + ".z, " + subtract_str + custom + ".w);", True, True)
+            add_line(
+                "vec2 " + name + " = vec2(" + custom + ".z, " + subtract_str + custom + ".w);",
+                True,
+                True,
+            )
     if not "uv" in special_vars:
         special_vars["uv"] = {}
     special_vars["uv"][uv_index] = name
+
 
 def add_struct(type, vars):
     match type:
@@ -81,9 +92,11 @@ def add_struct(type, vars):
             global structs_code
             structs_code += struct
 
+
 class UnsupportedSocket(Exception):
     def __init__(self, node, socket_name):
         super().__init__("Connecting " + socket_name + " on " + node.bl_idname + " is not supported")
+
 
 class DataTypes(Enum):
     FLOAT = "float"
@@ -93,6 +106,7 @@ class DataTypes(Enum):
     VEC4 = "vec4"
     BSDF = "BSDF"
     SAMPLER2D = "sampler2D"
+
 
 def input_to_data_type(input):
     match input.type:
@@ -115,6 +129,7 @@ def input_to_data_type(input):
         case _:
             raise Exception("Unsupported type: " + type)
 
+
 # pass None as output to indicate a helper variable
 def create_var(node, output, type):
     global next_num
@@ -128,6 +143,7 @@ def create_var(node, output, type):
     nodes_to_vars[node][output] = {"name": name, "type": type}
     return name
 
+
 def add_prop_to_var(node, output, key, val):
     if not node in special_var_props:
         special_var_props[node] = dict()
@@ -136,10 +152,12 @@ def add_prop_to_var(node, output, key, val):
     else:
         special_var_props[node][output] = dict([(key, val)])
 
+
 def get_prop_from_var(node, output, key):
     if not node in special_var_props or not output in special_var_props[node]:
         raise Exception("No special properties for node " + node.name)
     return special_var_props[node][output][key]
+
 
 def get_prop_from_any_child_of_var(node, output, key):
     if not node in special_var_props or not output in special_var_props[node]:
@@ -153,14 +171,19 @@ def get_prop_from_any_child_of_var(node, output, key):
         return (None, False)
     return (special_var_props[node][output][key], True)
 
+
 def set_var(node, output, type, name):
     if not node in nodes_to_vars:
         nodes_to_vars[node] = dict()
 
     nodes_to_vars[node][output] = {"name": name, "type": type}
 
-def set_var_as_uniform(name, type, linkTo, uniform_hint): # linkTo can for example be the name of the image for samplers
+
+def set_var_as_uniform(
+    name, type, linkTo, uniform_hint
+):  # linkTo can for example be the name of the image for samplers
     uniform_vars.add((name, type, linkTo, uniform_hint))
+
 
 def get_var(node, input):
     # find the output that connects to this input
@@ -173,11 +196,14 @@ def get_var(node, input):
         raise Exception("Variable that is needed for node " + node.name + ", input " + input.name + " does not exist")
     return nodes_to_vars[output_node][output]
 
+
 def get_var_name(node, input):
     return get_var(node, input)["name"]
 
+
 def get_var_data_type(node, input):
     return get_var(node, input)["type"]
+
 
 def beautify_float(f):
     as_str = "%.6f" % f
@@ -185,6 +211,7 @@ def beautify_float(f):
     if as_str.endswith("."):
         as_str = as_str + "0"
     return as_str
+
 
 def get_constant(node, input):
     match input.type:
@@ -197,15 +224,48 @@ def get_constant(node, input):
         case "VECTOR":
             match len(input.default_value):
                 case 2:
-                    return "vec2(" + beautify_float(input.default_value[0]) + ", " + beautify_float(input.default_value[1]) + ")"
+                    return (
+                        "vec2("
+                        + beautify_float(input.default_value[0])
+                        + ", "
+                        + beautify_float(input.default_value[1])
+                        + ")"
+                    )
                 case 3:
-                    return "vec3(" + beautify_float(input.default_value[0]) + ", " + beautify_float(input.default_value[1]) + ", " + beautify_float(input.default_value[2]) + ")"
+                    return (
+                        "vec3("
+                        + beautify_float(input.default_value[0])
+                        + ", "
+                        + beautify_float(input.default_value[1])
+                        + ", "
+                        + beautify_float(input.default_value[2])
+                        + ")"
+                    )
                 case 4:
-                    return "vec4(" + beautify_float(input.default_value[0]) + ", " + beautify_float(input.default_value[1]) + ", " + beautify_float(input.default_value[2]) + ", " + beautify_float(input.default_value[3]) + ")"
+                    return (
+                        "vec4("
+                        + beautify_float(input.default_value[0])
+                        + ", "
+                        + beautify_float(input.default_value[1])
+                        + ", "
+                        + beautify_float(input.default_value[2])
+                        + ", "
+                        + beautify_float(input.default_value[3])
+                        + ")"
+                    )
         case "RGBA":
-            return "vec3(" + beautify_float(input.default_value[0]) + ", " + beautify_float(input.default_value[1]) + ", " + beautify_float(input.default_value[2]) + ")"
+            return (
+                "vec3("
+                + beautify_float(input.default_value[0])
+                + ", "
+                + beautify_float(input.default_value[1])
+                + ", "
+                + beautify_float(input.default_value[2])
+                + ")"
+            )
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
+
 
 def get_data_type(node, input):
     match input.type:
@@ -226,9 +286,11 @@ def get_data_type(node, input):
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
+
 def reset_is_constant():
     global is_constant
     is_constant = True
+
 
 def get_casted_var_or_constant(node, input, needed_data_type):
     if input.is_linked:
@@ -237,6 +299,7 @@ def get_casted_var_or_constant(node, input, needed_data_type):
         var = get_var(node, input)
         return cast(var["type"], needed_data_type, var["name"])
     return cast(get_data_type(node, input), needed_data_type, get_constant(node, input))
+
 
 def cast(actual, needed, str):
     match actual:
@@ -296,6 +359,7 @@ def cast(actual, needed, str):
                     return str
     raise Exception("Unsupported cast: Cannot cast from " + actual.name + " to " + needed.name)
 
+
 def socket_is_zero(input):
     if input.is_linked:
         return False  # if socket is connected assume for simplicity that it's not 0
@@ -311,13 +375,23 @@ def socket_is_zero(input):
                 case 2:
                     return input.default_value[0] == 0.0 and input.default_value[1] == 0.0
                 case 3:
-                    return input.default_value[0] == 0.0 and input.default_value[1] == 0.0 and input.default_value[2] == 0.0
+                    return (
+                        input.default_value[0] == 0.0
+                        and input.default_value[1] == 0.0
+                        and input.default_value[2] == 0.0
+                    )
                 case 4:
-                    return input.default_value[0] == 0.0 and input.default_value[1] == 0.0 and input.default_value[2] == 0.0 and input.default_value[3] == 0.0
+                    return (
+                        input.default_value[0] == 0.0
+                        and input.default_value[1] == 0.0
+                        and input.default_value[2] == 0.0
+                        and input.default_value[3] == 0.0
+                    )
                 case _:
                     return False
         case _:
             return False
+
 
 def socket_is_one(input):
     if input.is_linked:
@@ -334,13 +408,23 @@ def socket_is_one(input):
                 case 2:
                     return input.default_value[0] == 1.0 and input.default_value[1] == 1.0
                 case 3:
-                    return input.default_value[0] == 1.0 and input.default_value[1] == 1.0 and input.default_value[2] == 1.0
+                    return (
+                        input.default_value[0] == 1.0
+                        and input.default_value[1] == 1.0
+                        and input.default_value[2] == 1.0
+                    )
                 case 4:
-                    return input.default_value[0] == 1.0 and input.default_value[1] == 1.0 and input.default_value[2] == 1.0 and input.default_value[3] == 1.0
+                    return (
+                        input.default_value[0] == 1.0
+                        and input.default_value[1] == 1.0
+                        and input.default_value[2] == 1.0
+                        and input.default_value[3] == 1.0
+                    )
                 case _:
                     return False
         case _:
             return False
+
 
 def init_tex_coord(node, uv_index):
     if node.from_instancer:
@@ -362,9 +446,13 @@ def init_tex_coord(node, uv_index):
                     global vertex_shader_needed
                     vertex_shader_needed = True
                     var_name = create_var(node, output, DataTypes.VEC3)
-                    add_line("vec3 " + var_name + " = vec3(vertex_local.x, -vertex_local.z, vertex_local.y);", False)
+                    add_line(
+                        "vec3 " + var_name + " = vec3(vertex_local.x, -vertex_local.z, vertex_local.y);",
+                        False,
+                    )
                 case _:
                     raise UnsupportedSocket(node, output.name)
+
 
 def init_math(node):
     line = ""
@@ -374,7 +462,13 @@ def init_math(node):
     reset_is_constant()
 
     def line_two_in(node, op):
-        expr = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT) + " " + op + " " + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+        expr = (
+            get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            + " "
+            + op
+            + " "
+            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+        )
         if op == ">" or op == "<":
             expr = "float(" + expr + ")"
         if use_clamp:
@@ -391,13 +485,29 @@ def init_math(node):
         return "float " + var_name + " = " + expr
 
     def two_param_fn(node, fn):
-        expr = fn + "(" + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT) + ", " + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT) + ")"
+        expr = (
+            fn
+            + "("
+            + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            + ", "
+            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            + ")"
+        )
         if use_clamp:
             expr = "clamp(" + expr + ", 0.0, 1.0)"
         return "float " + var_name + " = " + expr
 
     def three_param_fn(node, fn):
-        expr = fn + "(" + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT) + ", " + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT) + ", " + get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT) + ")"
+        expr = (
+            fn
+            + "("
+            + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            + ", "
+            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            + ", "
+            + get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
+            + ")"
+        )
         if use_clamp:
             expr = "clamp(" + expr + ", 0.0, 1.0)"
         return "float " + var_name + " = " + expr
@@ -484,6 +594,7 @@ def init_math(node):
 
     add_line(line + ";", is_constant)
 
+
 def init_mapping(node):
     if node.vector_type != "POINT":
         raise Exception("Only POINT type is support on Mapping Node")
@@ -499,7 +610,9 @@ def init_mapping(node):
     if socket_is_one(scale):
         expr += ";"
     else:
-        expr += " * " + get_casted_var_or_constant(node, scale, DataTypes.VEC3) + ";"  # vector-vector multiplication is component wise
+        expr += (
+            " * " + get_casted_var_or_constant(node, scale, DataTypes.VEC3) + ";"
+        )  # vector-vector multiplication is component wise
 
     rot = node.inputs.get("Rotation")
     loc = node.inputs.get("Location")
@@ -512,34 +625,61 @@ def init_mapping(node):
             rot_var = get_var_name(node, rot)
         else:
             reset_is_constant()
-            rot_var = create_var(node, rot, DataTypes.VEC3)  # it is fine to use an input here because we won't have to access that variable outside of here
-            add_line("vec3 " + rot_var + " = " + get_casted_var_or_constant(node, rot, DataTypes.VEC3) + ";", is_constant)
+            rot_var = create_var(
+                node, rot, DataTypes.VEC3
+            )  # it is fine to use an input here because we won't have to access that variable outside of here
+            add_line(
+                "vec3 " + rot_var + " = " + get_casted_var_or_constant(node, rot, DataTypes.VEC3) + ";",
+                is_constant,
+            )
         if rot.is_linked or rot.default_value[0] != 0.0:
             cx = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + cx + " = cos(" + rot_var + ".x);", False)
             sx = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + sx + " = sin(" + rot_var + ".x);", False)
-            add_line(var_name + ".y = " + var_name + ".y * " + cx + " - " + var_name + ".z * " + sx + ";", False)
-            add_line(var_name + ".z = " + var_name + ".y * " + sx + " + " + var_name + ".z * " + cx + ";", False)
+            add_line(
+                var_name + ".y = " + var_name + ".y * " + cx + " - " + var_name + ".z * " + sx + ";",
+                False,
+            )
+            add_line(
+                var_name + ".z = " + var_name + ".y * " + sx + " + " + var_name + ".z * " + cx + ";",
+                False,
+            )
 
         if rot.is_linked or rot.default_value[1] != 0.0:
             cy = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + cy + " = cos(" + rot_var + ".y);", False)
             sy = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + sy + " = sin(" + rot_var + ".y);", False)
-            add_line(var_name + ".x = " + var_name + ".x * " + cy + " + " + var_name + ".z * " + sy + ";", False)
-            add_line(var_name + ".z = -" + var_name + ".x * " + sy + " + " + var_name + ".z * " + cy + ";", False)
+            add_line(
+                var_name + ".x = " + var_name + ".x * " + cy + " + " + var_name + ".z * " + sy + ";",
+                False,
+            )
+            add_line(
+                var_name + ".z = -" + var_name + ".x * " + sy + " + " + var_name + ".z * " + cy + ";",
+                False,
+            )
 
         if rot.is_linked or rot.default_value[2] != 0.0:
             cz = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + cz + " = cos(" + rot_var + ".z);", False)
             sz = create_var(node, None, DataTypes.VEC3)
             add_line("vec3 " + sz + " = sin(" + rot_var + ".z);", False)
-            add_line(var_name + ".x = " + var_name + ".x * " + cz + " - " + var_name + ".y * " + sz + ";", False)
-            add_line(var_name + ".y = " + var_name + ".x * " + sz + " + " + var_name + ".y * " + cz + ";", False)
+            add_line(
+                var_name + ".x = " + var_name + ".x * " + cz + " - " + var_name + ".y * " + sz + ";",
+                False,
+            )
+            add_line(
+                var_name + ".y = " + var_name + ".x * " + sz + " + " + var_name + ".y * " + cz + ";",
+                False,
+            )
 
     if not socket_is_zero(loc):
-        add_line(var_name + " = " + var_name + " + " + get_casted_var_or_constant(node, loc, DataTypes.VEC3) + ";", False)
+        add_line(
+            var_name + " = " + var_name + " + " + get_casted_var_or_constant(node, loc, DataTypes.VEC3) + ";",
+            False,
+        )
+
 
 def init_combine_color(node):
     reset_is_constant()
@@ -549,6 +689,7 @@ def init_combine_color(node):
     color = create_var(node, node.outputs[0], DataTypes.VEC3)
     add_line("vec3 " + color + " = vec3(" + r + ", " + g + ", " + b + ");", is_constant)
 
+
 def init_combine_xyz(node):
     reset_is_constant()
     x = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
@@ -556,6 +697,7 @@ def init_combine_xyz(node):
     z = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
     vector = create_var(node, node.outputs[0], DataTypes.VEC3)
     add_line("vec3 " + vector + " = vec3(" + x + ", " + y + ", " + z + ");", is_constant)
+
 
 def init_separate_color(node):
     vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
@@ -569,6 +711,7 @@ def init_separate_color(node):
         varz = create_var(node, node.outputs[2], DataTypes.FLOAT)
         add_line("float " + varz + " = " + vec + ".b;", False)
 
+
 def init_separate_xyz(node):
     vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
     if node.outputs[0].is_linked:
@@ -580,6 +723,7 @@ def init_separate_xyz(node):
     if node.outputs[2].is_linked:
         varz = create_var(node, node.outputs[2], DataTypes.FLOAT)
         add_line("float " + varz + " = " + vec + ".z;", False)
+
 
 def init_tex_image(node, uv_index, type):
     if node.image is None:
@@ -616,6 +760,7 @@ def init_tex_image(node, uv_index, type):
         alpha = create_var(node, node.outputs[1], DataTypes.FLOAT)
         add_line("float " + alpha + " = texture(" + sampler + ", " + vec + ").a;", False)
 
+
 def init_normal_map(node):
     if node.space != "TANGENT":
         raise Exception("Only Tangent space is supported for Normal Maps, check node " + node.name)
@@ -627,6 +772,7 @@ def init_normal_map(node):
         add_line("NORMAL_MAP_DEPTH = " + strength + ";", False)
     # pass the color variable along, no need to create a new one
     set_var(node, node.outputs[0], DataTypes.VEC3, color)
+
 
 def init_uv_map(node, uv_index):
     if node.from_instancer:
@@ -646,6 +792,7 @@ def init_uv_map(node, uv_index):
         uv = create_var(node, node.outputs[0], DataTypes.VEC2)
         add_uv_line(uv, uv_index)
 
+
 def init_bsdf_principled(node):
     base_color = node.inputs.get("Base Color")
     metallic = node.inputs.get("Metallic")
@@ -655,7 +802,14 @@ def init_bsdf_principled(node):
     emission_color = node.inputs.get("Emission Color")
     emission_strength = node.inputs.get("Emission Strength")
     # rest is ignored
-    dict = {"ALBEDO": "vec3", "METALLIC": "float", "ROUGHNESS": "float", "ALPHA": "float", "NORMAL": "vec3", "EMISSION": "vec3"}
+    dict = {
+        "ALBEDO": "vec3",
+        "METALLIC": "float",
+        "ROUGHNESS": "float",
+        "ALPHA": "float",
+        "NORMAL": "vec3",
+        "EMISSION": "vec3",
+    }
     if not "BSDF" in added_structs:
         add_struct("BSDF", dict)
     var_bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
@@ -691,6 +845,7 @@ def init_bsdf_principled(node):
         + ");"
     )
     add_line(line, is_constant)
+
 
 def init_output_material(node):
     if not node.is_active_output:
@@ -729,8 +884,26 @@ def init_output_material(node):
                 uv_var = create_var(node, None, DataTypes.VEC2)
                 add_uv_line(uv_var, uv_ind)
             # add normal limiting code
-            add_line("if (" + uv_var + ".x >= " + str(limit_normal_effect["min_x"]) + " && " + uv_var + ".x <= " + str(limit_normal_effect["max_x"]) + " && "
-                     + uv_var + ".y >= " + str(limit_normal_effect["min_y"]) + " && " + uv_var + ".y <= " + str(limit_normal_effect["max_y"]) + ") {", False)
+            add_line(
+                "if ("
+                + uv_var
+                + ".x >= "
+                + str(limit_normal_effect["min_x"])
+                + " && "
+                + uv_var
+                + ".x <= "
+                + str(limit_normal_effect["max_x"])
+                + " && "
+                + uv_var
+                + ".y >= "
+                + str(limit_normal_effect["min_y"])
+                + " && "
+                + uv_var
+                + ".y <= "
+                + str(limit_normal_effect["max_y"])
+                + ") {",
+                False,
+            )
         if has_normal_map:
             add_line(tab + "NORMAL_MAP = " + bsdf + ".NORMAL;", False)
         else:
@@ -739,8 +912,17 @@ def init_output_material(node):
             add_line("}", False)
     add_line("EMISSION = " + bsdf + ".EMISSION;", False)
 
+
 def init_value(node):
-    add_line("float " + create_var(node, node.outputs[0], DataTypes.FLOAT) + " = " + get_constant(node, node.outputs[0]) + ";", True)
+    add_line(
+        "float "
+        + create_var(node, node.outputs[0], DataTypes.FLOAT)
+        + " = "
+        + get_constant(node, node.outputs[0])
+        + ";",
+        True,
+    )
+
 
 def init_mix(node):
     match node.data_type:
@@ -752,7 +934,10 @@ def init_mix(node):
             fac = get_casted_var_or_constant(node, node.inputs.get("Factor"), DataTypes.FLOAT)
             if node.clamp_factor:
                 fac = "clamp(" + fac + ", 0.0, 1.0)"
-            add_line("float " + mix_var + " = mix(" + a + ", " + b + ", " + fac + ");", is_constant)
+            add_line(
+                "float " + mix_var + " = mix(" + a + ", " + b + ", " + fac + ");",
+                is_constant,
+            )
         case "VECTOR":
             reset_is_constant()
             mix_var = create_var(node, node.outputs.get("Result"), DataTypes.VEC3)
@@ -765,7 +950,10 @@ def init_mix(node):
                 fac = get_casted_var_or_constant(node, node.inputs.get("Factor"), DataTypes.VEC3)
             if node.clamp_factor:
                 fac = "clamp(" + fac + ", 0.0, 1.0)"
-            add_line("vec3 " + mix_var + " = mix(" + a + ", " + b + ", " + fac + ");", is_constant)
+            add_line(
+                "vec3 " + mix_var + " = mix(" + a + ", " + b + ", " + fac + ");",
+                is_constant,
+            )
         case "RGBA":
             reset_is_constant()
             # https://github.com/blender/blender/blob/main/intern/cycles/kernel/osl/shaders/node_color_blend.h
@@ -789,7 +977,22 @@ def init_mix(node):
                 case "SCREEN":
                     white = "vec3(1.0)"
                     inv = "vec3(1.0 - " + fac + ")"
-                    line = white + " - (" + inv + " + " + fac + " * (" + white + " - " + b + ")) * (" + white + " - " + a + ")"
+                    line = (
+                        white
+                        + " - ("
+                        + inv
+                        + " + "
+                        + fac
+                        + " * ("
+                        + white
+                        + " - "
+                        + b
+                        + ")) * ("
+                        + white
+                        + " - "
+                        + a
+                        + ")"
+                    )
                 # skip DODGE for now
                 case "ADD":
                     line = "mix(" + a + ", " + a + " + " + b + ", " + fac + ")"
@@ -799,7 +1002,22 @@ def init_mix(node):
                 case "DIFFERENCE":
                     line = "mix(" + a + ", " + "abs(" + a + " - " + b + "), " + fac + ")"
                 case "EXCLUSION":
-                    line = "max(mix(" + a + ", " + a + " + " + b + " - 2.0 * " + a + " * " + b + ", " + fac + "), " + "0.0)"
+                    line = (
+                        "max(mix("
+                        + a
+                        + ", "
+                        + a
+                        + " + "
+                        + b
+                        + " - 2.0 * "
+                        + a
+                        + " * "
+                        + b
+                        + ", "
+                        + fac
+                        + "), "
+                        + "0.0)"
+                    )
                 case "SUBTRACT":
                     line = "mix(" + a + ", " + a + " - " + b + ", " + fac + ")"
                 # skip DIVIDE for now
@@ -812,7 +1030,11 @@ def init_mix(node):
 
 
 def init_rgb(node):
-    add_line("vec3 " + create_var(node, node.outputs[0], DataTypes.VEC3) + " = " + get_constant(node, node.outputs[0]) + ";", True)
+    add_line(
+        "vec3 " + create_var(node, node.outputs[0], DataTypes.VEC3) + " = " + get_constant(node, node.outputs[0]) + ";",
+        True,
+    )
+
 
 def init_group(node, type):
     group_nodes_stack.append(node)
@@ -833,7 +1055,11 @@ def init_group(node, type):
         else:
             type = input_to_data_type(node.outputs[i])
             var = create_var(node, node.outputs[i], type)
-            add_line(type.value + " " + var + " = " + get_constant(group_output, group_output.inputs[i]) + ";", True)
+            add_line(
+                type.value + " " + var + " = " + get_constant(group_output, group_output.inputs[i]) + ";",
+                True,
+            )
+
 
 def init_group_input(node):
     group_node = group_nodes_stack[len(group_nodes_stack) - 1]
@@ -846,10 +1072,15 @@ def init_group_input(node):
         else:
             type = input_to_data_type(node.outputs[i])
             var = create_var(node, node.outputs[i], type)
-            add_line(type.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";", True)
+            add_line(
+                type.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";",
+                True,
+            )
+
 
 def init_group_output(_node):
     group_nodes_stack.pop()
+
 
 supported_nodes = {
     "ShaderNodeTexCoord": init_tex_coord,
@@ -875,6 +1106,7 @@ supported_nodes = {
 needs_uv = set(("ShaderNodeTexCoord", "ShaderNodeUVMap"))
 needs_type = set(["ShaderNodeGroup"])
 needs_uv_and_type = set(["ShaderNodeTexImage"])
+
 
 def initialize_vars(node, type):
     if node.bl_idname in supported_nodes:
@@ -943,7 +1175,17 @@ def dfs(node, path, type):
 
     initialize_vars(node, type)
 
-def convert_to_godot_shader(object, material_name, cull_mode, limit_normal, right_after_bake, uv_base_color, uv_roughness_metallic, uv_normal):
+
+def convert_to_godot_shader(
+    object,
+    material_name,
+    cull_mode,
+    limit_normal,
+    right_after_bake,
+    uv_base_color,
+    uv_roughness_metallic,
+    uv_normal,
+):
     global fragment_code
     global structs_code
     global added_structs
@@ -982,7 +1224,7 @@ def convert_to_godot_shader(object, material_name, cull_mode, limit_normal, righ
     uv_roughness_metallic_idx = uv_roughness_metallic
     uv_normal_idx = uv_normal
     is_right_after_bake = right_after_bake
-    
+
     mat = bpy.data.materials.get(material_name)
     if not mat.use_nodes:
         raise Exception("Material does not use nodes")
@@ -1007,7 +1249,7 @@ def convert_to_godot_shader(object, material_name, cull_mode, limit_normal, righ
     code += "diffuse_lambert, specular_schlick_ggx;\n\n"
     for uniform in uniform_vars:
         code += "uniform " + uniform[1] + " " + uniform[0] + uniform[3] + ";\n"
-        uniforms.append([uniform[0], uniform[2]]) # name and linkTo
+        uniforms.append([uniform[0], uniform[2]])  # name and linkTo
 
     code += structs_code + "\n"
     if vertex_shader_needed:
