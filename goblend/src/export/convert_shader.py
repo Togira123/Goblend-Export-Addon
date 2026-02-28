@@ -917,29 +917,29 @@ def initialize_vars(node, type):
 def dfs(node, path, type):
     if not node.bl_idname in supported_nodes:
         raise Exception("Node " + node.bl_idname + " is not supported")
-    visited.add(path)
     for input in node.inputs:
         if input.is_linked:
             for link in input.links:
-                next_path = path + link.from_node.name + separator
-                if link.is_valid and not link.is_muted and not next_path in visited:
+                visited_name = path + separator + link.from_node.name
+                if link.is_valid and not link.is_muted and not visited_name in visited:
+                    visited.add(visited_name)
                     if node.bl_idname == "ShaderNodeBsdfPrincipled" and type == None:
                         base_color = node.inputs.get("Base Color")
                         metallic = node.inputs.get("Metallic")
                         roughness = node.inputs.get("Roughness")
                         normal = node.inputs.get("Normal")
                         if input == base_color:
-                            dfs(link.from_node, next_path, "BaseColor")
+                            dfs(link.from_node, path, "BaseColor")
                         elif input == metallic:
-                            dfs(link.from_node, next_path, "Metallic")
+                            dfs(link.from_node, path, "Metallic")
                         elif input == roughness:
-                            dfs(link.from_node, next_path, "Roughness")
+                            dfs(link.from_node, path, "Roughness")
                         elif input == normal:
-                            dfs(link.from_node, next_path, "Normal")
+                            dfs(link.from_node, path, "Normal")
                         else:
-                            dfs(link.from_node, next_path, type)
+                            dfs(link.from_node, path, type)
                     else:
-                        dfs(link.from_node, next_path, type)
+                        dfs(link.from_node, path, type)
 
     initialize_vars(node, type)
 
