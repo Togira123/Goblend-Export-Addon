@@ -159,6 +159,7 @@ def get_default_paths(config):
         for keys in save_keys:
             paths[keys[0]] = abs_path(keys[2])
             paths[keys[1]] = False
+        paths["same_hierarchy_target"] = "res://"
         paths["collision_shapes_save_path"] = abs_path("res://goblend/collision_shapes")
         paths["reuse_collision_shapes"] = True
     return paths

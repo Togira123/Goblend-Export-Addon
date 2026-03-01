@@ -265,6 +265,10 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             if getattr(props, path_key).lower() != "default":
                 paths[path_key] = abs_path(getattr(props, path_key))
 
+        for path_key in save_path_hierarchy_keys:
+            if getattr(props, path_key) != "DEFAULT":
+                paths[path_key] = True if getattr(props, path_key) == "YES" else False
+
         hierarchy_key_array = []
         for save_hierarchy in save_path_hierarchy_keys:
             hierarchy_key_array.append(save_hierarchy)

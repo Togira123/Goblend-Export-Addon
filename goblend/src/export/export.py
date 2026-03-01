@@ -10,8 +10,8 @@ from ..config import get_root_dir
 from ..log import log
 
 
-def handle_collision_shapes(collision_objects):
-    cmd_line_args_for_collisions = []
+def handle_collision_shapes(collision_objects, paths):
+    cmd_line_args_for_collisions = ["true" if paths["reuse_collision_shapes"] else "false"]
     obj_info = []
     for obj in collision_objects:
         if "boxshape" in obj.name.lower():
@@ -50,7 +50,7 @@ def handle_collision_shapes(collision_objects):
 
 
 def prep_for_export(
-    objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes
+    objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes, paths
 ):
     # select all objects since we only export selected
     for obj in objects:
@@ -62,7 +62,7 @@ def prep_for_export(
         obj.select_set(True)
 
     # handle collision objects
-    cmd_line_args_for_collisions = handle_collision_shapes(collision_objects)
+    cmd_line_args_for_collisions = handle_collision_shapes(collision_objects, paths)
     # also select them
     for obj in collision_objects:
         obj.select_set(True)
@@ -202,7 +202,13 @@ def export(
     filename = os.path.basename(blend_path)
 
     cmd_line_args_for_collisions, cmd_line_args_collision_settings = prep_for_export(
-        objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes
+        objects,
+        found_col_objects,
+        collision_objects,
+        collision_collection,
+        settings_for_godot,
+        godot_scene_nodes,
+        paths,
     )
 
     # export, apply remaining modifiers

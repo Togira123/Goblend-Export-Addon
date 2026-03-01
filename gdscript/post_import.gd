@@ -298,8 +298,9 @@ func run_import(ind: int):
 		DirAccess.remove_absolute("res://.tmp.goblend")
 
 func handle_collision_shapes(ind: int) -> int:
-	var number_of_coll_shapes := int(args[ind])
-	ind += 1
+	var reuse_coll_shapes := true if args[ind] == "true" else false
+	var number_of_coll_shapes := int(args[ind + 1])
+	ind += 2
 	for i in number_of_coll_shapes:
 		var node_name := args[ind].validate_node_name()
 		var type := args[ind + 1]
@@ -327,17 +328,21 @@ func handle_collision_shapes(ind: int) -> int:
 			var shape_path := paths["collision_shapes_save_path"] + "boxshapes/" + shape_name + ".tres"
 			var exists := ResourceLoader.exists(shape_path)
 			var shape: BoxShape3D
-			if exists:
-				shape = load(shape_path)
+			if reuse_coll_shapes:
+				if exists:
+					shape = load(shape_path)
+				else:
+					if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "boxshapes/"):
+						DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "boxshapes/")
+					shape = BoxShape3D.new()
+					shape.size = Vector3(dim_x, dim_y, dim_z)
+					var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
+					if ok == Error.OK:
+						log_msg("Successfully saved BoxShape3D " + shape_name + " to " + shape_path)
+					shape = load(shape_path)
 			else:
-				if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "boxshapes/"):
-					DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "boxshapes/")
 				shape = BoxShape3D.new()
 				shape.size = Vector3(dim_x, dim_y, dim_z)
-				var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
-				if ok == Error.OK:
-					log_msg("Successfully saved BoxShape3D " + shape_name + " to " + shape_path)
-				shape = load(shape_path)
 			var collision_shape := CollisionShape3D.new()
 			collision_shape.shape = shape
 			parent.add_child(collision_shape)
@@ -355,18 +360,23 @@ func handle_collision_shapes(ind: int) -> int:
 			var shape_path := paths["collision_shapes_save_path"] + "cylshapes/" + shape_name + ".tres"
 			var exists := ResourceLoader.exists(shape_path)
 			var shape: CylinderShape3D
-			if exists:
-				shape = load(shape_path)
+			if reuse_coll_shapes:
+				if exists:
+					shape = load(shape_path)
+				else:
+					if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "cylshapes/"):
+						DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "cylshapes/")
+					shape = CylinderShape3D.new()
+					shape.height = height
+					shape.radius = radius
+					var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
+					if ok == Error.OK:
+						log_msg("Successfully saved CylinderShape3D " + shape_name + " to " + shape_path)
+					shape = load(shape_path)
 			else:
-				if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "cylshapes/"):
-					DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "cylshapes/")
 				shape = CylinderShape3D.new()
 				shape.height = height
 				shape.radius = radius
-				var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
-				if ok == Error.OK:
-					log_msg("Successfully saved CylinderShape3D " + shape_name + " to " + shape_path)
-				shape = load(shape_path)
 			var collision_shape := CollisionShape3D.new()
 			collision_shape.shape = shape
 			parent.add_child(collision_shape)
@@ -382,17 +392,21 @@ func handle_collision_shapes(ind: int) -> int:
 			var shape_path := paths["collision_shapes_save_path"] + "sphereshapes/" + shape_name + ".tres"
 			var exists := ResourceLoader.exists(shape_path)
 			var shape: SphereShape3D
-			if exists:
-				shape = load(shape_path)
+			if reuse_coll_shapes:
+				if exists:
+					shape = load(shape_path)
+				else:
+					if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "sphereshapes/"):
+						DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "sphereshapes/")
+					shape = SphereShape3D.new()
+					shape.radius = radius
+					var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
+					if ok == Error.OK:
+						log_msg("Successfully saved SphereShape3D " + shape_name + " to " + shape_path)
+					shape = load(shape_path)
 			else:
-				if not DirAccess.dir_exists_absolute(paths["collision_shapes_save_path"] + "sphereshapes/"):
-					DirAccess.make_dir_recursive_absolute(paths["collision_shapes_save_path"] + "sphereshapes/")
 				shape = SphereShape3D.new()
 				shape.radius = radius
-				var ok := ResourceSaver.save(shape, shape_path, ResourceSaver.FLAG_CHANGE_PATH)
-				if ok == Error.OK:
-					log_msg("Successfully saved SphereShape3D " + shape_name + " to " + shape_path)
-				shape = load(shape_path)
 			var collision_shape := CollisionShape3D.new()
 			collision_shape.shape = shape
 			parent.add_child(collision_shape)
