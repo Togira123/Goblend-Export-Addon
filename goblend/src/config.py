@@ -169,6 +169,9 @@ def get_collision_defaults(config):
     layers = []
     if "collision_layers" in config:
         if type(config["collision_layers"]) is list:
+            for bit in config["collision_layers"]:
+                if not type(bit) is int:
+                    raise Exception("Incorrect type for element of 'collision_layers', should be int")
             layers = config["collision_layers"]
         else:
             raise Exception("Incorrect type for 'collision_layers', should be list")
@@ -176,6 +179,9 @@ def get_collision_defaults(config):
     masks = []
     if "collision_masks" in config:
         if type(config["collision_masks"]) is list:
+            for bit in config["collision_masks"]:
+                if not type(bit) is int:
+                    raise Exception("Incorrect type for element of 'collision_masks', should be int")
             masks = config["collision_masks"]
         else:
             raise Exception("Incorrect type for 'collision_masks', should be list")
