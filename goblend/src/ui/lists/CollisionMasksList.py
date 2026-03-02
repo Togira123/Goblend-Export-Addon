@@ -1,6 +1,5 @@
 import bpy
 
-from ...config import get_config
 from ...ui.lists.CollisionLayersList import layer_items
 
 

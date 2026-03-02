@@ -6,7 +6,7 @@ from .convert_shader import convert_to_godot_shader
 
 from .bake import bake_base_color, bake_metallic, bake_normal, bake_roughness, get_uv_index_from_name
 from .setup import save_path_keys
-from ..config import get_root_dir
+from ..utils import get_root_dir
 from ..log import log
 
 

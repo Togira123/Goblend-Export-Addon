@@ -1,6 +1,5 @@
 import bpy
 from .CollisionLayersList import layer_items
-from ...config import get_config
 
 
 class DefaultCollisionLayerListItem(bpy.types.PropertyGroup):

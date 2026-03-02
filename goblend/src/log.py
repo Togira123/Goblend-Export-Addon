@@ -4,7 +4,7 @@ import bpy
 import datetime
 import os
 
-from . import config
+from .utils import get_root_dir
 
 log_file = None
 
@@ -14,7 +14,7 @@ def init_log_file():
     if log_file:
         # old file was not closed for some reason
         log_file.close()
-    root_dir = config.get_root_dir()
+    root_dir = get_root_dir()
     if root_dir == "":
         return False
     file_path = os.path.join(root_dir, "goblend.log")

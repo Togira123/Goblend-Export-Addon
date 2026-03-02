@@ -1,17 +1,15 @@
 import bpy
-from ...config import get_config
-
-enum = []
+from ... import config as conf
+from ... import utils
 
 
 def layer_items(_self, _context):
-    global enum
-    if len(enum) == 0:
-        config = get_config()
+    if len(utils.layers_enum_cache) == 0:
+        config = conf.get_config()
         for layer in config["collisions"]["layers"]:
-            enum.append((str(layer["bit"]), layer["display_name"], "Bit " + str(layer["bit"])))
+            utils.layers_enum_cache.append((str(layer["bit"]), layer["display_name"], "Bit " + str(layer["bit"])))
 
-    return enum
+    return utils.layers_enum_cache
 
 
 class CollisionLayerListItem(bpy.types.PropertyGroup):

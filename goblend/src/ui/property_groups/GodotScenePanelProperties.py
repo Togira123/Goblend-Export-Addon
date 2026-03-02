@@ -1,9 +1,7 @@
 import bpy
 
-from ...config import get_config
-from ..lists.GroupList import GroupListItem
-
-from .enum_items import physics_objects
+from ... import config as conf
+from ... import utils
 
 
 def is_godot_scene(self, obj):
@@ -17,17 +15,15 @@ def is_godot_scene(self, obj):
     return obj.name in godot_scenes.objects
 
 
-enum = []
-
-
 def scenes(_self, _context):
-    global enum
-    if len(enum) == 0:
-        config = get_config()
+    if len(utils.godot_scene_panel_props_enum_cache) == 0:
+        config = conf.get_config()
         for scene in config["godot_scenes"]:
-            enum.append((scene["name"], scene["display_name"], "Godot Scene at: " + scene["godot_scene_path"]))
+            utils.godot_scene_panel_props_enum_cache.append(
+                (scene["name"], scene["display_name"], "Godot Scene at: " + scene["godot_scene_path"])
+            )
 
-    return enum
+    return utils.godot_scene_panel_props_enum_cache
 
 
 class GodotScenePanelProperties(bpy.types.PropertyGroup):

@@ -1,17 +1,17 @@
 import bpy
 
-from ...config import get_config
-
-enum = []
+from ... import config as conf
+from ... import utils
 
 
 def group_items(_self, _context):
-    global enum
-    if len(enum) == 0:
-        config = get_config()
+    if len(utils.group_list_enum_cache) == 0:
+        config = conf.get_config()
         for group in config["collisions"]["groups"]:
-            enum.append((str(group["godot_group_name"]), group["display_name"], group["description"]))
-    return enum
+            utils.group_list_enum_cache.append(
+                (str(group["godot_group_name"]), group["display_name"], group["description"])
+            )
+    return utils.group_list_enum_cache
 
 
 class GroupListItem(bpy.types.PropertyGroup):

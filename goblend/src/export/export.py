@@ -6,7 +6,7 @@ from .handle_materials import handle_materials, check_convert_to_shader
 from .clean_up import first_clean_up, last_clean_up
 from .setup import setup
 from .animations import handle_animations
-from ..config import get_root_dir
+from ..utils import get_root_dir
 from ..log import log
 
 

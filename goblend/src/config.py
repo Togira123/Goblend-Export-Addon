@@ -2,7 +2,9 @@ import bpy
 import os
 import json
 
-from ..src.log import log
+from .utils import get_root_dir, reset_cache_enums
+
+from . import log
 
 # config file should be named goblend.json
 
@@ -10,31 +12,6 @@ from ..src.log import log
 root_dir = None
 
 prev_filepath = ""
-
-
-def get_root_dir():
-    global root_dir
-    global was_empty_filepath
-    if root_dir != None:
-        return root_dir
-    if bpy.data.filepath == "":
-        return ""
-    filepath = os.path.normcase(bpy.data.filepath)
-    while True:
-        head, _ = os.path.split(filepath)
-        if head == filepath:
-            # reached root
-            break
-        files = [f for f in os.listdir(head) if os.path.isfile(os.path.join(head, f))]
-        for file in files:
-            if file == "project.godot":
-                root_dir = head
-                break
-        filepath = head
-    if root_dir == None:
-        # no godot project found
-        raise Exception("No Godot project found")
-    return root_dir
 
 
 def get_collision_groups(collision_config):
@@ -257,11 +234,11 @@ def read_config():
                 return
 
         except FileNotFoundError:
-            log("No config found")
+            log.log("No config found")
         except json.JSONDecodeError:
-            log("Config contains invalid json", "ERROR")
+            log.log("Config contains invalid json", "ERROR")
         except Exception as e:
-            log("Exception while reading config: " + repr(e), "ERROR")
+            log.log("Exception while reading config: " + repr(e), "ERROR")
 
     config["collisions"] = {}
     config["collisions"]["groups"] = []
@@ -281,5 +258,7 @@ def get_config():
     if not config or prev_filepath != bpy.data.filepath:
         prev_filepath = bpy.data.filepath
         read_config()
-        log("Config loaded:\n" + str(config))
+        # reset cached values
+        reset_cache_enums()
+        log.log("Config loaded:\n" + str(config))
     return config

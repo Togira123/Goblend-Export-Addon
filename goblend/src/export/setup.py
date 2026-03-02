@@ -2,7 +2,7 @@ import bpy
 import os
 import subprocess
 
-from ...src.config import get_root_dir
+from ..utils import get_root_dir
 
 from ...src.log import log
 
