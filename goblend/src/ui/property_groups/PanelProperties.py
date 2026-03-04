@@ -116,18 +116,18 @@ class PanelProperties(bpy.types.PropertyGroup):
         default=(1024, 1024),
         min=0,
     )
-    transparency_mode: bpy.props.EnumProperty(
-        name="Transparency Mode",
+    default_transparency_mode: bpy.props.EnumProperty(
+        name="Default Transparency Mode",
         description="Only affects transparent objects! Transparency mode to use in Godot",
         items=transparency_enum_items,
         default="DEPTH_PRE_PASS",
     )
-    transparency_alpha_scissor_threshold: bpy.props.FloatProperty(
-        name="Scissor Threshold", min=0.0, max=1.0, precision=3, default=0.5
+    default_transparency_alpha_scissor_threshold: bpy.props.FloatProperty(
+        name="Default Scissor Threshold", min=0.0, max=1.0, precision=3, default=0.5
     )
 
-    cull_mode: bpy.props.EnumProperty(
-        name="Cull Mode",
+    default_cull_mode: bpy.props.EnumProperty(
+        name="Default Cull Mode",
         description="The cull mode to use for objects in Godot",
         items=culling_enum_items,
         default="BACK",

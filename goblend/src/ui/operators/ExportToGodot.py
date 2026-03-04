@@ -93,9 +93,9 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 seen.add(default_group.group)
 
         settings_for_godot = {
-            "transparency_mode": props.transparency_mode,
-            "scissor_value": props.transparency_alpha_scissor_threshold,
-            "cull_mode": props.cull_mode,
+            "transparency_mode": props.default_transparency_mode,
+            "scissor_value": props.default_transparency_alpha_scissor_threshold,
+            "cull_mode": props.default_cull_mode,
             "default_collision_layers": default_layers,
             "default_collision_masks": default_masks,
             "default_groups": default_groups,

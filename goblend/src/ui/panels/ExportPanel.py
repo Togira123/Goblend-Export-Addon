@@ -46,11 +46,11 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
         col.label(text="Texture Dimensions")
         col.prop(panel_props, "texture_dim", text="")
 
-        col.prop(panel_props, "transparency_mode")
-        if panel_props.transparency_mode == "SCISSOR":
-            col.prop(panel_props, "transparency_alpha_scissor_threshold")
+        col.prop(panel_props, "default_transparency_mode")
+        if panel_props.default_transparency_mode == "SCISSOR":
+            col.prop(panel_props, "default_transparency_alpha_scissor_threshold")
 
-        col.prop(panel_props, "cull_mode")
+        col.prop(panel_props, "default_cull_mode")
 
         col.separator()
 
