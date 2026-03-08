@@ -16,4 +16,5 @@ license = [
   "SPDX:GPL-3.0-or-later",
 ]
 
+[permissions]
 files = "Export gltf, read Godot scene files, create textures"
