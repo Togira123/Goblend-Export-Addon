@@ -29,12 +29,12 @@ save_path_hierarchy_keys = [
 ]
 
 
-def find_objs_and_cols(root, found_col_objects, seen_libs, cmd_line_args_scene_instances):
+def find_objs_and_cols(root, found_col_objects, seen_libs):
     collision_collection = None
     if root.name == "Collisions":
         collision_collection = root
     for child in root.children:
-        coll = find_objs_and_cols(child, found_col_objects, seen_libs, cmd_line_args_scene_instances)
+        coll = find_objs_and_cols(child, found_col_objects, seen_libs)
         if coll != None:
             collision_collection = coll
     for obj in root.objects:
@@ -68,9 +68,23 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, cmd_line_args_scene_i
                             "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()",
                         ]
                     )
+                tmp_file_path = os.path.normcase(os.path.join(get_root_dir(), ".tmp.goblend"))
+                is_next = False
+                scene_path = None
+                with open(tmp_file_path, "r") as tmp_file:
+                    for line in tmp_file:
+                        if is_next:
+                            scene_path = line.strip()
+                            break
+                        if line.startswith(library_blend_file):
+                            is_next = True
+                if scene_path:
+                    godot_scene = bpy.context.scene.panel_props.gltf_extension.godot_scenes.add()
+                    godot_scene.object_name = cube.name
+                    godot_scene.scene_path = scene_path
+                else:
+                    log("Scene path not found for library: " + library_blend_file, "ERROR")
 
-                cmd_line_args_scene_instances.append(library_blend_file)
-                cmd_line_args_scene_instances.append(cube.name)
     return collision_collection
 
 
@@ -107,7 +121,7 @@ def get_collision_objects(collision_collection, objects):
                     to_remove.add(obj)
             for obj in to_remove:
                 objects.remove(obj)
-                collision_objects.add(obj)
+                collision_objects.add((obj, col.name))
 
         remove_collision_from_render(collision_collection)
         for col in collision_collection.children_recursive:
@@ -141,25 +155,16 @@ def setup(texture_group_assignments, settings_for_godot):
 
     seen_libs = set()
 
-    # scene path, scene name
-    cmd_line_args_scene_instances = []
     found_col_objects = []
 
     bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
-    collision_collection = find_objs_and_cols(
-        bpy.context.scene.collection, found_col_objects, seen_libs, cmd_line_args_scene_instances
-    )
+    collision_collection = find_objs_and_cols(bpy.context.scene.collection, found_col_objects, seen_libs)
 
-    cmd_line_args_scene_instances.insert(0, str(len(found_col_objects)))
-
-    # also append info about godot scenes
-    cmd_line_godot_scenes = []
     for obj_name in settings_for_godot["godot_scenes"]:
-        cmd_line_godot_scenes.append(obj_name)
-        cmd_line_godot_scenes.append(settings_for_godot["godot_scenes"][obj_name])
-    cmd_line_godot_scenes.insert(0, str(len(cmd_line_godot_scenes) // 2))
-    cmd_line_args_scene_instances = cmd_line_args_scene_instances + cmd_line_godot_scenes
+        godot_scene = bpy.context.scene.panel_props.gltf_extension.godot_scenes.add()
+        godot_scene.object_name = obj_name
+        godot_scene.scene_path = settings_for_godot["godot_scenes"][obj_name]
 
     # make all LayerCollections visible
     # we need this to later make all objects visible and then to export the visible objects
@@ -218,7 +223,6 @@ def setup(texture_group_assignments, settings_for_godot):
         collision_objects,
         collision_collection,
         export_path_glb,
-        cmd_line_args_scene_instances,
         godot_scene_nodes,
         selected_objects,
         hidden_layer_collections,

@@ -1,8 +1,10 @@
 import bpy
 
-# Import relative modules
 from .src import export_ui
 from .src.config import get_config_at_startup
+
+# this import is needed for the glTF extension to register
+from .src.export.glTF2ExportUserExtension import glTF2ExportUserExtension
 
 
 def register():

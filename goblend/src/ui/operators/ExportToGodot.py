@@ -46,6 +46,13 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
+        # reset all collection gltf properties
+        props.gltf_extension.collision_shapes.clear()
+        props.gltf_extension.physics_bodies.clear()
+        props.gltf_extension.materials.clear()
+        props.gltf_extension.texture_groups.clear()
+        props.gltf_extension.godot_scenes.clear()
+
         texture_dim = {"x": props.texture_dim[0], "y": props.texture_dim[1]}
 
         uv_map_override = {}
@@ -132,6 +139,8 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                         "obj": item.obj,
                     }
             settings_for_godot["shadow_cast_mode"][item.obj.name] = item.shadow_cast_mode
+
+        gltf_texture_groups = {}
         for mat in scene.material_panel_props:
             if not mat.mat:
                 continue
@@ -152,6 +161,11 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 ] = None  # object, will be set when iterating over materials
             else:
                 if mat.texture_group != "":
+                    if not mat.texture_group in gltf_texture_groups:
+                        gltf_texture_groups[mat.texture_group] = props.gltf_extension.texture_groups.add()
+                        gltf_texture_groups[mat.texture_group].name = mat.texture_group
+                    m = gltf_texture_groups[mat.texture_group].materials.add()
+                    m.name = mat.mat.name
                     texture_groups[mat.mat.name] = mat.texture_group
                 if mat.override_bake_margin:
                     bake_margins[mat.mat.name] = mat.bake_margin
@@ -295,6 +309,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             paths[save_path] = abs_path(path)
             idx += 1
         try:
+            props.gltf_extension.is_exporting_with_goblend = True
             export(
                 addon_prefs.godot_file_path,
                 texture_dim,
@@ -305,11 +320,13 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 settings_for_godot,
                 paths,
             )
+            props.gltf_extension.is_exporting_with_goblend = False
             if scene.is_root_scene:
                 log("------------ EXPORT DONE ------------")
             else:
                 log("Sub-export done")
         except Exception as e:
+            props.gltf_extension.is_exporting_with_goblend = False
             log(traceback.format_exc(), "ERROR")
             log(
                 "An error happend while trying to export. Check the logs above for more info. If you believe this is a bug, read the docs first. If you are fairly certain it still is, feel free to open an issue.",

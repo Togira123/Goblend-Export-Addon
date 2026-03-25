@@ -1,6 +1,7 @@
 import bpy
 
 from .enum_items import transparency_enum_items, culling_enum_items
+from ...export.glTF.glTFExtension import glTFExtension
 
 hierarchy_defaults = [
     ("DEFAULT", "Default", "Use the default value from the config file"),
@@ -132,3 +133,5 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=culling_enum_items,
         default="BACK",
     )
+
+    gltf_extension: bpy.props.PointerProperty(type=glTFExtension)

@@ -10,20 +10,24 @@ from ..utils import get_root_dir
 from ..log import log
 
 
-def material_prep_cmd_line_args(mat, cmd_line_args, settings_for_godot):
-    cmd_line_args.append(mat.name)
+def material_prep_gltf_data(mat, settings_for_godot):
+    gltf_extension_materials = bpy.context.scene.panel_props.gltf_extension.materials
+    material = gltf_extension_materials.add()
+    material.name = mat.name
     if mat.name in settings_for_godot["material_transparency_mode_overrides"]:
-        cmd_line_args.append(settings_for_godot["material_transparency_mode_overrides"][mat.name]["mode"])
+        material.transparency_mode = settings_for_godot["material_transparency_mode_overrides"][mat.name]["mode"]
         if settings_for_godot["material_transparency_mode_overrides"][mat.name]["mode"] == "SCISSOR":
-            cmd_line_args.append(str(settings_for_godot["material_transparency_mode_overrides"][mat.name]["scissor"]))
+            material.transparency_alpha_scissor_threshold = settings_for_godot["material_transparency_mode_overrides"][
+                mat.name
+            ]["scissor"]
     else:
-        cmd_line_args.append(settings_for_godot["transparency_mode"])
+        material.transparency_mode = settings_for_godot["transparency_mode"]
         if settings_for_godot["transparency_mode"] == "SCISSOR":
-            cmd_line_args.append(str(settings_for_godot["scissor_value"]))
+            material.transparency_alpha_scissor_threshold = settings_for_godot["scissor_value"]
     if mat.name in settings_for_godot["material_cull_mode_overrides"]:
-        cmd_line_args.append(settings_for_godot["material_cull_mode_overrides"][mat.name])
+        material.cull_mode = settings_for_godot["material_cull_mode_overrides"][mat.name]
     else:
-        cmd_line_args.append(settings_for_godot["cull_mode"])
+        material.cull_mode = settings_for_godot["cull_mode"]
 
 
 def get_bsdf_and_mat_output_node_of_mat(mat):
@@ -52,7 +56,7 @@ def prepare_material(obj, mat, poly_indices):
     return get_bsdf_and_mat_output_node_of_mat(mat)
 
 
-def handle_texture_group(mat, texture_groups, seen_texture_groups, cmd_line_args):
+def handle_texture_group(mat, texture_groups, seen_texture_groups):
     is_in_texture_group = mat.name in texture_groups
     texture_group = ""
     seen_group = False
@@ -63,10 +67,6 @@ def handle_texture_group(mat, texture_groups, seen_texture_groups, cmd_line_args
         else:
             seen_texture_groups.add(texture_group)
 
-    if is_in_texture_group:
-        cmd_line_args.append(texture_group)
-    else:
-        cmd_line_args.append("null")  # used to indicate that the object is in no uv group
     return is_in_texture_group, texture_group, seen_group
 
 
@@ -86,7 +86,8 @@ def should_bake_target(orig_value, orig_texture_group, texture_groups, input_nam
 
 def get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group):
     base_color = bsdf.inputs.get("Base Color")
-    bake_base_color = base_color.is_linked
+    alpha = bsdf.inputs.get("Alpha")
+    bake_base_color = base_color.is_linked or alpha.is_linked
     mat_group_name = None
     if is_in_texture_group:
         mat_group_name = texture_groups[mat.name]
@@ -95,9 +96,12 @@ def get_bake_targets(mat, bsdf, texture_groups, is_in_texture_group):
         def is_equal(a, b):
             return a[0] == b[0] and a[1] == b[1] and a[2] == b[2] and a[3] == b[3]
 
+        def is_equal_alpha(a, b):
+            return a == b
+
         bake_base_color = should_bake_target(
             base_color.default_value, mat_group_name, texture_groups, "Base Color", is_equal
-        )
+        ) or should_bake_target(alpha.default_value, mat_group_name, texture_groups, "Alpha", is_equal_alpha)
     roughness = bsdf.inputs.get("Roughness")
     bake_roughness = roughness.is_linked
     if not bake_roughness and is_in_texture_group:
@@ -175,7 +179,7 @@ def connect_image_textures(
     tex_node_to_separate_roughness_dict,
     tex_node_to_combine_roughness_dict,
 ):
-    inputs = ["Base Color", "Metallic", "Roughness", "Normal"]
+    inputs = ["Base Color", "Metallic", "Roughness", "Normal", "Alpha"]
     for obj in objects:
         for slot in obj.material_slots:
             mat = slot.material
@@ -213,94 +217,15 @@ def connect_image_textures(
                         mat.node_tree.links.new(separate_roughness_node.outputs[1], combine_roughness_node.inputs[1])
                         mat.node_tree.links.new(separate_roughness_node.outputs[1], combine_roughness_node.inputs[2])
                         mat.node_tree.links.new(combine_roughness_node.outputs["Color"], bsdf.inputs["Roughness"])
-                    else:
+                    elif inp == "Base Color":
                         mat.node_tree.links.new(img_tex_node.outputs["Color"], bsdf.inputs[inp])
+                    else:  # inp == "Alpha"
+                        mat.node_tree.links.new(img_tex_node.outputs["Alpha"], bsdf.inputs[inp])
+
     return inputs
 
 
-def first_clean_up(
-    objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj
-):
-    # deselect afterwards
-    bpy.ops.object.select_all(action="DESELECT")
-
-    # make sure to remove the Image Texture node when done exporting
-    for d in extra_shader_nodes:
-        d[1].remove(d[0])
-
-    # restore original node links
-    for obj in objects:
-        for slot in obj.material_slots:
-            mat = slot.material
-            for inp in inputs:
-                if inp in created_tex_nodes_per_mat_per_obj[obj][mat]:
-                    mat.node_tree.links.new(
-                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][2],
-                        created_tex_nodes_per_mat_per_obj[obj][mat][inp][1],
-                    )
-
-    # reapply old meshes for every object
-    for obj in objects:
-        orig_name = obj.data.name
-        obj.data = old_meshes[obj]
-        obj.data.name = orig_name
-        # set object as active
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
-        # reapply all modifiers
-        for m in orig_mod_per_obj[obj]:
-            bpy.ops.object.modifier_add(type=m["type"])
-            mod = obj.modifiers[len(obj.modifiers) - 1]
-            mod.name = m["name"]
-            match m["type"]:
-                case "BEVEL":
-                    for prop in m["props"]:
-                        setattr(mod, prop, m["props"][prop])
-                case "NODES":
-                    mod.node_group = m["node_group"]
-                    for identifier, val in m["props"].items():
-                        mod[identifier] = val
-
-
-def last_clean_up(images_created, found_col_objects, collision_objects, export_path_glb, selected_objects):
-    content = os.listdir(export_path_glb)
-    for file in content:
-        filepath = os.path.join(export_path_glb, file)
-        if os.path.isfile(filepath):
-            os.remove(filepath)
-        else:
-            log("Temporary directory contains other directories", "ERROR")
-
-    try:
-        os.rmdir(export_path_glb)
-    except:
-        log("Failed to remove temporary export directory", "ERROR")
-
-    for mesh in bpy.data.meshes:
-        if mesh.users == 0:
-            bpy.data.meshes.remove(mesh)
-
-    # clear cached image data blocks
-    for img in images_created:
-        bpy.data.images.remove(img)
-
-    # remove extra cubes
-    for obj in found_col_objects:
-        bpy.data.objects.remove(obj)
-
-    for obj in collision_objects:
-        if obj.name.endswith("-convcolonly"):
-            obj.name = obj.name[:-12]  # remove the last 12 chars
-
-    bpy.ops.object.select_all(action="DESELECT")
-
-    for obj in selected_objects:
-        obj.select_set(True)
-
-
-def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_converted_mats, objects):
-    shader_count = 0
+def check_convert_to_shader(settings_for_godot, already_converted_mats, objects):
     for mat_name, obj in settings_for_godot["use_shader_mats"].items():
         if mat_name in already_converted_mats:
             continue
@@ -318,25 +243,19 @@ def check_convert_to_shader(settings_for_godot, cmd_line_shader_data, already_co
                 limit_normal = settings_for_godot["limit_uv_effect_normal"][mat_name]
                 # if right_after_bake is false, the 3 uv indices don't matter so we can safely pass None for them
             code, uniforms = convert_to_godot_shader(obj, mat_name, cull_mode, limit_normal, False, None, None, None)
-            shader_count += 1
-            cmd_line_shader_data.append(mat_name)
-            cmd_line_shader_data.append(code)
-            cmd_line_shader_data.append(str(len(uniforms)))
+            material = bpy.context.scene.panel_props.gltf_extension.materials.add()
+            material.name = mat_name
+            material.shader_code = code
             for uniform in uniforms:
-                cmd_line_shader_data.append(uniform[0])  # var name
-                cmd_line_shader_data.append(
-                    uniform[1]
-                )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                shader_uniform = material.shader_uniforms.add()
+                shader_uniform.var_name = uniform[0]
+                shader_uniform.uniform_data = uniform[1]
         except Exception as e:
             log("Exception while trying to generate shader code: " + repr(e), "ERROR")
             raise e
-    total_shader_count = int(cmd_line_shader_data[0]) + shader_count
-    cmd_line_shader_data[0] = str(total_shader_count)
 
 
 def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
-    cmd_line_shader_data = []
-    shader_count = 0
     seen_mat_names = set()
     for obj_name in uv_map_override:
         obj = uv_map_override[obj_name]["obj"]
@@ -372,15 +291,13 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
                     get_uv_index_from_name(uv_map_override[obj_name]["Metallic/Roughness"], obj),
                     get_uv_index_from_name(uv_map_override[obj_name]["Normal"], obj),
                 )
-                shader_count += 1
-                cmd_line_shader_data.append(mat_name)
-                cmd_line_shader_data.append(code)
-                cmd_line_shader_data.append(str(len(uniforms)))
+                material = bpy.context.scene.panel_props.gltf_extension.materials.add()
+                material.name = mat_name
+                material.shader_code = code
                 for uniform in uniforms:
-                    cmd_line_shader_data.append(uniform[0])  # var name
-                    cmd_line_shader_data.append(
-                        uniform[1]
-                    )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                    shader_uniform = material.shader_uniforms.add()
+                    shader_uniform.var_name = uniform[0]
+                    shader_uniform.uniform_data = uniform[1]
             except Exception as e:
                 log("Exception while trying to generate shader code: " + repr(e), "ERROR")
                 raise e
@@ -409,19 +326,17 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
                 obj.data.uv_layers.active_index,
                 obj.data.uv_layers.active_index,
             )
-            shader_count += 1
-            cmd_line_shader_data.append(mat_name)
-            cmd_line_shader_data.append(code)
-            cmd_line_shader_data.append(str(len(uniforms)))
+            material = bpy.context.scene.panel_props.gltf_extension.materials.add()
+            material.name = mat_name
+            material.shader_code = code
             for uniform in uniforms:
-                cmd_line_shader_data.append(uniform[0])  # var name
-                cmd_line_shader_data.append(
-                    uniform[1]
-                )  # linkTo (image name or so, the value to set with set_shader_parameter in Godot)
+                shader_uniform = material.shader_uniforms.add()
+                shader_uniform.var_name = uniform[0]
+                shader_uniform.uniform_data = uniform[1]
         except Exception as e:
             log("Exception while trying to generate shader code: " + repr(e), "ERROR")
             raise e
-    return [str(shader_count)] + cmd_line_shader_data, seen_mat_names
+    return seen_mat_names
 
 
 def handle_materials(
@@ -446,17 +361,11 @@ def handle_materials(
     blend_path = os.path.normcase(bpy.data.filepath)
     filename = os.path.basename(blend_path)
 
-    cmd_line_args_path = []
     for save_path in save_path_keys:
-        cmd_line_args_path.append(os.path.normcase(paths[save_path]))
-
-    cmd_line_args = []
-    cmd_line_args.append("true" if scene.is_root_scene else "false")
-    cmd_line_args.append(str(len(objects)))
-    cmd_line_args.append(os.path.splitext(filename)[0])
+        setattr(scene.panel_props.gltf_extension.save_paths, save_path, os.path.normcase(paths[save_path]))
 
     # use temp file for storing paths of child scenes
-    # will be read in the gdscript script to figure out what scenes to link
+    # will be read by by other instances of blender to figure out what scenes to link
     tmp_file_path = os.path.normcase(os.path.join(root_dir, ".tmp.goblend"))
     with open(tmp_file_path, "a") as tmp_file:
         tmp_file.write(
@@ -482,14 +391,6 @@ def handle_materials(
             if slot.material != None:
                 mat_slots.append(slot)
 
-        cmd_line_args.append(obj.name)
-        cmd_line_args.append(str(len(mat_slots)))
-
-        if obj.name in settings_for_godot["shadow_cast_mode"]:
-            cmd_line_args.append(settings_for_godot["shadow_cast_mode"][obj.name])
-        else:
-            cmd_line_args.append("ON")  # default value for casting shadows
-
         # store all materials in an array, remove them all from the object and always only have one material slot
         # because having multiple will result in all of them baking at the same time
         materials = []
@@ -509,9 +410,9 @@ def handle_materials(
             if not material_output_and_bsdf:
                 continue
             mat_output_node, bsdf = material_output_and_bsdf
-            material_prep_cmd_line_args(mat, cmd_line_args, settings_for_godot)
+            material_prep_gltf_data(mat, settings_for_godot)
             is_in_texture_group, texture_group, seen_group = handle_texture_group(
-                mat, texture_groups, seen_texture_groups, cmd_line_args
+                mat, texture_groups, seen_texture_groups
             )
             link_array = []
             seen_mat = False
@@ -649,12 +550,6 @@ def handle_materials(
 
             # remove combine color node
             mat.node_tree.nodes.remove(combine_color)
-
-            cmd_line_args.append(str(len(link_array)))
-            for li in link_array:
-                cmd_line_args.append(li[0])
-                cmd_line_args.append(li[1])
-                cmd_line_args.append(li[2])
             created_tex_nodes_per_mat[mat] = created_texture_nodes
         created_tex_nodes_per_mat_per_obj[obj] = created_tex_nodes_per_mat
 
@@ -677,9 +572,7 @@ def handle_materials(
     )
 
     # if either limiting normal effect with disabled use shader or separate UV maps are set, we have to convert to a shader here
-    cmd_line_shader_data, converted_mat_names = check_early_convert_to_shader(
-        uv_map_override, settings_for_godot, objects
-    )
+    converted_mat_names = check_early_convert_to_shader(uv_map_override, settings_for_godot, objects)
 
     return (
         extra_shader_nodes,
@@ -687,9 +580,6 @@ def handle_materials(
         created_tex_nodes_per_mat_per_obj,
         old_meshes,
         orig_mod_per_obj,
-        cmd_line_shader_data,
         converted_mat_names,
-        cmd_line_args_path,
-        cmd_line_args,
         images_created,
     )

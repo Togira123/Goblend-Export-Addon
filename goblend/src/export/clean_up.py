@@ -1,5 +1,7 @@
 import bpy
 import os
+
+from ..utils import get_root_dir
 from ..log import log
 
 
@@ -63,7 +65,6 @@ def last_clean_up(
     hidden_layer_collections,
     hidden_objects,
 ):
-
     content = os.listdir(export_path_glb)
     for file in content:
         filepath = os.path.join(export_path_glb, file)
@@ -77,6 +78,11 @@ def last_clean_up(
     except:
         log("Failed to remove temporary export directory", "ERROR")
 
+    if bpy.context.scene.is_root_scene:
+        tmp_file_path = os.path.normcase(os.path.join(get_root_dir(), ".tmp.goblend"))
+        if os.path.isfile(tmp_file_path):
+            os.remove(tmp_file_path)
+
     for mesh in bpy.data.meshes:
         if mesh.users == 0:
             bpy.data.meshes.remove(mesh)
@@ -89,7 +95,8 @@ def last_clean_up(
     for obj in found_col_objects:
         bpy.data.objects.remove(obj)
 
-    for obj in collision_objects:
+    for val in collision_objects:
+        obj = val[0]
         if obj.name.endswith("-convcolonly"):
             obj.name = obj.name[:-12]  # remove the last 12 chars
 

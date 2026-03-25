@@ -37,7 +37,6 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
         filename = os.path.basename(blend_path)
         scene_path = os.path.join(scene_path, os.path.splitext(filename)[0]) + ".tscn"
 
-        print(scene_path)
         try:
             data = parse_scene(scene_path)
             scene.light_panel_props.clear()
@@ -65,7 +64,6 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                     if "light_cull_mask" in node_props:
                         # only store the lower 20 bits, as the rest are managed by godot internally so we never want to change them
                         lower20bits = (1 << 20) - 1
-                        print(node_props["light_cull_mask"])
                         node_props["light_cull_mask"]["value"] = node_props["light_cull_mask"]["value"] & lower20bits
                     for prop, value in node_props.items():
                         if hasattr(light_panel, prop):
@@ -76,7 +74,6 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                                     class_name = value["value"]["type"]
                                     match class_name:
                                         case "Color":
-                                            print(value["value"]["args"])
                                             setattr(
                                                 light_panel,
                                                 prop,

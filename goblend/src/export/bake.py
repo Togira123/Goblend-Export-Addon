@@ -36,6 +36,8 @@ def get_uv_index_from_name(uv_map_name, obj):
 
 def check_uv_map_target(obj, uv_map_override, key):
     old_active_ind_uv_map = obj.data.uv_layers.active_index
+    if obj.data.uv_layers.active_index < 0:
+        obj.data.uv_layers.active_index = 0
     if obj.name in uv_map_override:
         uv_map_name = uv_map_override[obj.name][key]
         idx = get_uv_index_from_name(uv_map_name, obj)
@@ -212,6 +214,15 @@ def bake_base_color(
         "BaseColor",
         "Base Color",
     )
+
+    if alpha_input.is_linked:
+        socket_connected_to_alpha = alpha_input.links[0].from_socket
+        created_texture_nodes["Alpha"] = [
+            img_texture_node,
+            alpha_input,
+            socket_connected_to_alpha,
+            bsdf,
+        ]
 
     # connect color to emission node to make sure only color is baked
     emission = make_emission_node(mat, mat_output_node)

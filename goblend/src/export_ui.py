@@ -67,7 +67,26 @@ from .ui.property_groups.MaterialPanelProperties import MaterialPanelProperties
 from .ui.property_groups.ObjectPanelProperties import ObjectPanelProperties
 from .ui.property_groups.PanelProperties import PanelProperties
 
+from .export.glTF.glTFCollisionShape import glTFCollisionShape
+from .export.glTF.glTFSavePaths import glTFSavePaths
+from .export.glTF.glTFTextureGroup import glTFTextureGroup, MaterialName
+from .export.glTF.glTFPhysicsBody import glTFPhysicsBody, StringValue, IntValue
+from .export.glTF.glTFMaterial import glTFMaterial, glTFMaterialShaderUniform
+from .export.glTF.glTFGodotScene import glTFGodotScene
+from .export.glTF.glTFExtension import glTFExtension
+
 classes = (
+    MaterialName,
+    StringValue,
+    IntValue,
+    glTFMaterialShaderUniform,
+    glTFCollisionShape,
+    glTFTextureGroup,
+    glTFSavePaths,
+    glTFPhysicsBody,
+    glTFMaterial,
+    glTFGodotScene,
+    glTFExtension,
     CollisionLayerListItem,
     SCENE_UL_CollisionLayersList,
     LIST_OT_AddItemToLayersList,
