@@ -9,6 +9,12 @@ hierarchy_defaults = [
     ("NO", "No", "Put the result directly into the save directory, do not use the same hierarchy"),
 ]
 
+save_externally_defaults = [
+    ("DEFAULT", "Default", "Use the default value from the config file"),
+    ("YES", "Yes", "Save this resource separately in its own file"),
+    ("NO", "No", "Save this resource directly in the resulting scene file"),
+]
+
 collision_defaults = [
     ("DEFAULT", "Default", "Use the default value from the config file"),
     ("YES", "Yes", "Reuse collision shapes"),
@@ -24,6 +30,7 @@ class PanelProperties(bpy.types.PropertyGroup):
         subtype="FILE_PATH",
         default="Default",
     )
+    open_scene_path_panel: bpy.props.BoolProperty(default=True)
     scene_save_path: bpy.props.StringProperty(
         name="Scene Save Path",
         description="The path to save the Godot scene at",
@@ -34,6 +41,13 @@ class PanelProperties(bpy.types.PropertyGroup):
         name="Scene Use Same Hierarchy",
         description="Whether to save the resulting scene using the same folder hierarchy at the save path as the hierarchy for this blend file",
         items=hierarchy_defaults,
+        default="DEFAULT",
+    )
+    open_material_path_panel: bpy.props.BoolProperty(default=True)
+    save_material_separately: bpy.props.EnumProperty(
+        name="Save Material Separately",
+        description="Whether to save materials in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
         default="DEFAULT",
     )
     material_save_path: bpy.props.StringProperty(
@@ -48,6 +62,7 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=hierarchy_defaults,
         default="DEFAULT",
     )
+    open_texture_path_panel: bpy.props.BoolProperty(default=True)
     texture_save_path: bpy.props.StringProperty(
         name="Texture Save Path",
         description="The path to save the generated textures at",
@@ -58,6 +73,13 @@ class PanelProperties(bpy.types.PropertyGroup):
         name="Texture Use Same Hierarchy",
         description="Whether to save the resulting textures using the same folder hierarchy at the save path as the hierarchy for this blend file",
         items=hierarchy_defaults,
+        default="DEFAULT",
+    )
+    open_animation_library_path_panel: bpy.props.BoolProperty(default=True)
+    save_animation_library_separately: bpy.props.EnumProperty(
+        name="Save Animation Library Separately",
+        description="Whether to save animation libraries in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
         default="DEFAULT",
     )
     animation_library_save_path: bpy.props.StringProperty(
@@ -72,6 +94,13 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=hierarchy_defaults,
         default="DEFAULT",
     )
+    open_animation_path_panel: bpy.props.BoolProperty(default=True)
+    save_animation_separately: bpy.props.EnumProperty(
+        name="Save Animation Separately",
+        description="Whether to save animations in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
+        default="DEFAULT",
+    )
     animation_save_path: bpy.props.StringProperty(
         name="Animation Save Path",
         description="The path to save the generated animations at",
@@ -82,6 +111,13 @@ class PanelProperties(bpy.types.PropertyGroup):
         name="Animation Use Same Hierarchy",
         description="Whether to save the resulting animations using the same folder hierarchy at the save path as the hierarchy for this blend file",
         items=hierarchy_defaults,
+        default="DEFAULT",
+    )
+    open_shader_path_panel: bpy.props.BoolProperty(default=True)
+    save_shader_separately: bpy.props.EnumProperty(
+        name="Save Shader Separately",
+        description="Whether to save Godot shaders in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
         default="DEFAULT",
     )
     shader_save_path: bpy.props.StringProperty(
@@ -96,6 +132,7 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=hierarchy_defaults,
         default="DEFAULT",
     )
+    open_collision_shapes_path_panel: bpy.props.BoolProperty(default=True)
     collision_shapes_save_path: bpy.props.StringProperty(
         name="Collision Shape Save Path",
         description="The path to save the generated collision shapes at",

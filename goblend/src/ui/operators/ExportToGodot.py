@@ -308,6 +308,32 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 path = os.path.join(os.path.normcase(path), os.path.splitext(os.path.basename(blend_path))[0])
             paths[save_path] = abs_path(path)
             idx += 1
+
+        whether_to_save_separately_keys = [
+            "save_material_separately",
+            "save_animation_library_separately",
+            "save_animation_separately",
+            "save_shader_separately",
+        ]
+
+        whether_to_save_separately_path_prop = [
+            "material_save_path",
+            "animation_library_save_path",
+            "animation_save_path",
+            "shader_save_path",
+        ]
+
+        for key in whether_to_save_separately_keys:
+            if getattr(props, key) != "DEFAULT":
+                paths[key] = True if getattr(props, key) == "YES" else False
+
+        for key, path in zip(whether_to_save_separately_keys, whether_to_save_separately_path_prop):
+            if not paths[key]:
+                paths[path] = ""
+
+        if not paths["reuse_collision_shapes"]:
+            paths["collision_shapes_save_path"] = ""
+
         try:
             props.gltf_extension.is_exporting_with_goblend = True
             export(

@@ -28,20 +28,68 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
         if paths_panel:
             paths_panel_col = paths_panel.column()
             paths_panel_col.prop(panel_props, "same_hierarchy_target")
-            paths_panel_col.prop(panel_props, "scene_save_path")
-            paths_panel_col.prop(panel_props, "scene_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "material_save_path")
-            paths_panel_col.prop(panel_props, "material_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "texture_save_path")
-            paths_panel_col.prop(panel_props, "texture_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "animation_library_save_path")
-            paths_panel_col.prop(panel_props, "animation_library_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "animation_save_path")
-            paths_panel_col.prop(panel_props, "animation_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "shader_save_path")
-            paths_panel_col.prop(panel_props, "shader_use_same_hierarchy")
-            paths_panel_col.prop(panel_props, "collision_shapes_save_path")
-            paths_panel_col.prop(panel_props, "reuse_collision_shapes")
+            scene_paths_header, scene_paths_panel = paths_panel_col.panel_prop(panel_props, "open_scene_path_panel")
+            scene_paths_header.label(text="Scene Save Path")
+            if scene_paths_panel:
+                scene_paths_panel_col = scene_paths_panel.column()
+                scene_paths_panel_col.prop(panel_props, "scene_save_path")
+                scene_paths_panel_col.prop(panel_props, "scene_use_same_hierarchy")
+
+            material_paths_header, material_paths_panel = paths_panel_col.panel_prop(
+                panel_props, "open_material_path_panel"
+            )
+            material_paths_header.label(text="Material Save Path")
+            if material_paths_panel:
+                material_paths_panel_col = material_paths_panel.column()
+                material_paths_panel_col.prop(panel_props, "save_material_separately")
+                material_paths_panel_col.prop(panel_props, "material_save_path")
+                material_paths_panel_col.prop(panel_props, "material_use_same_hierarchy")
+
+            texture_paths_header, texture_paths_panel = paths_panel_col.panel_prop(
+                panel_props, "open_texture_path_panel"
+            )
+            texture_paths_header.label(text="Texture Save Path")
+            if texture_paths_panel:
+                texture_paths_panel_col = texture_paths_panel.column()
+                texture_paths_panel_col.prop(panel_props, "texture_save_path")
+                texture_paths_panel_col.prop(panel_props, "texture_use_same_hierarchy")
+
+            animation_library_paths_header, animation_library_paths_panel = paths_panel_col.panel_prop(
+                panel_props, "open_animation_library_path_panel"
+            )
+            animation_library_paths_header.label(text="Animation Library Save Path")
+            if animation_library_paths_panel:
+                animation_library_paths_panel_col = animation_library_paths_panel.column()
+                animation_library_paths_panel_col.prop(panel_props, "save_animation_library_separately")
+                animation_library_paths_panel_col.prop(panel_props, "animation_library_save_path")
+                animation_library_paths_panel_col.prop(panel_props, "animation_library_use_same_hierarchy")
+
+            animation_paths_header, animation_paths_panel = paths_panel_col.panel_prop(
+                panel_props, "open_animation_path_panel"
+            )
+            animation_paths_header.label(text="Animation Save Path")
+            if animation_paths_panel:
+                animation_paths_panel_col = animation_paths_panel.column()
+                animation_paths_panel_col.prop(panel_props, "save_animation_separately")
+                animation_paths_panel_col.prop(panel_props, "animation_save_path")
+                animation_paths_panel_col.prop(panel_props, "animation_use_same_hierarchy")
+
+            shader_paths_header, shader_paths_panel = paths_panel_col.panel_prop(panel_props, "open_shader_path_panel")
+            shader_paths_header.label(text="Shader Save Path")
+            if shader_paths_panel:
+                shader_paths_panel_col = shader_paths_panel.column()
+                shader_paths_panel_col.prop(panel_props, "save_shader_separately")
+                shader_paths_panel_col.prop(panel_props, "shader_save_path")
+                shader_paths_panel_col.prop(panel_props, "shader_use_same_hierarchy")
+
+            collision_shapes_paths_header, collision_shapes_paths_panel = paths_panel_col.panel_prop(
+                panel_props, "open_collision_shapes_path_panel"
+            )
+            collision_shapes_paths_header.label(text="Collision Shape Save Path")
+            if collision_shapes_paths_panel:
+                collision_shapes_paths_panel_col = collision_shapes_paths_panel.column()
+                collision_shapes_paths_panel_col.prop(panel_props, "collision_shapes_save_path")
+                collision_shapes_paths_panel_col.prop(panel_props, "reuse_collision_shapes")
 
         col.label(text="Texture Dimensions")
         col.prop(panel_props, "texture_dim", text="")

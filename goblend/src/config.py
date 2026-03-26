@@ -94,6 +94,13 @@ def get_default_paths(config):
         ["animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"],
         ["shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"],
     ]
+    whether_to_save_separately_keys = [
+        ["save_material_separately", True],
+        ["save_animation_library_separately", True],
+        ["save_animation_separately", True],
+        ["save_shader_separately", True],
+    ]
+
     if "paths" in config:
         paths_config = config["paths"]
         has_hierarchy = False
@@ -109,7 +116,7 @@ def get_default_paths(config):
                 if type(paths_config[keys[0]]) is str:
                     paths[keys[0]] = abs_path(paths_config[keys[0]])
                 else:
-                    raise Exception("Incorrect type for 'scene_save_path', should be string")
+                    raise Exception("Incorrect type for '" + keys[0] + "', should be string")
             else:
                 paths[keys[0]] = abs_path(keys[2])
 
@@ -132,6 +139,15 @@ def get_default_paths(config):
                 paths["reuse_collision_shapes"] = paths_config["reuse_collision_shapes"]
             else:
                 raise Exception("Incorrect type for 'reuse_collision_shapes', should be bool")
+
+        for key_value in whether_to_save_separately_keys:
+            if key_value[0] in paths_config:
+                if type(paths_config[key_value[0]]) is bool:
+                    paths[key_value[0]] = paths_config[key_value[0]]
+                else:
+                    raise Exception("Incorrect type for '" + key_value[0] + "', should be bool")
+            else:
+                paths[key_value[0]] = key_value[1]
     else:
         for keys in save_keys:
             paths[keys[0]] = abs_path(keys[2])
@@ -139,6 +155,8 @@ def get_default_paths(config):
         paths["same_hierarchy_target"] = abs_path("res://")
         paths["collision_shapes_save_path"] = abs_path("res://goblend/collision_shapes")
         paths["reuse_collision_shapes"] = True
+        for key_value in whether_to_save_separately_keys:
+            paths[key_value[0]] = key_value[1]
     return paths
 
 

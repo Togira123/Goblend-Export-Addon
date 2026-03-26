@@ -15,13 +15,13 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	if not state.json["extensions"].has(ext_name):
 		return ERR_INVALID_DATA
 	var ext: Dictionary = state.json["extensions"][ext_name]["save_paths"]
-	if ext.has("material_save_path"):
-		var seen_mats := PackedStringArray()
-		var shader_save_path := ""
-		if ext.has("shader_save_path"):
-			shader_save_path = ext["shader_save_path"]
-		Goblend.log_msg("Saving materials externally...")
-		save_materials_externally(root, ext["material_save_path"], seen_mats, shader_save_path)
+	if not ext.has("scene_save_path"):
+		return ERR_INVALID_DATA
+	var material_save_path: String = ext["material_save_path"] if ext.has("material_save_path") else null
+	var shader_save_path: String = ext["shader_save_path"] if ext.has("shader_save_path") else null
+	var seen_mats := PackedStringArray()
+	Goblend.log_msg("Saving materials externally...")
+	save_materials_externally(root, material_save_path, seen_mats, shader_save_path)
 	
 	var animation_save_path := ""
 	var animation_library_save_path := ""
@@ -32,11 +32,8 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	
 	handle_animation_player(root, animation_save_path, animation_library_save_path, root.name)
 
-	if ext.has("collision_shapes_save_path"):
-		save_collision_shapes_externally(root, ext["collision_shapes_save_path"])
+	save_collision_shapes_externally(root, ext["collision_shapes_save_path"] if ext.has("collision_shapes_save_path") else "")
 
-	if not ext.has("scene_save_path"):
-		return ERR_INVALID_DATA
 	var scene_save_path: String = ext["scene_save_path"]
 	
 	var scene := PackedScene.new()
@@ -59,25 +56,32 @@ func save_materials_externally(root: Node, path: String, seen_mats: PackedString
 			var mat_path := path.path_join(mat_name + ".tres")
 			if not seen_mats.has(mat_name):
 				seen_mats.append(mat_name)
-				if mat is ShaderMaterial and shader_path != "":
-					# also save the shader separately
-					var shader_save_path := shader_path.path_join(mat_name + ".gdshader")
-					if not DirAccess.dir_exists_absolute(shader_path):
-						DirAccess.make_dir_recursive_absolute(shader_path)
-					var ok := ResourceSaver.save(mat.shader, shader_save_path, ResourceSaver.FLAG_CHANGE_PATH)
-					if ok == OK:
-						Goblend.log_msg("Successfully saved shader at " + shader_save_path)
-						mat.shader = load(shader_save_path)
+				if mat is ShaderMaterial:
+					if shader_path != "":
+						# also save the shader separately
+						var shader_save_path := shader_path.path_join(mat_name + ".gdshader")
+						if not DirAccess.dir_exists_absolute(shader_path):
+							DirAccess.make_dir_recursive_absolute(shader_path)
+						var ok := ResourceSaver.save(mat.shader, shader_save_path, ResourceSaver.FLAG_CHANGE_PATH)
+						if ok == OK:
+							Goblend.log_msg("Successfully saved shader at " + shader_save_path)
+							mat.shader = load(shader_save_path)
+						else:
+							Goblend.log_msg("Failed to save shader at " + shader_save_path, "WARNING")
 					else:
-						Goblend.log_msg("Failed to save shader at " + shader_save_path, "WARNING")
-				if not DirAccess.dir_exists_absolute(path):
-					DirAccess.make_dir_recursive_absolute(path)
-				var ok := ResourceSaver.save(mat, mat_path, ResourceSaver.FLAG_CHANGE_PATH)
-				if ok != OK:
-					Goblend.log_msg("Failed to save material at " + mat_path, "WARNING")
-					continue
-				Goblend.log_msg("Successfully saved material at " + mat_path)
-			mesh.surface_set_material(i, load(mat_path))
+						Goblend.log_msg("Skip saving shader " + mat.shader.resource_name + " separately")
+				if path != "":
+					if not DirAccess.dir_exists_absolute(path):
+						DirAccess.make_dir_recursive_absolute(path)
+					var ok := ResourceSaver.save(mat, mat_path, ResourceSaver.FLAG_CHANGE_PATH)
+					if ok != OK:
+						Goblend.log_msg("Failed to save material at " + mat_path, "WARNING")
+						continue
+					Goblend.log_msg("Successfully saved material at " + mat_path)
+				else:
+					Goblend.log_msg("Skip saving material " + mat_name + " separately")
+			if path != "":
+				mesh.surface_set_material(i, load(mat_path))
 	for child in root.get_children():
 		save_materials_externally(child, path, seen_mats, shader_path)
 
@@ -102,6 +106,8 @@ func handle_animation_player(root: Node, animations_path: String, animation_libr
 						anim = load(animations_path + name + ".res")
 					else:
 						Goblend.log_msg("Failed to save animation at " + animations_path + name + ".res", "WARNING")
+				else:
+					Goblend.log_msg("Skip saving animation " + name + " separately")
 				library.add_animation(name, anim)
 			if animation_libraries_path != "":
 				if not DirAccess.dir_exists_absolute(animation_libraries_path):
@@ -112,6 +118,8 @@ func handle_animation_player(root: Node, animations_path: String, animation_libr
 					library = load(animation_libraries_path + lib_name + ".res")
 				else:
 					Goblend.log_msg("Failed to save animation library at " + animation_libraries_path + lib_name + ".res", "WARNING")
+			else:
+				Goblend.log_msg("Skip saving animation library " + lib_name + " separately")
 			# remove old libraries
 			var old_library_list := anim_player.get_animation_library_list()
 			for old_library in old_library_list:
@@ -129,6 +137,7 @@ func handle_animation_player(root: Node, animations_path: String, animation_libr
 
 func save_collision_shapes_externally(root: Node, path: String) -> void:
 	if path == "":
+		Goblend.log_msg("Skip saving collision shapes separately")
 		return
 	if root is CollisionShape3D:
 		var shape: Shape3D = root.shape
