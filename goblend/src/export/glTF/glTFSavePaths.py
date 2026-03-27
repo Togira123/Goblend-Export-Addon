@@ -9,6 +9,7 @@ class glTFSavePaths(bpy.types.PropertyGroup):
     animation_save_path: bpy.props.StringProperty()
     shader_save_path: bpy.props.StringProperty()
     collision_shapes_save_path: bpy.props.StringProperty()
+    mesh_save_path: bpy.props.StringProperty()
 
     @classmethod
     def paths(cls):

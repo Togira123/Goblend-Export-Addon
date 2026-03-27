@@ -93,12 +93,14 @@ def get_default_paths(config):
         ["animation_library_save_path", "animation_library_use_same_hierarchy", "res://goblend/animation_libraries/"],
         ["animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"],
         ["shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"],
+        ["mesh_save_path", "mesh_use_same_hierarchy", "res://goblend/meshes/"],
     ]
     whether_to_save_separately_keys = [
         ["save_material_separately", True],
         ["save_animation_library_separately", True],
         ["save_animation_separately", True],
         ["save_shader_separately", True],
+        ["save_mesh_separately", False],
     ]
 
     if "paths" in config:

@@ -14,9 +14,10 @@ save_path_keys = [
     "animation_save_path",
     "shader_save_path",
     "collision_shapes_save_path",
+    "mesh_save_path",
 ]
 
-save_path_uses_filename = [False, True, True, True, True, True, False]
+save_path_uses_filename = [False, True, True, True, True, True, False, True]
 
 save_path_hierarchy_keys = [
     "scene_use_same_hierarchy",
@@ -26,6 +27,7 @@ save_path_hierarchy_keys = [
     "animation_use_same_hierarchy",
     "shader_use_same_hierarchy",
     "reuse_collision_shapes",
+    "mesh_use_same_hierarchy",
 ]
 
 

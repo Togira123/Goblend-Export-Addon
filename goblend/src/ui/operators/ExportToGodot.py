@@ -299,6 +299,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         idx = 0
         for save_path in save_path_keys:
             if save_path == "collision_shapes_save_path":
+                idx += 1
                 continue  # this is the exception, has no use hierarchy setting
             path = paths[save_path]
             if paths[hierarchy_key_array[idx]]:
@@ -314,6 +315,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             "save_animation_library_separately",
             "save_animation_separately",
             "save_shader_separately",
+            "save_mesh_separately",
         ]
 
         whether_to_save_separately_path_prop = [
@@ -321,6 +323,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             "animation_library_save_path",
             "animation_save_path",
             "shader_save_path",
+            "mesh_save_path",
         ]
 
         for key in whether_to_save_separately_keys:

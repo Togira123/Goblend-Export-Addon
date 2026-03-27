@@ -17,18 +17,19 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	var ext: Dictionary = state.json["extensions"][ext_name]["save_paths"]
 	if not ext.has("scene_save_path"):
 		return ERR_INVALID_DATA
-	var material_save_path: String = ext["material_save_path"] if ext.has("material_save_path") else null
-	var shader_save_path: String = ext["shader_save_path"] if ext.has("shader_save_path") else null
+
+	var mesh_save_path: String = ext["mesh_save_path"] if ext.has("mesh_save_path") else ""
+
+	save_meshes_externally(root, mesh_save_path)
+
+	var material_save_path: String = ext["material_save_path"] if ext.has("material_save_path") else ""
+	var shader_save_path: String = ext["shader_save_path"] if ext.has("shader_save_path") else ""
 	var seen_mats := PackedStringArray()
 	Goblend.log_msg("Saving materials externally...")
 	save_materials_externally(root, material_save_path, seen_mats, shader_save_path)
 	
-	var animation_save_path := ""
-	var animation_library_save_path := ""
-	if ext.has("animation_save_path"):
-		animation_save_path = ext["animation_save_path"]
-	if ext.has("animation_library_save_path"):
-		animation_library_save_path = ext["animation_library_save_path"]
+	var animation_save_path: String = ext["animation_save_path"] if ext.has("animation_save_path") else ""
+	var animation_library_save_path: String = ext["animation_library_save_path"] if ext.has("animation_library_save_path") else ""
 	
 	handle_animation_player(root, animation_save_path, animation_library_save_path, root.name)
 
@@ -183,3 +184,21 @@ func convert_to_rounded_float_str(f: float, precision := 1_000_000) -> String:
 		s = s.substr(0, s.length() - 6) + "." + s.substr(s.length() - 6)
 	s += "000000000" # make sure the string is at least 9 characters long
 	return s.substr(0, 9)
+
+func save_meshes_externally(root: Node, path: String) -> void:
+	if path == "":
+		Goblend.log_msg("Skip saving meshes separately")
+		return
+	if root is MeshInstance3D:
+		var mesh: Mesh = root.mesh
+		var mesh_path := path.path_join(mesh.resource_name + ".res")
+		if not DirAccess.dir_exists_absolute(path):
+			DirAccess.make_dir_recursive_absolute(path)
+		var ok := ResourceSaver.save(mesh, mesh_path, ResourceSaver.FLAG_CHANGE_PATH)
+		if ok == OK:
+			Goblend.log_msg("Successfully saved mesh at " + mesh_path)
+			root.mesh = load(mesh_path)
+		else:
+			Goblend.log_msg("Failed to save mesh at " + mesh_path, "WARNING")
+	for child in root.get_children():
+		save_meshes_externally(child, path)

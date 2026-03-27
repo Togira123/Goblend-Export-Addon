@@ -91,6 +91,14 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
                 collision_shapes_paths_panel_col.prop(panel_props, "collision_shapes_save_path")
                 collision_shapes_paths_panel_col.prop(panel_props, "reuse_collision_shapes")
 
+            mesh_paths_header, mesh_paths_panel = paths_panel_col.panel_prop(panel_props, "open_mesh_path_panel")
+            mesh_paths_header.label(text="Mesh Save Path")
+            if mesh_paths_panel:
+                mesh_paths_panel_col = mesh_paths_panel.column()
+                mesh_paths_panel_col.prop(panel_props, "save_mesh_separately")
+                mesh_paths_panel_col.prop(panel_props, "mesh_save_path")
+                mesh_paths_panel_col.prop(panel_props, "mesh_use_same_hierarchy")
+
         col.label(text="Texture Dimensions")
         col.prop(panel_props, "texture_dim", text="")
 

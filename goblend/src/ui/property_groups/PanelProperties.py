@@ -145,6 +145,25 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=collision_defaults,
         default="DEFAULT",
     )
+    open_mesh_path_panel: bpy.props.BoolProperty(default=True)
+    save_mesh_separately: bpy.props.EnumProperty(
+        name="Save Mesh Separately",
+        description="Whether to save meshes in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
+        default="DEFAULT",
+    )
+    mesh_save_path: bpy.props.StringProperty(
+        name="Mesh Save Path",
+        description="The path to save the generated meshes at",
+        subtype="FILE_PATH",
+        default="Default",
+    )
+    mesh_use_same_hierarchy: bpy.props.EnumProperty(
+        name="Mesh Use Same Hierarchy",
+        description="Whether to save the resulting meshes using the same folder hierarchy at the save path as the hierarchy for this blend file",
+        items=hierarchy_defaults,
+        default="DEFAULT",
+    )
 
     texture_dim: bpy.props.IntVectorProperty(
         name="Dimensions",
