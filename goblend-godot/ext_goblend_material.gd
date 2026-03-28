@@ -41,19 +41,29 @@ func _import_node(state: GLTFState, gltf_node: GLTFNode, _json: Dictionary, node
 				var ext_data: Dictionary = gltf_mat["extensions"][ext_name]
 				# check whether the material should be a shader
 				if ext_data.has("shader_code") and ext_data["shader_code"] != "":
-					var shader_mat := ShaderMaterial.new()
-					shader_mat.resource_name = mat.resource_name
-					var shader := Shader.new()
-					shader.code = ext_data["shader_code"]
-					if ext_data.has("shader_uniforms"):
-						for uniform in ext_data["shader_uniforms"]:
-							var var_name: String = uniform["var_name"]
-							var uniform_data: String = uniform["uniform_data"]
-							# we are assuming here that uniform_data will always be a path to a resource
-							# this is the case right now, but may change in the future
-							shader_mat.set_shader_parameter(var_name, load(uniform_data))
-					shader_mat.shader = shader
-					mesh.set_surface_material(i, shader_mat)
+					var has_generated_shader = state.get_additional_data(ext_name)
+					if has_generated_shader and has_generated_shader.has(mat.resource_name):
+						# make sure to reuse the same material instance to only have one in case
+						# materials are not saved separately
+						mesh.set_surface_material(i, has_generated_shader[mat.resource_name])
+					else:
+						var shader_mat := ShaderMaterial.new()
+						shader_mat.resource_name = mat.resource_name
+						var shader := Shader.new()
+						shader.code = ext_data["shader_code"]
+						if ext_data.has("shader_uniforms"):
+							for uniform in ext_data["shader_uniforms"]:
+								var var_name: String = uniform["var_name"]
+								var uniform_data: String = uniform["uniform_data"]
+								# we are assuming here that uniform_data will always be a path to a resource
+								# this is the case right now, but may change in the future
+								shader_mat.set_shader_parameter(var_name, load(uniform_data))
+						shader_mat.shader = shader
+						mesh.set_surface_material(i, shader_mat)
+						if not has_generated_shader:
+							has_generated_shader = {}
+						has_generated_shader[mat.resource_name] = shader_mat
+						state.set_additional_data(ext_name, has_generated_shader)
 				else:
 					# not a shader
 					if ext_data.has("transparency_mode") and mat.transparency != BaseMaterial3D.Transparency.TRANSPARENCY_DISABLED:
