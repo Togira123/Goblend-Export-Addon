@@ -11,6 +11,7 @@ goblend_light = "EXT_goblend_light"
 goblend_general = "EXT_goblend_general"
 goblend_godot_scene = "EXT_goblend_godot_scene"
 goblend_animation = "EXT_goblend_animation"
+goblend_object = "EXT_goblend_object"
 godot_single_root = "GODOT_single_root"
 
 collisions_collection = "Collisions"
@@ -288,37 +289,46 @@ def _gather_node_hook(self, gltf2_object, blender_object):
         gltf2_object.mesh = None
         return
 
-    if not gltf2_object.extensions or not "KHR_lights_punctual" in gltf2_object.extensions:
+    if gltf2_object.extensions and "KHR_lights_punctual" in gltf2_object.extensions:
+        # it's a light
+        light_settings = None
+        for setting in scene.light_panel_props:
+            if setting.light == blender_object:
+                light_settings = setting
+                break
+        if not light_settings:
+            return
+        ext = {
+            "omni_range": setting.omni_range,
+            "omni_attenuation": setting.omni_attenuation,
+            "omni_shadow_mode": int(setting.omni_shadow_mode),
+            "spot_range": setting.spot_range,
+            "spot_attenuation": setting.spot_attenuation,
+            "spot_angle": setting.spot_angle,
+            "spot_angle_attenuation": setting.spot_angle_attenuation,
+            "light_color": [x for x in setting.light_color],
+            "light_energy": setting.light_energy,
+            "light_indirect_energy": setting.light_indirect_energy,
+            "light_volumetric_fog_energy": setting.light_volumetric_fog_energy,
+            "light_angular_distance": setting.light_angular_distance,
+            "light_size": setting.light_size,
+            "light_negative": setting.light_negative,
+            "light_specular": setting.light_specular,
+            "light_bake_mode": int(setting.light_bake_mode),
+            "light_cull_mask": setting.light_cull_mask,
+            "shadow_enabled": setting.shadow_enabled,
+        }
+        gltf2_object.extensions[goblend_light] = self.Extension(name=goblend_light, extension=ext, required=False)
         return
-    # it's a light
-    light_settings = None
-    for setting in scene.light_panel_props:
-        if setting.light == blender_object:
-            light_settings = setting
+
+    for prop in scene.object_panel_props:
+        if prop.enabled and prop.obj == blender_object:
+            if gltf2_object.extensions is None:
+                gltf2_object.extensions = {}
+            gltf2_object.extensions[goblend_object] = self.Extension(
+                name=goblend_object, extension={"shadow_cast_mode": prop.shadow_cast_mode}, required=False
+            )
             break
-    if not light_settings:
-        return
-    ext = {
-        "omni_range": setting.omni_range,
-        "omni_attenuation": setting.omni_attenuation,
-        "omni_shadow_mode": int(setting.omni_shadow_mode),
-        "spot_range": setting.spot_range,
-        "spot_attenuation": setting.spot_attenuation,
-        "spot_angle": setting.spot_angle,
-        "spot_angle_attenuation": setting.spot_angle_attenuation,
-        "light_color": [x for x in setting.light_color],
-        "light_energy": setting.light_energy,
-        "light_indirect_energy": setting.light_indirect_energy,
-        "light_volumetric_fog_energy": setting.light_volumetric_fog_energy,
-        "light_angular_distance": setting.light_angular_distance,
-        "light_size": setting.light_size,
-        "light_negative": setting.light_negative,
-        "light_specular": setting.light_specular,
-        "light_bake_mode": int(setting.light_bake_mode),
-        "light_cull_mask": setting.light_cull_mask,
-        "shadow_enabled": setting.shadow_enabled,
-    }
-    gltf2_object.extensions[goblend_light] = self.Extension(name=goblend_light, extension=ext, required=False)
 
 
 def _gather_gltf_hook(self, animations):
