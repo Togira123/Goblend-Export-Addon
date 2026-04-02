@@ -53,9 +53,9 @@ def add_line(str, const, top=False):
 
 
 # only call this after checking that the corresponding entry in special_vars does not exist yet
-def add_uv_line(name, uv_index):
+def add_uv_line(name, uv_index, flipped):
     subtract_str = ""
-    if not is_right_after_bake:
+    if flipped:
         subtract_str = "1.0 - "
     if uv_index == 0:
         add_line("vec2 " + name + " = vec2(UV.x, " + subtract_str + "UV.y);", True, True)
@@ -79,9 +79,14 @@ def add_uv_line(name, uv_index):
                 False,
                 True,
             )
-    if not "uv" in special_vars:
-        special_vars["uv"] = {}
-    special_vars["uv"][uv_index] = name
+    if flipped:  # this one is needed when UV coords are used for something other than textures
+        if not "uv_flipped" in special_vars:
+            special_vars["uv_flipped"] = {}
+        special_vars["uv_flipped"][uv_index] = name
+    else:
+        if not "uv" in special_vars:
+            special_vars["uv"] = {}
+        special_vars["uv"][uv_index] = name
 
 
 def add_global_line(str):
@@ -357,7 +362,7 @@ def cast(actual, needed, str):
                 case DataTypes.FLOAT:
                     return "(" + str + ".x + " + str + ".y + " + str + ".z) / 3.0"
                 case DataTypes.VEC2:
-                    return "vec2(" + str + ".xy)"
+                    return "(" + str + ".xy)"
                 case DataTypes.VEC3:
                     return str
                 case DataTypes.VEC4:
@@ -367,9 +372,9 @@ def cast(actual, needed, str):
                 case DataTypes.FLOAT:
                     return "(" + str + ".x + " + str + ".y + " + str + ".z + " + str + ".w) / 4.0"
                 case DataTypes.VEC2:
-                    return "vec2(" + str + ".xy)"
+                    return "(" + str + ".xy)"
                 case DataTypes.VEC3:
-                    return "vec2(" + str + ".xyz)"
+                    return "(" + str + ".xyz)"
                 case DataTypes.VEC4:
                     return str
     raise Exception("Unsupported cast: Cannot cast from " + actual.name + " to " + needed.name)
@@ -451,12 +456,13 @@ def init_tex_coord(node, uv_index):
         if output.is_linked:
             match output.name:
                 case "UV":
-                    if "uv" in special_vars and uv_index in special_vars["uv"]:
-                        uv_var = special_vars["uv"][uv_index]
+                    if "uv_flipped" in special_vars and uv_index in special_vars["uv_flipped"]:
+                        uv_var = special_vars["uv_flipped"][uv_index]
                         set_var(node, output, DataTypes.VEC2, uv_var)
                     else:
                         var_name = create_var(node, output, DataTypes.VEC2)
-                        add_uv_line(var_name, uv_index)
+                        add_uv_line(var_name, uv_index, True)
+                        add_prop_to_var(node, output, "is_uv_value", True)
                 case "Object":
                     if not "vertex_local" in special_vars:
                         add_global_line("varying vec3 vertex_local;")
@@ -763,12 +769,20 @@ def init_tex_image(node, uv_index, type):
     vec = None
     if node.inputs[0].is_linked:
         vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC2)
+        # check whether this value comes from UV. If yes, we have to invert because
+        # all values coming from UV are flipped, so we have to flip back now
+        res = get_prop_from_any_child_of_var(
+            node.inputs[0].links[0].from_node, node.inputs[0].links[0].from_socket, "is_uv_value"
+        )
+        if res[1] and res[0]:
+            vec = "vec2(" + vec + ".x, 1.0 - " + vec + ".y)"
     else:
         if "uv" in special_vars and uv_index in special_vars["uv"]:
             vec = special_vars["uv"][uv_index]
         else:
             vec = create_var(node, None, DataTypes.VEC2)
-            add_uv_line(vec, uv_index)
+            # do not flip UV because we exclusively will use this value for an image
+            add_uv_line(vec, uv_index, False)
     if node.outputs[0].is_linked:
         color = create_var(node, node.outputs[0], DataTypes.VEC3)
         add_line("vec3 " + color + " = texture(" + sampler + ", " + vec + ").rgb;", False)
@@ -802,12 +816,13 @@ def init_uv_map(node, uv_index):
                 break
             c += 1
         uv_index = c
-    if "uv" in special_vars and uv_index in special_vars["uv"]:
-        uv_var = special_vars["uv"][uv_index]
+    if "uv_flipped" in special_vars and uv_index in special_vars["uv_flipped"]:
+        uv_var = special_vars["uv_flipped"][uv_index]
         set_var(node, node.outputs[0], DataTypes.VEC2, uv_var)
     else:
         uv = create_var(node, node.outputs[0], DataTypes.VEC2)
-        add_uv_line(uv, uv_index)
+        add_uv_line(uv, uv_index, True)
+        add_prop_to_var(node, node.outputs[0], "is_uv_value", True)
 
 
 def init_bsdf_principled(node):
@@ -895,11 +910,13 @@ def init_output_material(node):
             if is_right_after_bake:
                 # we just baked the textures, so we should also take the UVs that we baked them with
                 uv_ind = uv_normal_idx
-            if "uv" in special_vars and uv_ind in special_vars["uv"]:
-                uv_var = special_vars["uv"][uv_ind]
+            if "uv_flipped" in special_vars and uv_ind in special_vars["uv_flipped"]:
+                uv_var = special_vars["uv_flipped"][uv_ind]
             else:
                 uv_var = create_var(node, None, DataTypes.VEC2)
-                add_uv_line(uv_var, uv_ind)
+                add_uv_line(uv_var, uv_ind, True)
+                # no need to add prop for is_uv_value here like everywhere else since we only
+                # use this value here and output material node has no outputs anyway
             # add normal limiting code
             add_line(
                 "if ("
