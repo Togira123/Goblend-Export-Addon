@@ -702,7 +702,7 @@ def init_combine_color(node):
     reset_is_constant()
     r = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
     g = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
-    b = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+    b = get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
     color = create_var(node, node.outputs[0], DataTypes.VEC3)
     add_line("vec3 " + color + " = vec3(" + r + ", " + g + ", " + b + ");", is_constant)
 
@@ -711,7 +711,7 @@ def init_combine_xyz(node):
     reset_is_constant()
     x = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
     y = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
-    z = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+    z = get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
     vector = create_var(node, node.outputs[0], DataTypes.VEC3)
     add_line("vec3 " + vector + " = vec3(" + x + ", " + y + ", " + z + ");", is_constant)
 
