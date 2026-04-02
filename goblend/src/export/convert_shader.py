@@ -745,7 +745,7 @@ def init_tex_image(node, uv_index, type):
         set_var_as_uniform(sampler, DataTypes.SAMPLER2D.value, abs_filepath, "")
     vec = None
     if node.inputs[0].is_linked:
-        vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
+        vec = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC2)
     else:
         if "uv" in special_vars and uv_index in special_vars["uv"]:
             vec = special_vars["uv"][uv_index]
