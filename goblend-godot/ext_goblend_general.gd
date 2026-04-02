@@ -18,10 +18,6 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	if not ext.has("scene_save_path"):
 		return ERR_INVALID_DATA
 
-	var mesh_save_path: String = ext["mesh_save_path"] if ext.has("mesh_save_path") else ""
-
-	save_meshes_externally(root, mesh_save_path)
-
 	var material_save_path: String = ext["material_save_path"] if ext.has("material_save_path") else ""
 	var shader_save_path: String = ext["shader_save_path"] if ext.has("shader_save_path") else ""
 	var seen_mats := PackedStringArray()
@@ -34,6 +30,10 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	handle_animation_player(root, animation_save_path, animation_library_save_path, root.name)
 
 	save_collision_shapes_externally(root, ext["collision_shapes_save_path"] if ext.has("collision_shapes_save_path") else "")
+
+	var mesh_save_path: String = ext["mesh_save_path"] if ext.has("mesh_save_path") else ""
+
+	save_meshes_externally(root, mesh_save_path)
 
 	var scene_save_path: String = ext["scene_save_path"]
 	
