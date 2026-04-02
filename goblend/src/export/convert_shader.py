@@ -9,6 +9,8 @@ from ..log import log
 
 fragment_code = ""
 structs_code = ""
+vertex_code = ""
+globals_code = ""
 
 added_structs = set()
 
@@ -20,8 +22,6 @@ next_num = 0
 is_constant = True
 group_nodes_stack = []
 visited = set()
-
-vertex_shader_needed = False
 
 uniform_vars = set()
 
@@ -52,6 +52,7 @@ def add_line(str, const, top=False):
             fragment_code += "\t" + str + "\n"
 
 
+# only call this after checking that the corresponding entry in special_vars does not exist yet
 def add_uv_line(name, uv_index):
     subtract_str = ""
     if not is_right_after_bake:
@@ -61,22 +62,36 @@ def add_uv_line(name, uv_index):
     elif uv_index == 1:
         add_line("vec2 " + name + " = vec2(UV2.x, " + subtract_str + "UV2.y);", True, True)
     else:
-        custom = "CUSTOM" + str((uv_index / 2) - 1)
+        custom_idx = str((uv_index // 2) - 1)
+        custom = "CUSTOM" + custom_idx
+        custom_var = "custom" + custom_idx
+        add_global_line("varying vec4 " + custom_var + ";")
+        add_vertex_line(custom_var + " = " + custom + ";")
         if uv_index % 2 == 0:
             add_line(
-                "vec2 " + name + " = vec2(" + custom + ".x, " + subtract_str + custom + ".y);",
-                True,
+                "vec2 " + name + " = vec2(" + custom_var + ".x, " + subtract_str + custom_var + ".y);",
+                False,
                 True,
             )
         else:
             add_line(
-                "vec2 " + name + " = vec2(" + custom + ".z, " + subtract_str + custom + ".w);",
-                True,
+                "vec2 " + name + " = vec2(" + custom_var + ".z, " + subtract_str + custom_var + ".w);",
+                False,
                 True,
             )
     if not "uv" in special_vars:
         special_vars["uv"] = {}
     special_vars["uv"][uv_index] = name
+
+
+def add_global_line(str):
+    global globals_code
+    globals_code += str + "\n"
+
+
+def add_vertex_line(str):
+    global vertex_code
+    vertex_code += "\t" + str + "\n"
 
 
 def add_struct(type, vars):
@@ -443,8 +458,10 @@ def init_tex_coord(node, uv_index):
                         var_name = create_var(node, output, DataTypes.VEC2)
                         add_uv_line(var_name, uv_index)
                 case "Object":
-                    global vertex_shader_needed
-                    vertex_shader_needed = True
+                    if not "vertex_local" in special_vars:
+                        add_global_line("varying vec3 vertex_local;")
+                        add_vertex_line("vertex_local = VERTEX;")
+                        special_vars["vertex_local"] = True
                     var_name = create_var(node, output, DataTypes.VEC3)
                     add_line(
                         "vec3 " + var_name + " = vec3(vertex_local.x, -vertex_local.z, vertex_local.y);",
@@ -1188,6 +1205,8 @@ def convert_to_godot_shader(
 ):
     global fragment_code
     global structs_code
+    global vertex_code
+    global globals_code
     global added_structs
     global nodes_to_vars
     global special_var_props
@@ -1195,7 +1214,6 @@ def convert_to_godot_shader(
     global is_constant
     global group_nodes_stack
     global visited
-    global vertex_shader_needed
     global uniform_vars
     global limit_normal_effect
     global obj
@@ -1207,6 +1225,8 @@ def convert_to_godot_shader(
     global separator
     fragment_code = ""
     structs_code = ""
+    vertex_code = ""
+    globals_code = ""
     added_structs = set()
     nodes_to_vars = dict()
     special_var_props = dict()
@@ -1214,7 +1234,6 @@ def convert_to_godot_shader(
     is_constant = True
     group_nodes_stack = []
     visited = set()
-    vertex_shader_needed = False
     uniform_vars = set()
 
     limit_normal_effect = limit_normal
@@ -1252,7 +1271,9 @@ def convert_to_godot_shader(
         uniforms.append([uniform[0], uniform[2]])  # name and linkTo
 
     code += structs_code + "\n"
-    if vertex_shader_needed:
-        code += "varying vec3 vertex_local;\n\nvoid vertex() {\n\tvertex_local = VERTEX;\n}\n\n"
+    if globals_code:
+        code += globals_code
+    if vertex_code:
+        code += "\nvoid vertex() {\n" + vertex_code + "}\n\n"
     code += "void fragment() {\n" + fragment_code + "}\n"
     return code, uniforms
