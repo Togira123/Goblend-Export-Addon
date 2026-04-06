@@ -16,7 +16,7 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
         props = scene.panel_props
         paths = get_config()["defaults"]["paths"].copy()
         if props.same_hierarchy_target.lower() != "default":
-            paths["same_hierarchy_target"] = props.same_hierarchy_target
+            paths["same_hierarchy_target"] = abs_path(props.same_hierarchy_target)
         if props.scene_save_path.lower() != "default":
             paths["scene_save_path"] = abs_path(props.scene_save_path)
 

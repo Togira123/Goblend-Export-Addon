@@ -149,18 +149,18 @@ func save_collision_shapes_externally(root: Node, path: String) -> void:
 			var dim_y_str := convert_to_rounded_float_str(shape.size.y)
 			var dim_z_str := convert_to_rounded_float_str(shape.size.z)
 			var shape_name := dim_x_str + "_" + dim_y_str + "_" + dim_z_str
-			shape_base_path = path.path_join("boxshapes/")
-			shape_path = path.path_join("boxshapes/" + shape_name + ".tres")
+			shape_base_path = path.path_join("boxshapes")
+			shape_path = path.path_join("boxshapes".path_join(shape_name + ".tres"))
 		elif shape is CylinderShape3D:
 			var height_str := convert_to_rounded_float_str(shape.height)
 			var radius_str := convert_to_rounded_float_str(shape.radius)
 			var shape_name := height_str + "_" + radius_str
-			shape_base_path = path.path_join("cylshapes/")
-			shape_path = path.path_join("cylshapes/" + shape_name + ".tres")
+			shape_base_path = path.path_join("cylshapes")
+			shape_path = path.path_join("cylshapes".path_join(shape_name + ".tres"))
 		elif shape is SphereShape3D:
 			var radius_str := convert_to_rounded_float_str(shape.radius)
-			shape_base_path = path.path_join("sphereshapes/")
-			shape_path = path.path_join("sphereshapes/" + radius_str + ".tres")
+			shape_base_path = path.path_join("sphereshapes")
+			shape_path = path.path_join("sphereshapes".path_join(radius_str + ".tres"))
 		if shape_path != "":
 			if not ResourceLoader.exists(shape_path):
 				if not DirAccess.dir_exists_absolute(shape_base_path):

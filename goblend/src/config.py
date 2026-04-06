@@ -67,13 +67,10 @@ def get_collision_config(config):
 
 
 def abs_path(path):
-    if not path.endswith("/"):
-        path = path + "/"
     if path.startswith("res://"):
-        root_dir = get_root_dir()
-        if not root_dir.endswith("/"):
-            root_dir = root_dir + "/"
-        return path.replace("res://", root_dir, 1)
+        root_dir = os.path.join(os.path.normcase(get_root_dir()), "")
+        path = path.replace("res://", root_dir, 1)
+    path = os.path.join(os.path.normcase(path), "")
     return path
 
 

@@ -273,7 +273,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
 
         paths = config["defaults"]["paths"].copy()
         if props.same_hierarchy_target.lower() != "default":
-            paths["same_hierarchy_target"] = props.same_hierarchy_target
+            paths["same_hierarchy_target"] = abs_path(props.same_hierarchy_target)
 
         for path_key in save_path_keys:
             if getattr(props, path_key).lower() != "default":

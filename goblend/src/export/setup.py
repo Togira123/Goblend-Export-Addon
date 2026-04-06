@@ -215,7 +215,7 @@ def setup(texture_group_assignments, settings_for_godot):
         scene.render.image_settings.color_depth = "8"
 
     # create it again every time because it is deleted by the gdscript script
-    export_path_glb = os.path.join(root_dir, "tmp_goblend_export/")
+    export_path_glb = os.path.join(os.path.join(root_dir, "tmp_goblend_export"), "")
     os.makedirs(export_path_glb, exist_ok=True)
     log("Setup done")
 

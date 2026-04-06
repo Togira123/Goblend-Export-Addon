@@ -6,7 +6,7 @@ maintainer = "https://github.com/Togira123"
 name = "Goblend: Export to Godot"
 tagline = "Highly customizable export of complex scenes to Godot"
 type = "add-on"
-version = "2.0.1"
+version = "2.0.2"
 
 tags = ["Game Engine", "Import-Export"]
 
