@@ -18,6 +18,7 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	if not ext.has("scene_save_path"):
 		return ERR_INVALID_DATA
 
+	# all paths end with a separator
 	var material_save_path: String = ext["material_save_path"] if ext.has("material_save_path") else ""
 	var shader_save_path: String = ext["shader_save_path"] if ext.has("shader_save_path") else ""
 	var seen_mats := PackedStringArray()
@@ -41,7 +42,7 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	scene.pack(root)
 	if not DirAccess.dir_exists_absolute(scene_save_path):
 		DirAccess.make_dir_recursive_absolute(scene_save_path)
-	ResourceSaver.save(scene, scene_save_path.path_join(root.name + ".tscn"))
+	ResourceSaver.save(scene, scene_save_path + root.name + ".tscn")
 
 	return OK
 
@@ -54,13 +55,13 @@ func save_materials_externally(root: Node, path: String, seen_mats: PackedString
 			var mat_name := mat.resource_name
 			if mat_name == "":
 				continue
-			var mat_path := path.path_join(mat_name + ".tres")
+			var mat_path := path + mat_name + ".tres"
 			if not seen_mats.has(mat_name):
 				seen_mats.append(mat_name)
 				if mat is ShaderMaterial:
 					if shader_path != "":
 						# also save the shader separately
-						var shader_save_path := shader_path.path_join(mat_name + ".gdshader")
+						var shader_save_path := shader_path + mat_name + ".gdshader"
 						if not DirAccess.dir_exists_absolute(shader_path):
 							DirAccess.make_dir_recursive_absolute(shader_path)
 						var ok := ResourceSaver.save(mat.shader, shader_save_path, ResourceSaver.FLAG_CHANGE_PATH)
@@ -149,18 +150,18 @@ func save_collision_shapes_externally(root: Node, path: String) -> void:
 			var dim_y_str := convert_to_rounded_float_str(shape.size.y)
 			var dim_z_str := convert_to_rounded_float_str(shape.size.z)
 			var shape_name := dim_x_str + "_" + dim_y_str + "_" + dim_z_str
-			shape_base_path = path.path_join("boxshapes")
-			shape_path = path.path_join("boxshapes".path_join(shape_name + ".tres"))
+			shape_base_path = path + "boxshapes/"
+			shape_path = shape_base_path + shape_name + ".tres"
 		elif shape is CylinderShape3D:
 			var height_str := convert_to_rounded_float_str(shape.height)
 			var radius_str := convert_to_rounded_float_str(shape.radius)
 			var shape_name := height_str + "_" + radius_str
-			shape_base_path = path.path_join("cylshapes")
-			shape_path = path.path_join("cylshapes".path_join(shape_name + ".tres"))
+			shape_base_path = path + "cylshapes/"
+			shape_path = shape_base_path + shape_name + ".tres"
 		elif shape is SphereShape3D:
 			var radius_str := convert_to_rounded_float_str(shape.radius)
-			shape_base_path = path.path_join("sphereshapes")
-			shape_path = path.path_join("sphereshapes".path_join(radius_str + ".tres"))
+			shape_base_path = path + "sphereshapes/"
+			shape_path = shape_base_path + radius_str + ".tres"
 		if shape_path != "":
 			if not ResourceLoader.exists(shape_path):
 				if not DirAccess.dir_exists_absolute(shape_base_path):
@@ -191,7 +192,7 @@ func save_meshes_externally(root: Node, path: String) -> void:
 		return
 	if root is MeshInstance3D:
 		var mesh: Mesh = root.mesh
-		var mesh_path := path.path_join(mesh.resource_name + ".res")
+		var mesh_path := path + mesh.resource_name + ".res"
 		if not DirAccess.dir_exists_absolute(path):
 			DirAccess.make_dir_recursive_absolute(path)
 		var ok := ResourceSaver.save(mesh, mesh_path, ResourceSaver.FLAG_CHANGE_PATH)
