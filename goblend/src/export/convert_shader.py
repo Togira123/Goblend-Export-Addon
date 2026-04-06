@@ -840,7 +840,7 @@ def init_uv_map(node, uv_index):
     else:
         uv = create_var(node, node.outputs[0], DataTypes.VEC2)
         add_uv_line(uv, uv_index, True)
-        add_prop_to_var(node, node.outputs[0], "is_uv_value", True)
+    add_prop_to_var(node, node.outputs[0], "is_uv_value", True)
 
 
 def init_bsdf_principled(node):
