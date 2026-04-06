@@ -37,7 +37,8 @@ class glTF2ExportUserExtension:
             _gather_node_hook(self, gltf2_object, blender_object)
 
     def gather_gltf_hook(self, _active_scene_idx, _scenes, animations, _export_settings):
-        _gather_gltf_hook(self, animations)
+        if bpy.context.scene.panel_props.gltf_extension.is_exporting_with_goblend:
+            _gather_gltf_hook(self, animations)
 
 
 def _init(self):
