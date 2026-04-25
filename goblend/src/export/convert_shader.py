@@ -502,56 +502,100 @@ def init_math(node):
 
     reset_is_constant()
 
-    def line_two_in(node, op):
+    def line_two_in(node, op, ind1=0, ind2=1, str1=None, str2=None, is_inline=False):
         expr = (
-            get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            (
+                ("(" + str1 + ")")
+                if str1 != None
+                else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT)
+            )
             + " "
             + op
             + " "
-            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            + (
+                ("(" + str2 + ")")
+                if str2 != None
+                else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.FLOAT)
+            )
         )
-        if op == ">" or op == "<":
-            expr = "float(" + expr + ")"
+        if is_inline:
+            return expr
         if use_clamp:
             expr = "clamp(" + expr + ", 0.0, 1.0)"
         return "float " + var_name + " = " + expr
 
-    def just_fn(node, ind, fn):
-        return fn + "(" + get_casted_var_or_constant(node, node.inputs[ind], DataTypes.FLOAT) + ")"
-
-    def one_param_fn(node, fn):
-        expr = just_fn(node, 0, fn)
-        if use_clamp:
-            expr = "clamp(" + expr + ", 0.0, 1.0)"
-        return "float " + var_name + " = " + expr
-
-    def two_param_fn(node, fn):
+    def one_param_fn(node, fn, ind1=0, str1=None, is_inline=False):
         expr = (
             fn
             + "("
-            + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
-            + ", "
-            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT))
             + ")"
         )
+        if is_inline:
+            return expr
         if use_clamp:
             expr = "clamp(" + expr + ", 0.0, 1.0)"
         return "float " + var_name + " = " + expr
 
-    def three_param_fn(node, fn):
+    def two_param_fn(node, fn, ind1=0, ind2=1, str1=None, str2=None, is_inline=False):
         expr = (
             fn
             + "("
-            + get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT))
             + ", "
-            + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
-            + ", "
-            + get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
+            + (str2 if str2 != None else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.FLOAT))
             + ")"
         )
+        if is_inline:
+            return expr
         if use_clamp:
             expr = "clamp(" + expr + ", 0.0, 1.0)"
         return "float " + var_name + " = " + expr
+
+    def three_param_fn(node, fn, ind1=0, ind2=1, ind3=2, str1=None, str2=None, str3=None, is_inline=False):
+        expr = (
+            fn
+            + "("
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT))
+            + ", "
+            + (str2 if str2 != None else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.FLOAT))
+            + ", "
+            + (str3 if str3 != None else get_casted_var_or_constant(node, node.inputs[ind3], DataTypes.FLOAT))
+            + ")"
+        )
+        if is_inline:
+            return expr
+        if use_clamp:
+            expr = "clamp(" + expr + ", 0.0, 1.0)"
+        return "float " + var_name + " = " + expr
+
+    def ternary(node, ind1=0, ind2=1, ind3=2, str1=None, str2=None, str3=None, is_inline=False):
+        expr = (
+            (
+                ("(" + str1 + ")")
+                if str1 != None
+                else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT)
+            )
+            + " ? "
+            + (
+                ("(" + str2 + ")")
+                if str2 != None
+                else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.FLOAT)
+            )
+            + " : "
+            + (
+                ("(" + str3 + ")")
+                if str3 != None
+                else get_casted_var_or_constant(node, node.inputs[ind3], DataTypes.FLOAT)
+            )
+        )
+        if is_inline:
+            return expr
+        if use_clamp:
+            expr = "clamp(" + expr + ", 0.0, 1.0)"
+        return "float " + var_name + " = " + expr
+
+    add_semicolon = True
 
     match node.operation:
         case "ADD":
@@ -567,10 +611,14 @@ def init_math(node):
         case "POWER":
             line = two_param_fn(node, "pow")
         case "LOGARITHM":
-            expr = just_fn(node, "log2") + " / " + just_fn(node, 1, "log2")
-            if use_clamp:
-                expr = "clamp(" + expr + ", 0.0, 1.0)"
-            line = "float " + var_name + " = " + expr
+            line = line_two_in(
+                node,
+                "/",
+                None,
+                None,
+                one_param_fn(node, "log2", is_inline=True),
+                one_param_fn(node, "log2", 1, is_inline=True),
+            )
         case "SQRT":
             line = one_param_fn(node, "sqrt")
         case "INVERSE_SQRT":
@@ -584,14 +632,119 @@ def init_math(node):
         case "MAXIMUM":
             line = two_param_fn(node, "max")
         case "LESS_THAN":
-            line = line_two_in(node, "<")
-            # line = two_param_fn(node, "float(lessThan") + ")"  # need to cast bool to float
+            line = ternary(node, None, None, None, line_two_in(node, "<", is_inline=True), "1.0", "0.0")
         case "GREATER_THAN":
-            line = line_two_in(node, ">")
-            # line = two_param_fn(node, "float(greaterThan") + ")"  # need to cast bool to float
+            line = ternary(node, None, None, None, line_two_in(node, ">", is_inline=True), "1.0", "0.0")
         case "SIGN":
             line = one_param_fn(node, "sign")
-        # leaving out COMPARE, SMOOTH_MIN and SMOOTH_MAX for now
+
+        # smooth min blender source code (https://projects.blender.org/blender/blender/src/commit/39dbd17e92f41925011ae9b427eae474e81c5f6e/intern/cycles/util/math_base.h#L450):
+        # params are a, b, k
+        # if (k != 0.0f) {
+        #   const float h = fmaxf(k - fabsf(a - b), 0.0f) / k;
+        #   return fminf(a, b) - h * h * h * k * (1.0f / 6.0f);
+        # }
+        # return fminf(a, b);
+
+        # smooth_max is same as smooth_min but a, b and result negated
+        case "SMOOTH_MIN" | "SMOOTH_MAX":
+            add_semicolon = False
+            tmp_var_name = create_var(node, None, DataTypes.FLOAT)
+            a_minus_b = (
+                get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+                + " - "
+                + get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            )
+            a_negated = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+            b_negated = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+            if node.operation == "SMOOTH_MAX":
+                a_minus_b = "-(" + a_minus_b + ")"
+                a_negated = "-(" + a_negated + ")"
+                b_negated = "-(" + b_negated + ")"
+            line = "float " + var_name + ";\n"
+            line += "\tif (" + line_two_in(node, "!=", 2, None, None, "0.0", True) + ") {\n"
+            line += (
+                "\t\tfloat "
+                + tmp_var_name
+                + " = "
+                + line_two_in(
+                    node,
+                    "/",
+                    None,
+                    2,
+                    two_param_fn(
+                        node,
+                        "max",
+                        None,
+                        None,
+                        line_two_in(
+                            node,
+                            "-",
+                            2,
+                            None,
+                            None,
+                            one_param_fn(node, "abs", None, a_minus_b, True),
+                            True,
+                        ),
+                        "0.0",
+                        True,
+                    ),
+                    None,
+                    True,
+                )
+                + ";\n\t\t"
+            )
+            line += (
+                var_name
+                + " = "
+                + line_two_in(
+                    node,
+                    "-",
+                    None,
+                    None,
+                    two_param_fn(node, "min", None, None, a_negated, b_negated, True),
+                    tmp_var_name
+                    + " * "
+                    + tmp_var_name
+                    + " * "
+                    + tmp_var_name
+                    + " * "
+                    + line_two_in(node, "*", 2, None, None, "(1.0 / 6.0)", True),
+                    True,
+                )
+                + ";\n\t} else {\n\t\t"
+                + var_name
+                + " = "
+                + two_param_fn(node, "min", None, None, a_negated, b_negated, True)
+                + ";\n\t}"
+            )
+        case "COMPARE":
+            # blender source code: ((Value1 == Value2) || (abs(Value1 - Value2) <= max(Value3, 1e-5))) ? 1.0 : 0.0;
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(
+                    node,
+                    "||",
+                    None,
+                    None,
+                    "(" + line_two_in(node, "==", is_inline=True) + ")",
+                    line_two_in(
+                        node,
+                        "<=",
+                        None,
+                        None,
+                        one_param_fn(node, "abs", None, line_two_in(node, "-", is_inline=True), True),
+                        two_param_fn(node, "max", 2, None, None, "1e-5", True),
+                        True,
+                    ),
+                    True,
+                ),
+                "1.0",
+                "0.0",
+            )
         case "ROUND":
             line = one_param_fn(node, "round")
         case "FLOOR":
@@ -603,10 +756,113 @@ def init_math(node):
         case "FRACT":
             line = one_param_fn(node, "fract")
         case "MODULO":
-            line = one_param_fn(node, "trunc(mod") + ")"
+            line = two_param_fn(node, "trunc(mod") + ")"
         case "FLOORED_MODULO":
-            line = one_param_fn(node, "floor(mod") + ")"
-        # leaving out WRAP, SNAP and PINGPONG for now
+            line = two_param_fn(node, "floor(mod") + ")"
+        # blender source code:
+        # float range = max - min;
+        # return (range != 0.0) ? value - (range * floor((value - min) / range)) : min;
+        case "WRAP":
+            tmp_var_name = create_var(node, None, DataTypes.FLOAT)
+            line = "float " + tmp_var_name + " = " + line_two_in(node, "-", 1, 2, is_inline=True) + ";\n\t"
+            cond = line_two_in(node, "!=", None, None, tmp_var_name, "0.0", True)
+            expr1 = line_two_in(
+                node,
+                "-",
+                0,
+                None,
+                None,
+                line_two_in(
+                    node,
+                    "*",
+                    None,
+                    None,
+                    tmp_var_name,
+                    one_param_fn(
+                        node,
+                        "floor",
+                        None,
+                        line_two_in(
+                            node, "/", None, None, line_two_in(node, "-", 0, 2, is_inline=True), tmp_var_name, True
+                        ),
+                        True,
+                    ),
+                    True,
+                ),
+                True,
+            )
+            expr2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
+            line += ternary(node, None, None, None, cond, expr1, expr2)
+        # blender source code: floor(safe_divide(a, b)) * b;
+        case "SNAP":
+            line = line_two_in(
+                node,
+                "*",
+                None,
+                1,
+                one_param_fn(
+                    node,
+                    "floor",
+                    None,
+                    ternary(
+                        node,
+                        None,
+                        None,
+                        None,
+                        line_two_in(node, "!=", 1, None, None, "0.0", True),
+                        line_two_in(node, "/", is_inline=True),
+                        "0.0",
+                        is_inline=True,
+                    ),
+                    True,
+                ),
+            )
+        # blender source code: (b != 0.0) ? abs(fract((a - b) / (b * 2.0)) * b * 2.0 - b) : 0.0;
+        case "PINGPONG":
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "!=", 1, None, None, "0.0", True),
+                one_param_fn(
+                    node,
+                    "abs",
+                    None,
+                    line_two_in(
+                        node,
+                        "-",
+                        None,
+                        1,
+                        line_two_in(
+                            node,
+                            "*",
+                            None,
+                            None,
+                            one_param_fn(
+                                node,
+                                "fract",
+                                None,
+                                line_two_in(
+                                    node,
+                                    "/",
+                                    None,
+                                    None,
+                                    line_two_in(node, "-", is_inline=True),
+                                    line_two_in(node, "*", 1, None, None, "2.0", True),
+                                    True,
+                                ),
+                                True,
+                            ),
+                            line_two_in(node, "*", 1, None, None, "2.0", True),
+                            True,
+                        ),
+                        is_inline=True,
+                    ),
+                    True,
+                ),
+                "0.0",
+            )
         case "SINE":
             line = one_param_fn(node, "sin")
         case "COSINE":
@@ -619,7 +875,8 @@ def init_math(node):
             line = one_param_fn(node, "acos")
         case "ARCTANGENT":
             line = one_param_fn(node, "atan")
-        # leaving out ARCTAN2 for now
+        case "ARCTAN2":
+            line = two_param_fn(node, "atan")
         case "SINH":
             line = one_param_fn(node, "sinh")
         case "COSH":
@@ -633,7 +890,7 @@ def init_math(node):
         case _:
             raise UnsupportedSocket(node, node.operation)
 
-    add_line(line + ";", is_constant)
+    add_line(line + (";" if add_semicolon else ""), is_constant)
 
 
 def init_mapping(node):
