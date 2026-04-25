@@ -620,9 +620,25 @@ def init_math(node):
                 one_param_fn(node, "log2", 1, is_inline=True),
             )
         case "SQRT":
-            line = one_param_fn(node, "sqrt")
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "<=", 0, None, None, "0.0", True),
+                "0.0",
+                one_param_fn(node, "sqrt", is_inline=True),
+            )
         case "INVERSE_SQRT":
-            line = one_param_fn(node, "inversesqrt")
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "<=", 0, None, None, "0.0", True),
+                "0.0",
+                one_param_fn(node, "inversesqrt", is_inline=True),
+            )
         case "ABSOLUTE":
             line = one_param_fn(node, "abs")
         case "EXPONENT":
@@ -730,7 +746,7 @@ def init_math(node):
                     "||",
                     None,
                     None,
-                    "(" + line_two_in(node, "==", is_inline=True) + ")",
+                    line_two_in(node, "==", is_inline=True),
                     line_two_in(
                         node,
                         "<=",
@@ -756,9 +772,40 @@ def init_math(node):
         case "FRACT":
             line = one_param_fn(node, "fract")
         case "MODULO":
-            line = two_param_fn(node, "trunc(mod") + ")"
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "!=", 1, None, None, "0.0", True),
+                line_two_in(
+                    node,
+                    "-",
+                    0,
+                    None,
+                    None,
+                    line_two_in(
+                        node,
+                        "*",
+                        None,
+                        1,
+                        one_param_fn(node, "trunc", None, line_two_in(node, "/", is_inline=True), True),
+                        is_inline=True,
+                    ),
+                    True,
+                ),
+                "0.0",
+            )
         case "FLOORED_MODULO":
-            line = two_param_fn(node, "floor(mod") + ")"
+            line = ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "!=", 1, None, None, "0.0", True),
+                two_param_fn(node, "mod", is_inline=True),
+                "0.0",
+            )
         # blender source code:
         # float range = max - min;
         # return (range != 0.0) ? value - (range * floor((value - min) / range)) : min;
@@ -870,9 +917,13 @@ def init_math(node):
         case "TANGENT":
             line = one_param_fn(node, "tan")
         case "ARCSINE":
-            line = one_param_fn(node, "asin")
+            line = one_param_fn(
+                node, "asin", None, three_param_fn(node, "clamp", 0, None, None, None, "-1.0", "1.0", True)
+            )
         case "ARCCOSINE":
-            line = one_param_fn(node, "acos")
+            line = one_param_fn(
+                node, "acos", None, three_param_fn(node, "clamp", 0, None, None, None, "-1.0", "1.0", True)
+            )
         case "ARCTANGENT":
             line = one_param_fn(node, "atan")
         case "ARCTAN2":
