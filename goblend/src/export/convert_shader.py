@@ -838,8 +838,7 @@ def init_math(node):
                 ),
                 True,
             )
-            expr2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
-            line += ternary(node, None, None, None, cond, expr1, expr2)
+            line += ternary(node, None, None, 2, cond, expr1)
         # blender source code: floor(safe_divide(a, b)) * b;
         case "SNAP":
             line = line_two_in(
@@ -941,6 +940,386 @@ def init_math(node):
         case _:
             raise UnsupportedSocket(node, node.operation)
 
+    add_line(line + (";" if add_semicolon else ""), is_constant)
+
+
+def init_vector_math(node):
+    line = ""
+    var_str = "vec3 "
+    var_name = ""
+    match node.operation:
+        case "DOT_PRODUCT" | "DISTANCE" | "LENGTH":
+            var_str = "float "
+            var_name = create_var(node, node.outputs.get("Value"), DataTypes.FLOAT)
+        case _:
+            var_name = create_var(node, node.outputs.get("Vector"), DataTypes.VEC3)
+
+    reset_is_constant()
+
+    def line_two_in(
+        node,
+        op,
+        ind1=0,
+        ind2=1,
+        str1=None,
+        str2=None,
+        snd_arg_data_type=DataTypes.VEC3,
+        is_inline=False,
+    ):
+        expr = (
+            (
+                ("(" + str1 + ")")
+                if str1 != None
+                else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.VEC3)
+            )
+            + " "
+            + op
+            + " "
+            + (
+                ("(" + str2 + ")")
+                if str2 != None
+                else get_casted_var_or_constant(node, node.inputs[ind2], snd_arg_data_type)
+            )
+        )
+        if is_inline:
+            return expr
+        return var_str + var_name + " = " + expr
+
+    def one_param_fn(node, fn, ind1=0, str1=None, is_inline=False):
+        expr = (
+            fn
+            + "("
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.VEC3))
+            + ")"
+        )
+        if is_inline:
+            return expr
+        return var_str + var_name + " = " + expr
+
+    def two_param_fn(node, fn, ind1=0, ind2=1, str1=None, str2=None, is_inline=False):
+        expr = (
+            fn
+            + "("
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.VEC3))
+            + ", "
+            + (str2 if str2 != None else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.VEC3))
+            + ")"
+        )
+        if is_inline:
+            return expr
+        return var_str + var_name + " = " + expr
+
+    def three_param_fn(
+        node,
+        fn,
+        ind1=0,
+        ind2=1,
+        ind3=2,
+        str1=None,
+        str2=None,
+        str3=None,
+        third_arg_data_type=DataTypes.VEC3,
+        is_inline=False,
+    ):
+        expr = (
+            fn
+            + "("
+            + (str1 if str1 != None else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.VEC3))
+            + ", "
+            + (str2 if str2 != None else get_casted_var_or_constant(node, node.inputs[ind2], DataTypes.VEC3))
+            + ", "
+            + (str3 if str3 != None else get_casted_var_or_constant(node, node.inputs[ind3], third_arg_data_type))
+            + ")"
+        )
+        if is_inline:
+            return expr
+        return var_str + var_name + " = " + expr
+
+    def ternary(
+        node, ind1=0, ind2=1, ind3=2, str1=None, str2=None, str3=None, ret_type=DataTypes.FLOAT, is_inline=False
+    ):
+        expr = (
+            (
+                ("(" + str1 + ")")
+                if str1 != None
+                else get_casted_var_or_constant(node, node.inputs[ind1], DataTypes.FLOAT)
+            )
+            + " ? "
+            + (("(" + str2 + ")") if str2 != None else get_casted_var_or_constant(node, node.inputs[ind2], ret_type))
+            + " : "
+            + (("(" + str3 + ")") if str3 != None else get_casted_var_or_constant(node, node.inputs[ind3], ret_type))
+        )
+        if is_inline:
+            return expr
+        if ret_type == DataTypes.FLOAT:
+            return "float " + var_name + " = " + expr
+        else:
+            return "vec3 " + var_name + " = " + expr
+
+    add_semicolon = True
+
+    match node.operation:
+        case "ADD":
+            line = line_two_in(node, "+")
+        case "SUBTRACT":
+            line = line_two_in(node, "-")
+        case "MULTIPLY":
+            line = line_two_in(node, "*")
+        case "DIVIDE":
+            line = line_two_in(node, "/")
+        case "MULTIPLY_ADD":
+            line = three_param_fn(node, "fma")
+        case "CROSS_PRODUCT":
+            line = two_param_fn(node, "cross")
+        case "PROJECT":
+            tmp_var_name = create_var(node, None, DataTypes.FLOAT)
+            line = "float " + tmp_var_name + " = " + two_param_fn(node, "dot", 1, 1, is_inline=True) + ";\n\t"
+            line += ternary(
+                node,
+                None,
+                None,
+                None,
+                line_two_in(node, "!=", None, None, tmp_var_name, "0.0", is_inline=True),
+                line_two_in(
+                    node,
+                    "*",
+                    None,
+                    1,
+                    line_two_in(
+                        node, "/", None, None, two_param_fn(node, "dot", is_inline=True), tmp_var_name, is_inline=True
+                    ),
+                    is_inline=True,
+                ),
+                one_param_fn(node, "vec3", None, "0.0", True),
+                DataTypes.VEC3,
+            )
+        case "REFLECT":
+            line = two_param_fn(node, "reflect", 0, None, None, one_param_fn(node, "normalize", 1, is_inline=True))
+        case "REFRACT":
+            line = three_param_fn(
+                node,
+                "refract",
+                0,
+                None,
+                2,
+                None,
+                one_param_fn(node, "normalize", 1, is_inline=True),
+                third_arg_data_type=DataTypes.FLOAT,
+            )
+        case "FACEFORWARD":
+            line = three_param_fn(node, "faceforward")
+        case "DOT_PRODUCT":
+            line = two_param_fn(node, "dot")
+        case "DISTANCE":
+            line = two_param_fn(node, "distance")
+        case "LENGTH":
+            line = one_param_fn(node, "length")
+        case "SCALE":
+            line = line_two_in(node, "*", snd_arg_data_type=DataTypes.FLOAT)
+        case "NORMALIZE":
+            line = one_param_fn(node, "normalize")
+        case "ABSOLUTE":
+            line = one_param_fn(node, "abs")
+        case "POWER":
+            line = two_param_fn(node, "pow")
+        case "SIGN":
+            line = one_param_fn(node, "sign")
+        case "MINIMUM":
+            line = two_param_fn(node, "min")
+        case "MAXIMUM":
+            line = two_param_fn(node, "max")
+        case "ROUND":
+            line = one_param_fn(node, "round")
+        case "FLOOR":
+            line = one_param_fn(node, "floor")
+        case "CEIL":
+            line = one_param_fn(node, "ceil")
+        case "FRACTION":
+            line = one_param_fn(node, "fract")
+        case "MODULO":
+            # we have to separate into each coordinate because we have to check for divisions by 0
+            x_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".x"
+            y_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".y"
+            z_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".z"
+            x_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".x"
+            y_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".y"
+            z_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".z"
+
+            def mod_one_coord(coord_0, coord_1):
+                return ternary(
+                    node,
+                    None,
+                    None,
+                    None,
+                    line_two_in(node, "!=", None, None, coord_1, "0.0", is_inline=True),
+                    line_two_in(
+                        node,
+                        "-",
+                        None,
+                        None,
+                        coord_0,
+                        line_two_in(
+                            node,
+                            "*",
+                            None,
+                            None,
+                            one_param_fn(
+                                node,
+                                "trunc",
+                                None,
+                                line_two_in(node, "/", None, None, coord_0, coord_1, is_inline=True),
+                                True,
+                            ),
+                            coord_1,
+                            is_inline=True,
+                        ),
+                        is_inline=True,
+                    ),
+                    "0.0",
+                    is_inline=True,
+                )
+
+            line = three_param_fn(
+                node,
+                "vec3",
+                None,
+                None,
+                None,
+                mod_one_coord(x_coord_0, x_coord_1),
+                mod_one_coord(y_coord_0, y_coord_1),
+                mod_one_coord(z_coord_0, z_coord_1),
+            )
+        case "WRAP":
+            # we have to separate into each coordinate because we have to check for divisions by 0
+            x_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".x"
+            y_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".y"
+            z_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".z"
+            x_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".x"
+            y_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".y"
+            z_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".z"
+            x_coord_2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.VEC3) + ".x"
+            y_coord_2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.VEC3) + ".y"
+            z_coord_2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.VEC3) + ".z"
+            tmp_var_name_x = create_var(node, None, DataTypes.FLOAT)
+            tmp_var_name_y = create_var(node, None, DataTypes.FLOAT)
+            tmp_var_name_z = create_var(node, None, DataTypes.FLOAT)
+            line = (
+                "float "
+                + tmp_var_name_x
+                + " = "
+                + line_two_in(node, "-", None, None, x_coord_1, x_coord_2, is_inline=True)
+                + ";\n\t"
+            )
+            line += (
+                "float "
+                + tmp_var_name_y
+                + " = "
+                + line_two_in(node, "-", None, None, y_coord_1, y_coord_2, is_inline=True)
+                + ";\n\t"
+            )
+            line += (
+                "float "
+                + tmp_var_name_z
+                + " = "
+                + line_two_in(node, "-", None, None, z_coord_1, z_coord_2, is_inline=True)
+                + ";\n\t"
+            )
+
+            def wrap_one_coord(tmp_var_name, coord_0, coord_2):
+                cond = line_two_in(node, "!=", None, None, tmp_var_name, "0.0", is_inline=True)
+                expr1 = line_two_in(
+                    node,
+                    "-",
+                    None,
+                    None,
+                    coord_0,
+                    line_two_in(
+                        node,
+                        "*",
+                        None,
+                        None,
+                        tmp_var_name,
+                        one_param_fn(
+                            node,
+                            "floor",
+                            None,
+                            line_two_in(
+                                node,
+                                "/",
+                                None,
+                                None,
+                                line_two_in(node, "-", None, None, coord_0, coord_2, is_inline=True),
+                                tmp_var_name,
+                                is_inline=True,
+                            ),
+                            is_inline=True,
+                        ),
+                        is_inline=True,
+                    ),
+                    is_inline=True,
+                )
+                return ternary(node, None, None, None, cond, expr1, coord_2, is_inline=True)
+
+            line += three_param_fn(
+                node,
+                "vec3",
+                None,
+                None,
+                None,
+                wrap_one_coord(tmp_var_name_x, x_coord_0, x_coord_2),
+                wrap_one_coord(tmp_var_name_y, y_coord_0, y_coord_2),
+                wrap_one_coord(tmp_var_name_z, z_coord_0, z_coord_2),
+            )
+        case "SNAP":
+            x_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".x"
+            y_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".y"
+            z_coord_0 = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3) + ".z"
+            x_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".x"
+            y_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".y"
+            z_coord_1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3) + ".z"
+
+            def wrap_one_coord(coord_0, coord_1):
+                return line_two_in(
+                    node,
+                    "*",
+                    None,
+                    None,
+                    one_param_fn(
+                        node,
+                        "floor",
+                        None,
+                        ternary(
+                            node,
+                            None,
+                            None,
+                            None,
+                            line_two_in(node, "!=", None, None, coord_1, "0.0", is_inline=True),
+                            line_two_in(node, "/", None, None, coord_0, coord_1, is_inline=True),
+                            "0.0",
+                            is_inline=True,
+                        ),
+                        True,
+                    ),
+                    coord_1,
+                    is_inline=True,
+                )
+
+            line = three_param_fn(
+                node,
+                "vec3",
+                None,
+                None,
+                None,
+                wrap_one_coord(x_coord_0, x_coord_1),
+                wrap_one_coord(y_coord_0, y_coord_1),
+                wrap_one_coord(z_coord_0, z_coord_1),
+            )
+        case "SINE":
+            line = one_param_fn(node, "sin")
+        case "COSINE":
+            line = one_param_fn(node, "cos")
+        case "TANGENT":
+            line = one_param_fn(node, "tan")
     add_line(line + (";" if add_semicolon else ""), is_constant)
 
 
@@ -1445,6 +1824,7 @@ def init_group_output(_node):
 supported_nodes = {
     "ShaderNodeTexCoord": init_tex_coord,
     "ShaderNodeMath": init_math,
+    "ShaderNodeVectorMath": init_vector_math,
     "ShaderNodeMapping": init_mapping,
     "ShaderNodeCombineColor": init_combine_color,
     "ShaderNodeCombineXYZ": init_combine_xyz,
