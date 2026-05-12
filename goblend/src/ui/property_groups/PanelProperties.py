@@ -208,4 +208,10 @@ class PanelProperties(bpy.types.PropertyGroup):
         default="BACK",
     )
 
+    process_linked_collections: bpy.props.BoolProperty(
+        name="Process Linked Collections",
+        description="Run Goblend for all linked collections recursively. The final scene in Godot will include linked collections regardless of this value, it is only about whether to re-export or use the existing scene files. Defaults to true. Only disable this if you know that all linked collections already exist as Godot scenes. Otherwise this will result in an error!",
+        default=True,
+    )
+
     gltf_extension: bpy.props.PointerProperty(type=glTFExtension)

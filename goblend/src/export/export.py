@@ -146,6 +146,7 @@ def export(
     texture_overrides,
     settings_for_godot,
     paths,
+    process_linked_collections,
 ):
     (
         objects,
@@ -157,7 +158,7 @@ def export(
         selected_objects,
         hidden_layer_collections,
         hidden_objects,
-    ) = setup(texture_groups, settings_for_godot)
+    ) = setup(texture_groups, settings_for_godot, process_linked_collections)
     (
         extra_shader_nodes,
         inputs,

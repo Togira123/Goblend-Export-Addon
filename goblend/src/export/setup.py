@@ -49,12 +49,12 @@ save_path_hierarchy_keys = [
 ]
 
 
-def find_objs_and_cols(root, found_col_objects, seen_libs):
+def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collections):
     collision_collection = None
     if root.name == "Collisions":
         collision_collection = root
     for child in root.children:
-        coll = find_objs_and_cols(child, found_col_objects, seen_libs)
+        coll = find_objs_and_cols(child, found_col_objects, seen_libs, process_linked_collections)
         if coll != None:
             collision_collection = coll
     for obj in root.objects:
@@ -80,17 +80,30 @@ def find_objs_and_cols(root, found_col_objects, seen_libs):
                 if not col.library.filepath in seen_libs:
                     log("Found Library: " + col.library.name)
                     seen_libs.add(col.library.filepath)
-                    subprocess.run(
-                        [
-                            blender_binary_path,
-                            "-b",
-                            "--addons",
-                            "goblend",
-                            library_blend_file,
-                            "--python-expr",
-                            "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()",
-                        ]
-                    )
+                    if process_linked_collections:
+                        subprocess.run(
+                            [
+                                blender_binary_path,
+                                "-b",
+                                "--addons",
+                                "goblend",
+                                library_blend_file,
+                                "--python-expr",
+                                "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()",
+                            ]
+                        )
+                    else:
+                        subprocess.run(
+                            [
+                                blender_binary_path,
+                                "-b",
+                                "--addons",
+                                "goblend",
+                                library_blend_file,
+                                "--python-expr",
+                                "import bpy; bpy.ops.scene.save_scene_in_tmp_file()",
+                            ]
+                        )
                 tmp_file_path = os.path.normcase(os.path.join(get_root_dir(), ".tmp.goblend"))
                 is_next = False
                 scene_path = None
@@ -169,7 +182,7 @@ def remove_godot_scene_objects(objects):
     return godot_scene_nodes
 
 
-def setup(texture_group_assignments, settings_for_godot):
+def setup(texture_group_assignments, settings_for_godot, process_linked_collections):
     log("Running export for: " + os.path.normcase(bpy.data.filepath))
 
     selected_objects = bpy.context.selected_objects.copy()
@@ -182,7 +195,9 @@ def setup(texture_group_assignments, settings_for_godot):
 
     bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
-    collision_collection = find_objs_and_cols(bpy.context.scene.collection, found_col_objects, seen_libs)
+    collision_collection = find_objs_and_cols(
+        bpy.context.scene.collection, found_col_objects, seen_libs, process_linked_collections
+    )
 
     for obj_name in settings_for_godot["godot_scenes"]:
         godot_scene = bpy.context.scene.panel_props.gltf_extension.godot_scenes.add()

@@ -356,6 +356,24 @@ def check_early_convert_to_shader(uv_map_override, settings_for_godot, objects):
     return seen_mat_names
 
 
+def write_tmp_file(paths):
+    root_dir = get_root_dir()
+
+    blend_path = os.path.normcase(bpy.data.filepath)
+    filename = os.path.basename(blend_path)
+
+    # use temp file for storing paths of child scenes
+    # will be read by by other instances of blender to figure out what scenes to link
+    tmp_file_path = os.path.normcase(os.path.join(root_dir, ".tmp.goblend"))
+    with open(tmp_file_path, "a") as tmp_file:
+        tmp_file.write(
+            os.path.normcase(bpy.data.filepath)
+            + "\n"
+            + os.path.join(paths["scene_save_path"], os.path.splitext(filename)[0])
+            + "\n"
+        )
+
+
 def handle_materials(
     uv_map_override, objects, paths, texture_groups, settings_for_godot, bake_margins, texture_dim, texture_overrides
 ):
@@ -373,24 +391,10 @@ def handle_materials(
     tex_node_to_separate_roughness_dict = {}
     tex_node_to_combine_roughness_dict = {}
 
-    root_dir = get_root_dir()
-
-    blend_path = os.path.normcase(bpy.data.filepath)
-    filename = os.path.basename(blend_path)
+    write_tmp_file(paths)
 
     for save_path in save_path_keys:
         setattr(scene.panel_props.gltf_extension.save_paths, save_path, os.path.normcase(paths[save_path]))
-
-    # use temp file for storing paths of child scenes
-    # will be read by by other instances of blender to figure out what scenes to link
-    tmp_file_path = os.path.normcase(os.path.join(root_dir, ".tmp.goblend"))
-    with open(tmp_file_path, "a") as tmp_file:
-        tmp_file.write(
-            os.path.normcase(bpy.data.filepath)
-            + "\n"
-            + os.path.join(paths["scene_save_path"], os.path.splitext(filename)[0])
-            + "\n"
-        )
 
     for obj in objects:
         if not prepare_object(obj):

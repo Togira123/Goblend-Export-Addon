@@ -68,6 +68,7 @@ from .ui.operators.RemoveGodotScenesSetting import SCENE_OT_RemoveGodotScenesSet
 from .ui.operators.RemoveLightSetting import SCENE_OT_RemoveLightSetting
 from .ui.operators.RemoveObjectSetting import SCENE_OT_RemoveObjectSetting
 from .ui.operators.RemoveMaterialSetting import SCENE_OT_RemoveMaterialSetting
+from .ui.operators.SaveSceneInTmpFile import SCENE_OT_SaveSceneInTmpFile
 from .ui.operators.SyncLights import SCENE_OT_SyncLights
 from .ui.panels.AnimationsPanel import SCENE_PT_AnimationsPanel
 from .ui.panels.CollisionsPanel import SCENE_PT_CollisionsPanel
@@ -148,6 +149,7 @@ classes = (
     SCENE_OT_RemoveGodotScenesSetting,
     SCENE_OT_AddLightsSetting,
     SCENE_OT_RemoveLightSetting,
+    SCENE_OT_SaveSceneInTmpFile,
     SCENE_PT_ExportPanel,
     SCENE_PT_ObjectsPanel,
     SCENE_PT_MaterialsPanel,

@@ -197,6 +197,8 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
             inner_col.operator("default_group_list.add_item", icon="ADD", text="")
             inner_col.operator("default_group_list.remove_item", icon="REMOVE", text="")
 
+        layout.prop(panel_props, "process_linked_collections")
+
         layout.separator()
 
         # export button
