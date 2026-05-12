@@ -197,12 +197,18 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
     shapes_dict = {}
     for shape in gltf_extension.collision_shapes:
         gltf2_scene.nodes.remove(self.blender_object_name_to_gltf_node[shape.object.name])
+        parent_type = None
+        if shape.parent_name in physics_body_types:
+            parent_type = physics_body_types[shape.parent_name]
+        else:
+            # the parent isn't its own physics body hence it is the type of the root
+            parent_type = physics_body_types[collisions_collection]
         shape_node = None
         if shape.type == "box":
             shape_node = _add_box_shape(
                 self,
                 shape.object,
-                physics_body_types[shape.parent_name] == "AREA",
+                parent_type == "AREA",
                 shape.dimensions[0],
                 shape.dimensions[1],
                 shape.dimensions[2],
@@ -211,19 +217,17 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
             shape_node = _add_cylinder_shape(
                 self,
                 shape.object,
-                physics_body_types[shape.parent_name] == "AREA",
+                parent_type == "AREA",
                 shape.radius,
                 shape.height,
             )
         elif shape.type == "sphere":
-            shape_node = _add_sphere_shape(
-                self, shape.object, physics_body_types[shape.parent_name] == "AREA", shape.radius
-            )
+            shape_node = _add_sphere_shape(self, shape.object, parent_type == "AREA", shape.radius)
         elif shape.type == "convcol":
             shape_node = _add_convex_shape(
                 self,
                 shape.object,
-                physics_body_types[shape.parent_name] == "AREA",
+                parent_type == "AREA",
                 self.blender_object_name_to_gltf_node[shape.object.name].mesh,
             )
         else:
@@ -244,7 +248,6 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
         if not physics_body.name in shapes_dict:
             # body has no shapes
             shapes_dict[physics_body.name] = []
-        physics_body_types[physics_body.name] = physics_body.type
         # place the collision shape centered in terms of origins of the shapes
         # unless it is the root node
         translation = (
