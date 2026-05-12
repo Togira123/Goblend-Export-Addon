@@ -65,6 +65,9 @@ def find_objs_and_cols(root, found_col_objects, seen_libs):
 
                 library_blend_file = os.path.normpath(os.path.abspath(bpy.path.abspath(col.library.filepath)))
 
+                if not bpy.context.view_layer.objects.active:
+                    # without an active object, the operator below will fail
+                    bpy.context.view_layer.objects.active = obj
                 bpy.ops.object.mode_set(mode="OBJECT")
                 bpy.ops.mesh.primitive_cube_add(location=obj.location, rotation=obj.rotation_euler)
 
