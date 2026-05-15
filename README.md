@@ -30,7 +30,6 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md) for guidelines.
 
 ## Issues
 
-There are no issue templates (yet).
 Feel free to create issues for bug reports, suggestions or feedback.
 Before reporting a bug, make sure that:
 
