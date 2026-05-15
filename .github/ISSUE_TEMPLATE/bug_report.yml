@@ -1,0 +1,67 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - Togira123
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: dropdown
+    id: version
+    attributes:
+      label: Goblend version
+      description: What version of Goblend are you running?
+      options:
+        - 2.0.2
+        - 2.0.1
+        - 2.0.0
+        - 1.0.2
+        - 1.0.1
+        - 1.0.0
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: OS
+    attributes:
+      label: What OS are you using?
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-repro
+    attributes:
+      label: Steps to reproduce and/or MRP (Minimal Reproduction Project)
+      description: For the MRP, please upload a single .zip file that includes a Godot project as well as the problematic .blend file(s).
+      placeholder: |
+        1.
+        2.
+        3.
+        ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output from your goblend.log file (found in your project root directory). This will be automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: true
+  - type: upload
+    id: screenshots
+    attributes:
+      label: Upload screenshots
+      description: If applicable, add screenshots to help explain your problem.
+    validations:
+      required: false
