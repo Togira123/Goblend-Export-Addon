@@ -204,6 +204,7 @@ def export(
         export_animation_mode="NLA_TRACKS",
         export_pointer_animation=True,
         export_convert_animation_pointer=True,
+        use_active_scene=True,
     )
 
     # import into godot
