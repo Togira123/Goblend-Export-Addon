@@ -23,14 +23,22 @@ from ..utils import get_root_dir
 from ..log import log
 
 
-def first_clean_up(
+def clean_up(
     objects,
     extra_shader_nodes,
     inputs,
     created_tex_nodes_per_mat_per_obj,
     old_meshes,
     orig_mod_per_obj,
+    images_created,
+    found_col_objects,
+    collision_objects,
+    export_path_glb,
+    selected_objects,
+    hidden_layer_collections,
+    hidden_objects,
 ):
+
     # deselect afterwards
     bpy.ops.object.select_all(action="DESELECT")
 
@@ -56,7 +64,9 @@ def first_clean_up(
     # reapply old meshes for every object
     for obj in objects:
         orig_name = obj.data.name
+        cur_mesh = obj.data
         obj.data = old_meshes[obj]
+        bpy.data.meshes.remove(cur_mesh)
         obj.data.name = orig_name
         # set object as active
         bpy.ops.object.select_all(action="DESELECT")
@@ -73,16 +83,7 @@ def first_clean_up(
                     for identifier, val in m["props"].items():
                         mod[identifier] = val
 
-
-def last_clean_up(
-    images_created,
-    found_col_objects,
-    collision_objects,
-    export_path_glb,
-    selected_objects,
-    hidden_layer_collections,
-    hidden_objects,
-):
+    # remove the tmp_goblend_export directory
     content = os.listdir(export_path_glb)
     for file in content:
         filepath = os.path.join(export_path_glb, file)
@@ -101,17 +102,15 @@ def last_clean_up(
         if os.path.isfile(tmp_file_path):
             os.remove(tmp_file_path)
 
-    for mesh in bpy.data.meshes:
-        if mesh.users == 0:
-            bpy.data.meshes.remove(mesh)
-
     # clear cached image data blocks
     for img in images_created:
         bpy.data.images.remove(img)
 
-    # remove extra cubes
+    # remove extra cubes that were created for linked collections
     for obj in found_col_objects:
+        mesh = obj.data
         bpy.data.objects.remove(obj)
+        bpy.data.meshes.remove(mesh)
 
     for val in collision_objects:
         obj = val[0]

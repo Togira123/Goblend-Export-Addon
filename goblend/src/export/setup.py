@@ -127,7 +127,7 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collec
 def get_objects_to_export(texture_groups):
     objects = []
     hidden_objects = set()
-    for obj in bpy.data.objects:
+    for obj in bpy.context.scene.objects:
         # only export object if it's a mesh, not hidden from rendering and not from a library
         if obj.type == "MESH" and not obj.hide_render and obj.library == None and not obj.name.endswith("__tmp_name"):
             if obj.hide_get():
@@ -166,7 +166,15 @@ def get_collision_objects(collision_collection, objects):
 
 
 def remove_godot_scene_objects(objects):
-    godot_scenes = bpy.data.collections.get("GodotScenes")
+    # this is much slower than a simple bpy.data.collections.get("GodotScenes"),
+    # but it only includes collections of the current scene
+    # it shouldn't matter too much with a low collection count
+    all_collections_in_scene = bpy.context.scene.collection.children_recursive
+    godot_scenes = None
+    for coll in all_collections_in_scene:
+        if coll.name == "GodotScenes":
+            godot_scenes = coll
+            break
     godot_scene_nodes = set()
     if not godot_scenes:
         return godot_scene_nodes

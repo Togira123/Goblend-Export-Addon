@@ -27,7 +27,15 @@ def is_godot_scene(self, obj):
     for item in scene.godot_scene_panel_props:
         if obj == item.obj:
             return False
-    godot_scenes = bpy.data.collections.get("GodotScenes")
+    # this is much slower than a simple bpy.data.collections.get("GodotScenes"),
+    # but it only includes collections of the current scene
+    # it shouldn't matter too much with a low collection count
+    all_collections_in_scene = bpy.context.scene.collection.children_recursive
+    godot_scenes = None
+    for coll in all_collections_in_scene:
+        if coll.name == "GodotScenes":
+            godot_scenes = coll
+            break
     if not godot_scenes:
         return False
     return obj.name in godot_scenes.objects

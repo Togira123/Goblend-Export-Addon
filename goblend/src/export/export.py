@@ -21,7 +21,7 @@ import os
 import subprocess
 
 from .handle_materials import handle_materials, check_convert_to_shader
-from .clean_up import first_clean_up, last_clean_up
+from .clean_up import clean_up
 from .setup import setup
 from ..utils import get_root_dir
 
@@ -131,7 +131,7 @@ def prep_for_export(
             g.value = group
 
     # finally also add lights
-    for obj in bpy.data.objects:
+    for obj in bpy.context.scene.objects:
         if obj.type == "LIGHT" and not obj.hide_render and obj.library == None:
             obj.hide_set(False)
             obj.select_set(True)
@@ -206,14 +206,16 @@ def export(
         export_convert_animation_pointer=True,
     )
 
-    first_clean_up(objects, extra_shader_nodes, inputs, created_tex_nodes_per_mat_per_obj, old_meshes, orig_mod_per_obj)
-
     # import into godot
-    root_dir = get_root_dir()
+    subprocess.run([godot_exec_path, "--path", get_root_dir(), "--headless", "--import"])
 
-    # this will also run post_import.gd which creates a copy of the project in a temporary folder
-    subprocess.run([godot_exec_path, "--path", root_dir, "--headless", "--import"])
-    last_clean_up(
+    clean_up(
+        objects,
+        extra_shader_nodes,
+        inputs,
+        created_tex_nodes_per_mat_per_obj,
+        old_meshes,
+        orig_mod_per_obj,
         images_created,
         found_col_objects,
         collision_objects,

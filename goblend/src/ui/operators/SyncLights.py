@@ -59,7 +59,7 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
             data = parse_scene(scene_path)
             scene.light_panel_props.clear()
             nodes = data["nodes"]
-            for obj in bpy.data.objects:
+            for obj in bpy.context.scene.objects:
                 if obj.type != "LIGHT":
                     continue
                 validated_obj_name = obj.name
