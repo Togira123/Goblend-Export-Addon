@@ -35,7 +35,7 @@ save_path_keys = [
     "mesh_save_path",
 ]
 
-save_path_uses_filename = [False, True, True, True, True, True, False, True]
+save_path_uses_scene_name = [False, True, True, True, True, True, False, True]
 
 save_path_hierarchy_keys = [
     "scene_use_same_hierarchy",
@@ -49,12 +49,12 @@ save_path_hierarchy_keys = [
 ]
 
 
-def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collections):
+def find_objs_and_cols(root, found_col_objects, seen_linked_collections, process_linked_collections):
     collision_collection = None
     if root.name == bpy.context.scene.panel_props.collision_collection:
         collision_collection = root
     for child in root.children:
-        coll = find_objs_and_cols(child, found_col_objects, seen_libs, process_linked_collections)
+        coll = find_objs_and_cols(child, found_col_objects, seen_linked_collections, process_linked_collections)
         if coll != None:
             collision_collection = coll
     for obj in root.objects:
@@ -77,9 +77,12 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collec
 
                 found_col_objects.append(cube)
 
-                if not col.library.filepath in seen_libs:
+                collection_name = col.name.replace("'", "\\'")
+                collection_identifier = col.library.filepath + collection_name
+
+                if not collection_identifier in seen_linked_collections:
                     log("Found Library: " + col.library.name)
-                    seen_libs.add(col.library.filepath)
+                    seen_linked_collections.add(collection_identifier)
                     if process_linked_collections:
                         subprocess.run(
                             [
@@ -89,7 +92,11 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collec
                                 "goblend",
                                 library_blend_file,
                                 "--python-expr",
-                                "import bpy; bpy.context.scene.is_root_scene = False; bpy.ops.scene.export_to_godot()",
+                                "import bpy; bpy.context.scene.is_root_scene = False; bpy.context.scene.panel_props.linked_collection_identifier = '"
+                                + collection_identifier
+                                + "'; bpy.context.scene.panel_props.collection_name = '"
+                                + collection_name
+                                + "'; bpy.ops.scene.export_to_godot()",
                             ]
                         )
                     else:
@@ -101,7 +108,11 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collec
                                 "goblend",
                                 library_blend_file,
                                 "--python-expr",
-                                "import bpy; bpy.ops.scene.save_scene_in_tmp_file()",
+                                "import bpy; bpy.context.scene.panel_props.linked_collection_identifier = '"
+                                + collection_identifier
+                                + "'; bpy.context.scene.panel_props.collection_name = '"
+                                + collection_name
+                                + "'; bpy.ops.scene.save_scene_in_tmp_file()",
                             ]
                         )
                 tmp_file_path = os.path.normcase(os.path.join(get_root_dir(), ".tmp.goblend"))
@@ -112,14 +123,20 @@ def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collec
                         if is_next:
                             scene_path = line.strip()
                             break
-                        if line.startswith(library_blend_file):
+                        if line.startswith(collection_identifier):
                             is_next = True
                 if scene_path:
                     godot_scene = bpy.context.scene.panel_props.gltf_extension.godot_scenes.add()
                     godot_scene.object_name = cube.name
                     godot_scene.scene_path = scene_path
                 else:
-                    log("Scene path not found for library: " + library_blend_file, "ERROR")
+                    log(
+                        "Scene path not found for library: "
+                        + library_blend_file
+                        + ", with collection identifier: "
+                        + collection_identifier,
+                        "ERROR",
+                    )
 
     return collision_collection
 
@@ -190,21 +207,38 @@ def remove_godot_scene_objects(objects):
     return godot_scene_nodes
 
 
-def setup(texture_group_assignments, settings_for_godot, process_linked_collections):
+def write_tmp_file(paths):
+    root_dir = get_root_dir()
+
+    # use temp file for storing paths of child scenes
+    # will be read by by other instances of blender to figure out what scenes to link
+    tmp_file_path = os.path.normcase(os.path.join(root_dir, ".tmp.goblend"))
+    with open(tmp_file_path, "a") as tmp_file:
+        tmp_file.write(
+            bpy.context.scene.panel_props.linked_collection_identifier
+            + "\n"
+            + os.path.join(paths["scene_save_path"], bpy.context.scene.panel_props.gltf_extension.scene_name)
+            + "\n"
+        )
+
+
+def setup(texture_group_assignments, settings_for_godot, process_linked_collections, paths):
     log("Running export for: " + os.path.normcase(bpy.data.filepath))
+
+    write_tmp_file(paths)
 
     selected_objects = bpy.context.selected_objects.copy()
 
     root_dir = get_root_dir()
 
-    seen_libs = set()
+    seen_linked_collections = set()
 
     found_col_objects = []
 
     bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
     collision_collection = find_objs_and_cols(
-        bpy.context.scene.collection, found_col_objects, seen_libs, process_linked_collections
+        bpy.context.scene.collection, found_col_objects, seen_linked_collections, process_linked_collections
     )
 
     for obj_name in settings_for_godot["godot_scenes"]:

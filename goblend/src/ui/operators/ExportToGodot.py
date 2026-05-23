@@ -23,7 +23,7 @@ import traceback
 
 from ...config import abs_path, get_config
 from ...export.export import export
-from ...export.setup import save_path_keys, save_path_hierarchy_keys, save_path_uses_filename
+from ...export.setup import save_path_keys, save_path_hierarchy_keys, save_path_uses_scene_name
 from ...log import log
 from .... import __package__ as base_package
 
@@ -37,6 +37,7 @@ class SCENE_OT_RootExportToGodot(bpy.types.Operator):
     def execute(self, context):
         log("------------ STARTING EXPORT ------------")
         context.scene.is_root_scene = True
+        context.scene.panel_props.linked_collection_identifier = "root_scene"
         bpy.ops.scene.export_to_godot()
         return {"FINISHED"}
 
@@ -76,8 +77,8 @@ def get_export_paths(config, props):
         if paths[hierarchy_key_array[idx]]:
             # append path
             path = os.path.join(os.path.normcase(path), hierarchy_path)
-        if save_path_uses_filename[idx]:
-            path = os.path.join(os.path.normcase(path), os.path.splitext(os.path.basename(blend_path))[0])
+        if save_path_uses_scene_name[idx]:
+            path = os.path.join(os.path.normcase(path), props.gltf_extension.scene_name)
         paths[save_path] = abs_path(path)
         idx += 1
 
@@ -110,6 +111,39 @@ def get_export_paths(config, props):
     return paths
 
 
+def set_scene_name(props):
+    stripped_scene_name = props.exported_scene_name.strip()
+    if len(stripped_scene_name) == 0:
+        blend_path = os.path.normcase(bpy.data.filepath)
+        filename = os.path.basename(blend_path)
+        props.gltf_extension.scene_name = os.path.splitext(filename)[0]
+    else:
+        props.gltf_extension.scene_name = stripped_scene_name
+
+
+def determine_correct_scene(context):
+    collection_name = context.scene.panel_props.collection_name
+    # check which scene the linked collection is in
+    # and make sure to make that scene active
+    for scene in bpy.data.scenes:
+        all_collections = scene.collection.children_recursive
+        for collection in all_collections:
+            if collection.name == collection_name:
+                if context.scene != scene:
+                    original_identifier = context.scene.panel_props.linked_collection_identifier
+                    # change scene
+                    if context.window:
+                        context.window.scene = scene
+                    else:
+                        for window in bpy.context.window_manager.windows:
+                            if window:
+                                window.scene = scene
+                                break
+                    context.scene.panel_props.linked_collection_identifier = original_identifier
+                    context.scene.is_root_scene = False
+                return
+
+
 class SCENE_OT_ExportToGodot(bpy.types.Operator):
     bl_idname = "scene.export_to_godot"
     bl_label = "Export to Godot"
@@ -117,6 +151,8 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        if not context.scene.is_root_scene:
+            determine_correct_scene(context)
         scene = context.scene
         props = scene.panel_props
         default_collision_props = scene.default_collision_panel_props
@@ -358,16 +394,11 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 else:
                     raise Exception("Unsupported type in light properties")
 
+        set_scene_name(props)
+
         paths = get_export_paths(config, props)
 
         try:
-            stripped_scene_name = props.exported_scene_name.strip()
-            if len(stripped_scene_name) == 0:
-                blend_path = os.path.normcase(bpy.data.filepath)
-                filename = os.path.basename(blend_path)
-                props.gltf_extension.scene_name = os.path.splitext(filename)[0]
-            else:
-                props.gltf_extension.scene_name = stripped_scene_name
             props.gltf_extension.is_exporting_with_goblend = True
             export(
                 addon_prefs.godot_file_path,

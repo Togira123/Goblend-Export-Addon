@@ -60,7 +60,11 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	scene.pack(root)
 	if not DirAccess.dir_exists_absolute(scene_save_path):
 		DirAccess.make_dir_recursive_absolute(scene_save_path)
-	ResourceSaver.save(scene, scene_save_path + root.name + ".tscn")
+	var ok := ResourceSaver.save(scene, scene_save_path + root.name + ".tscn")
+	if ok == OK:
+		Goblend.log_msg("Successfully saved scene at " + scene_save_path + root.name + ".tscn")
+	else:
+		Goblend.log_msg("Failed to save scene at " + scene_save_path + root.name + ".tscn", "WARNING")
 
 	return OK
 

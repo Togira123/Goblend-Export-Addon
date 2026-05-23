@@ -278,7 +278,7 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
         ):  # area node, set its trigger to all its collision shapes
             physics_body_node.extensions[omi_physics_body].extension["trigger"] = shapes_dict[physics_body.name]
         if physics_body_node.name == collisions_collection:
-            # rename the root node to the filename
+            # rename the root node to the scene name
             physics_body_node.name = gltf_extension.scene_name
             root_physics_body_node = physics_body_node
         # add node to the scene

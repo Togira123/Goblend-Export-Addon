@@ -160,7 +160,7 @@ def export(
         selected_objects,
         hidden_layer_collections,
         hidden_objects,
-    ) = setup(texture_groups, settings_for_godot, process_linked_collections)
+    ) = setup(texture_groups, settings_for_godot, process_linked_collections, paths)
     (
         extra_shader_nodes,
         inputs,

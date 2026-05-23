@@ -232,3 +232,12 @@ class PanelProperties(bpy.types.PropertyGroup):
     )
 
     gltf_extension: bpy.props.PointerProperty(type=glTFExtension)
+
+    # this is unique during one export amongst all linked collections (and hence scenes)
+    # it is used in the .tmp.goblend file to assign godot scene paths to linked collections.
+    # Is set by the parent blender file
+    linked_collection_identifier: bpy.props.StringProperty()
+
+    # the name of the collection that is linked by the parent scene
+    # not applicable to the root scene,
+    collection_name: bpy.props.StringProperty()

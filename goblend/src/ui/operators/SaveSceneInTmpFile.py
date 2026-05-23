@@ -18,9 +18,9 @@
 
 import bpy
 
-from .ExportToGodot import get_export_paths
+from .ExportToGodot import get_export_paths, determine_correct_scene, set_scene_name
 from ...config import get_config
-from ...export.handle_materials import write_tmp_file
+from ...export.setup import write_tmp_file
 
 
 class SCENE_OT_SaveSceneInTmpFile(bpy.types.Operator):
@@ -29,6 +29,8 @@ class SCENE_OT_SaveSceneInTmpFile(bpy.types.Operator):
     bl_description = "Saves the path of this scene in the .tmp.goblend file."
 
     def execute(self, context):
+        determine_correct_scene(context)
+        set_scene_name(context.scene.panel_props)
         paths = get_export_paths(get_config(), props=context.scene.panel_props)
 
         write_tmp_file(paths)
