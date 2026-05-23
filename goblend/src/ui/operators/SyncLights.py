@@ -51,9 +51,7 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
         if paths["scene_use_same_hierarchy"]:
             scene_path = abs_path(os.path.join(os.path.normcase(scene_path), hierarchy_path))
 
-        blend_path = os.path.normcase(bpy.data.filepath)
-        filename = os.path.basename(blend_path)
-        scene_path = os.path.join(scene_path, os.path.splitext(filename)[0]) + ".tscn"
+        scene_path = os.path.join(scene_path, context.scene.panel_props.gltf_extension.scene_name) + ".tscn"
 
         try:
             data = parse_scene(scene_path)

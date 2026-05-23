@@ -51,7 +51,7 @@ save_path_hierarchy_keys = [
 
 def find_objs_and_cols(root, found_col_objects, seen_libs, process_linked_collections):
     collision_collection = None
-    if root.name == "Collisions":
+    if root.name == bpy.context.scene.panel_props.collision_collection:
         collision_collection = root
     for child in root.children:
         coll = find_objs_and_cols(child, found_col_objects, seen_libs, process_linked_collections)
@@ -166,13 +166,13 @@ def get_collision_objects(collision_collection, objects):
 
 
 def remove_godot_scene_objects(objects):
-    # this is much slower than a simple bpy.data.collections.get("GodotScenes"),
+    # this is much slower than a simple bpy.data.collections.get("bpy.context.scene.panel_props.godot_scenes_collection"),
     # but it only includes collections of the current scene
     # it shouldn't matter too much with a low collection count
     all_collections_in_scene = bpy.context.scene.collection.children_recursive
     godot_scenes = None
     for coll in all_collections_in_scene:
-        if coll.name == "GodotScenes":
+        if coll.name == bpy.context.scene.panel_props.godot_scenes_collection:
             godot_scenes = coll
             break
     godot_scene_nodes = set()

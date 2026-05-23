@@ -29,13 +29,13 @@ def is_collision_collection(self, collection):
     existing = []
     for item in scene.collision_panel_props:
         existing.append(item.collection)
-    # this is much slower than a simple bpy.data.collections.get("Collisions"),
+    # this is much slower than a simple bpy.data.collections.get(bpy.context.scene.panel_props.collision_collection),
     # but it only includes collections of the current scene
     # it shouldn't matter too much with a low collection count
     all_collections_in_scene = scene.collection.children_recursive
     collision_collection = None
     for coll in all_collections_in_scene:
-        if coll.name == "Collisions":
+        if coll.name == bpy.context.scene.panel_props.collision_collection:
             collision_collection = coll
             break
     return (

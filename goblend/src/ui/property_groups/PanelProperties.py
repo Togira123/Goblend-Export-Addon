@@ -183,6 +183,23 @@ class PanelProperties(bpy.types.PropertyGroup):
         default="DEFAULT",
     )
 
+    exported_scene_name: bpy.props.StringProperty(
+        name="Exported Scene Name",
+        description="The name of the exported scene. Leave blank to use the default value which is the file name.",
+    )
+
+    collision_collection: bpy.props.StringProperty(
+        name="Collision Collection Name",
+        description="The name of the top collision collection. Case sensitive. Defaults to 'Collisions'.",
+        default="Collisions",
+    )
+
+    godot_scenes_collection: bpy.props.StringProperty(
+        name="Godot Scenes Collection Name",
+        description="The name of the collection containing references to existing Godot scenes. Case sensitive. Defaults to 'GodotScenes'.",
+        default="GodotScenes",
+    )
+
     texture_dim: bpy.props.IntVectorProperty(
         name="Dimensions",
         description="Dimensions of the generated texture",

@@ -84,7 +84,9 @@ def prep_for_export(
 
     if collision_collection != None:
         for sett in settings_for_godot["collisions"]:
-            added_root_node = added_root_node or sett["collection"].name == "Collisions"
+            added_root_node = (
+                added_root_node or sett["collection"].name == bpy.context.scene.panel_props.collision_collection
+            )
             physics_body = gltf_extension.physics_bodies.add()
             physics_body.name = sett["collection"].name
             physics_body.type = sett["type"]
@@ -118,7 +120,7 @@ def prep_for_export(
     # add root node if it does not exist yet
     if not added_root_node:
         root_physics_body = gltf_extension.physics_bodies.add()
-        root_physics_body.name = "Collisions"
+        root_physics_body.name = bpy.context.scene.panel_props.collision_collection
         root_physics_body.type = settings_for_godot["default_physics_type"]
         for layer in settings_for_godot["default_collision_layers"]:
             l = root_physics_body.layers.add()
@@ -178,9 +180,6 @@ def export(
         texture_overrides,
     )
 
-    blend_path = os.path.normcase(bpy.data.filepath)
-    filename = os.path.basename(blend_path)
-
     prep_for_export(
         objects,
         found_col_objects,
@@ -195,7 +194,7 @@ def export(
 
     # export, apply remaining modifiers
     bpy.ops.export_scene.gltf(
-        filepath=export_path_glb + os.path.splitext(filename)[0] + ".gltf",
+        filepath=export_path_glb + bpy.context.scene.panel_props.gltf_extension.scene_name + ".gltf",
         export_format="GLTF_SEPARATE",
         use_selection=True,
         export_lights=True,

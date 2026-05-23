@@ -34,4 +34,7 @@ class glTFExtension(bpy.types.PropertyGroup):
     # also includes linked collections, not just scenes in GodotScenes
     godot_scenes: bpy.props.CollectionProperty(type=glTFGodotScene)
 
+    # scene name
+    scene_name: bpy.props.StringProperty()
+
     is_exporting_with_goblend: bpy.props.BoolProperty(default=False)

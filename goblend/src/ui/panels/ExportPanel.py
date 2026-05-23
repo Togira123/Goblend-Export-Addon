@@ -117,6 +117,10 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
                 mesh_paths_panel_col.prop(panel_props, "mesh_save_path")
                 mesh_paths_panel_col.prop(panel_props, "mesh_use_same_hierarchy")
 
+        col.prop(panel_props, "exported_scene_name")
+        col.prop(panel_props, "collision_collection")
+        col.prop(panel_props, "godot_scenes_collection")
+
         col.label(text="Texture Dimensions")
         col.prop(panel_props, "texture_dim", text="")
 

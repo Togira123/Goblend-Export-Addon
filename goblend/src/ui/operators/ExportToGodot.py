@@ -361,6 +361,13 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         paths = get_export_paths(config, props)
 
         try:
+            stripped_scene_name = props.exported_scene_name.strip()
+            if len(stripped_scene_name) == 0:
+                blend_path = os.path.normcase(bpy.data.filepath)
+                filename = os.path.basename(blend_path)
+                props.gltf_extension.scene_name = os.path.splitext(filename)[0]
+            else:
+                props.gltf_extension.scene_name = stripped_scene_name
             props.gltf_extension.is_exporting_with_goblend = True
             export(
                 addon_prefs.godot_file_path,

@@ -32,8 +32,6 @@ goblend_animation = "EXT_goblend_animation"
 goblend_object = "EXT_goblend_object"
 godot_single_root = "GODOT_single_root"
 
-collisions_collection = "Collisions"
-
 
 # this class is special, it is used to add a gltf extension
 # it must be defined in the __init__.py file for it to work
@@ -133,6 +131,7 @@ def _gather_gltf_extensions_hook(self, gltf2_plan):
 
 def _gather_scene_hook(self, gltf2_scene, blender_scene):
     gltf_extension = blender_scene.panel_props.gltf_extension
+    collisions_collection = bpy.context.scene.panel_props.collision_collection
 
     texture_group_dict = {}
     for texture_group in gltf_extension.texture_groups:
@@ -280,7 +279,7 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
             physics_body_node.extensions[omi_physics_body].extension["trigger"] = shapes_dict[physics_body.name]
         if physics_body_node.name == collisions_collection:
             # rename the root node to the filename
-            physics_body_node.name = os.path.splitext(os.path.basename(bpy.data.filepath))[0]
+            physics_body_node.name = gltf_extension.scene_name
             root_physics_body_node = physics_body_node
         # add node to the scene
         gltf2_scene.nodes.append(physics_body_node)
