@@ -29,6 +29,18 @@
             "godot_scene_path": "res://scenes/MyScene.tscn"
         }
     ],
+    "visuals": {
+        "render_layers": [
+            {
+                "bit": 0,
+                "display_name": "Level"
+            },
+            {
+                "bit": 1,
+                "display_name": "Weapon"
+            }
+        ]
+    },
     "defaults": {
         "paths": {
             "same_hierarchy_target": "res://assets/blender",
@@ -47,7 +59,14 @@
             "collision_shapes_save_path": "res://resources/collision_shapes",
             "reuse_collision_shapes": true
         },
-        "collision_layers": [0, 2],
-        "collision_mask": []
+        "collision_layers": [
+            0,
+            2
+        ],
+        "collision_mask": [],
+        "render_layers": [
+            0,
+            1
+        ]
     }
 }

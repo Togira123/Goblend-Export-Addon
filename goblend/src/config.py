@@ -178,7 +178,7 @@ def get_default_paths(config):
 
 
 def get_collision_defaults(config):
-    layers = []
+    layers = [0]
     if "collision_layers" in config:
         if type(config["collision_layers"]) is list:
             for bit in config["collision_layers"]:
@@ -188,7 +188,7 @@ def get_collision_defaults(config):
         else:
             raise Exception("Incorrect type for 'collision_layers', should be list")
 
-    masks = []
+    masks = [0]
     if "collision_masks" in config:
         if type(config["collision_masks"]) is list:
             for bit in config["collision_masks"]:
@@ -197,21 +197,34 @@ def get_collision_defaults(config):
             masks = config["collision_masks"]
         else:
             raise Exception("Incorrect type for 'collision_masks', should be list")
-    return (layers, masks)
+
+    render_layers = [0]
+    if "render_layers" in config:
+        if type(config["render_layers"]) is list:
+            for bit in config["render_layers"]:
+                if not type(bit) is int:
+                    raise Exception("Incorrect type for element of 'render_layers', should be int")
+            render_layers = config["render_layers"]
+        else:
+            raise Exception("Incorrect type for 'render_layers', should be list")
+
+    return (layers, masks, render_layers)
 
 
 def get_defaults(config):
     defaults = {}
     if "defaults" in config:
         defaults["paths"] = get_default_paths(config["defaults"])
-        layers, masks = get_collision_defaults(config["defaults"])
+        layers, masks, render_layers = get_collision_defaults(config["defaults"])
         defaults["collision_layers"] = layers
         defaults["collision_masks"] = masks
+        defaults["render_layers"] = render_layers
     else:
         defaults["paths"] = get_default_paths({})  # will get default paths
-        layers, masks = get_collision_defaults({})
+        layers, masks, render_layers = get_collision_defaults({})
         defaults["collision_layers"] = layers
         defaults["collision_masks"] = masks
+        defaults["render_layers"] = render_layers
 
     return defaults
 
@@ -248,6 +261,34 @@ def get_godot_scenes(config):
     return scenes
 
 
+def get_render_layers(object_config):
+    layers = []
+    if "render_layers" in object_config:
+        layers_config = object_config["render_layers"]
+        if not type(layers_config) is list:
+            raise Exception("Invalid layers attribute")
+        seen_bits = set()
+        for layer in layers_config:
+            if "bit" in layer and "display_name" in layer:
+                if layer["bit"] in seen_bits:
+                    raise Exception("Duplicate bit used in layers")
+                if not (type(layer["bit"]) is int and type(layer["display_name"]) is str):
+                    raise Exception("Incorrect type for 'bit' or 'display_name'")
+                layers.append({"bit": layer["bit"], "display_name": layer["display_name"]})
+            else:
+                raise Exception("Malformed render layer")
+    return layers
+
+
+def get_visual_settings(config):
+    visuals = {}
+    layers = []
+    if "visuals" in config:
+        layers = get_render_layers(config["visuals"])
+    visuals["render_layers"] = layers
+    return visuals
+
+
 config = {}
 
 
@@ -266,6 +307,7 @@ def read_config():
                 config["collisions"]["layers"] = layers
                 config["defaults"] = get_defaults(content)
                 config["godot_scenes"] = get_godot_scenes(content)
+                config["visuals"] = get_visual_settings(content)
                 return
 
         except FileNotFoundError:
@@ -280,6 +322,8 @@ def read_config():
     config["collisions"]["layers"] = []
     config["defaults"] = get_defaults({})
     config["godot_scenes"] = get_godot_scenes({})
+    config["visuals"] = {}
+    config["visuals"]["render_layers"] = []
 
 
 @bpy.app.handlers.persistent

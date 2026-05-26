@@ -67,6 +67,9 @@ def _init(self):
     self.blender_object_name_to_gltf_node = {}
     for godot_scene in bpy.context.scene.panel_props.gltf_extension.godot_scenes:
         self.godot_scenes_dict[godot_scene.object_name] = godot_scene
+    self.object_props_dict = {}
+    for object_prop in bpy.context.scene.panel_props.gltf_extension.objects:
+        self.object_props_dict[object_prop.name] = object_prop
 
 
 def _gather_gltf_extensions_hook(self, gltf2_plan):
@@ -310,8 +313,24 @@ def _gather_node_hook(self, gltf2_object, blender_object):
         gltf2_object.mesh = None
         return
 
-    if gltf2_object.extensions and "KHR_lights_punctual" in gltf2_object.extensions:
-        # it's a light
+    is_light = gltf2_object.extensions and "KHR_lights_punctual" in gltf2_object.extensions
+
+    if gltf2_object.extensions is None:
+        gltf2_object.extensions = {}
+
+    if blender_object.name in self.object_props_dict:
+        props = self.object_props_dict[blender_object.name]
+        ext_obj = {
+            "render_layers": [layer.value for layer in props.render_layers],
+        }
+        if not is_light:
+            ext_obj["shadow_cast_mode"] = props.shadow_cast_mode
+        gltf2_object.extensions[goblend_object] = self.Extension(name=goblend_object, extension=ext_obj, required=False)
+    else:
+        ext_obj = {"render_layers": [layer.value for layer in scene.panel_props.gltf_extension.default_render_layers]}
+        gltf2_object.extensions[goblend_object] = self.Extension(name=goblend_object, extension=ext_obj, required=False)
+
+    if is_light:
         light_settings = None
         for setting in scene.light_panel_props:
             if setting.light == blender_object:
@@ -341,15 +360,6 @@ def _gather_node_hook(self, gltf2_object, blender_object):
         }
         gltf2_object.extensions[goblend_light] = self.Extension(name=goblend_light, extension=ext, required=False)
         return
-
-    for prop in scene.object_panel_props:
-        if prop.enabled and prop.obj == blender_object:
-            if gltf2_object.extensions is None:
-                gltf2_object.extensions = {}
-            gltf2_object.extensions[goblend_object] = self.Extension(
-                name=goblend_object, extension={"shadow_cast_mode": prop.shadow_cast_mode}, required=False
-            )
-            break
 
 
 def _gather_gltf_hook(self, animations):

@@ -201,6 +201,30 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
             inner_col.operator("default_group_list.add_item", icon="ADD", text="")
             inner_col.operator("default_group_list.remove_item", icon="REMOVE", text="")
 
+        default_render_layers_header, default_render_layers_panel = col.panel_prop(
+            panel_props, "default_render_layers_panel_open"
+        )
+        default_render_layers_header.label(text="Default Render Layers")
+        if default_render_layers_panel:
+            inner_col = default_render_layers_panel.column()
+            inner_col.prop(panel_props, "use_render_layer_config_value")
+            row = default_render_layers_panel.row()
+            row.template_list(
+                "SCENE_UL_DefaultRenderLayersList",
+                "default_render_layers_list",
+                panel_props,
+                "default_render_layers_list",
+                panel_props,
+                "default_render_layers_list_index",
+            )
+
+            if panel_props.use_render_layer_config_value:
+                row.enabled = False
+
+            inner_col = row.column(align=True)
+            inner_col.operator("default_render_layers_list.add_item", icon="ADD", text="")
+            inner_col.operator("default_render_layers_list.remove_item", icon="REMOVE", text="")
+
         layout.prop(panel_props, "process_linked_collections")
 
         layout.separator()

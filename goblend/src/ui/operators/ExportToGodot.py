@@ -172,9 +172,11 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
         # reset all collection gltf properties
         props.gltf_extension.collision_shapes.clear()
         props.gltf_extension.physics_bodies.clear()
+        props.gltf_extension.objects.clear()
         props.gltf_extension.materials.clear()
         props.gltf_extension.texture_groups.clear()
         props.gltf_extension.godot_scenes.clear()
+        props.gltf_extension.default_render_layers.clear()
 
         texture_dim = {"x": props.texture_dim[0], "y": props.texture_dim[1]}
 
@@ -222,6 +224,24 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 default_groups.append(default_group.group)
                 seen.add(default_group.group)
 
+        default_render_layers = []
+        seen = set()
+        if props.use_render_layer_config_value:
+            for layer in config["defaults"]["render_layers"]:
+                l = str(layer)
+                if not l in seen:
+                    default_render_layers.append(l)
+                    seen.add(l)
+        else:
+            for default_render_layer in props.default_render_layers_list:
+                if default_render_layer.enabled and not default_render_layer.layer in seen:
+                    default_render_layers.append(default_render_layer.layer)
+                    seen.add(default_render_layer.layer)
+
+        for default_render_layer in default_render_layers:
+            val = props.gltf_extension.default_render_layers.add()
+            val.value = int(default_render_layer)
+
         settings_for_godot = {
             "transparency_mode": props.default_transparency_mode,
             "scissor_value": props.default_transparency_alpha_scissor_threshold,
@@ -229,13 +249,14 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             "default_collision_layers": default_layers,
             "default_collision_masks": default_masks,
             "default_groups": default_groups,
+            "default_render_layers": default_render_layers,
             "default_physics_type": default_collision_props.type,
             "collisions": [],
             "material_transparency_mode_overrides": {},
             "material_cull_mode_overrides": {},
             "use_shader_mats": {},
             "limit_uv_effect_normal": {},
-            "shadow_cast_mode": {},
+            "objects": [],
             "animations": {},
             "godot_scenes": {},
             "lights": {},
@@ -261,7 +282,16 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                         "Normal": item.uv_map,
                         "obj": item.obj,
                     }
-            settings_for_godot["shadow_cast_mode"][item.obj.name] = item.shadow_cast_mode
+            obj_dict = {"shadow_cast_mode": item.shadow_cast_mode, "name": item.obj.name}
+            if item.render_layers_override_enabled:
+                seen = set()
+                layers = []
+                for layer_override in item.render_layers_override_list:
+                    if layer_override.enabled and not layer_override.layer in seen:
+                        layers.append(layer_override.layer)
+                        seen.add(layer_override.layer)
+                obj_dict["layer_overrides"] = layers
+            settings_for_godot["objects"].append(obj_dict)
 
         gltf_texture_groups = {}
         for mat in scene.material_panel_props:

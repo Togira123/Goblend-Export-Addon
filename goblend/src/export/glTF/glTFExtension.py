@@ -19,7 +19,8 @@
 import bpy
 from .glTFSavePaths import glTFSavePaths
 from .glTFCollisionShape import glTFCollisionShape
-from .glTFPhysicsBody import glTFPhysicsBody
+from .glTFPhysicsBody import glTFPhysicsBody, IntValue
+from .glTFObject import glTFObject
 from .glTFMaterial import glTFMaterial
 from .glTFTextureGroup import glTFTextureGroup
 from .glTFGodotScene import glTFGodotScene
@@ -29,10 +30,13 @@ class glTFExtension(bpy.types.PropertyGroup):
     save_paths: bpy.props.PointerProperty(type=glTFSavePaths)
     collision_shapes: bpy.props.CollectionProperty(type=glTFCollisionShape)
     physics_bodies: bpy.props.CollectionProperty(type=glTFPhysicsBody)
+    objects: bpy.props.CollectionProperty(type=glTFObject)
     materials: bpy.props.CollectionProperty(type=glTFMaterial)
     texture_groups: bpy.props.CollectionProperty(type=glTFTextureGroup)
     # also includes linked collections, not just scenes in GodotScenes
     godot_scenes: bpy.props.CollectionProperty(type=glTFGodotScene)
+
+    default_render_layers: bpy.props.CollectionProperty(type=IntValue)
 
     # scene name
     scene_name: bpy.props.StringProperty()

@@ -18,6 +18,7 @@
 
 import bpy
 
+from ...ui.lists.RenderLayersList import RenderLayerListItem
 from .enum_items import shadow_cast_enum_items
 
 
@@ -80,3 +81,8 @@ class ObjectPanelProperties(bpy.types.PropertyGroup):
         items=shadow_cast_enum_items,
         default="ON",
     )
+
+    render_layers_override_enabled: bpy.props.BoolProperty(name="Override Render Layers", default=False)
+    render_layers_override_panel_open: bpy.props.BoolProperty(default=True)
+    render_layers_override_list: bpy.props.CollectionProperty(type=RenderLayerListItem)
+    render_layers_list_index: bpy.props.IntProperty()

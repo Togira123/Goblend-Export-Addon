@@ -74,18 +74,29 @@ func iterate_nodes(state: GLTFState, node: Node) -> void:
 		var ext = gltf_node.get_additional_data(ext_name)
 		if ext != null:
 			var setting: GeometryInstance3D.ShadowCastingSetting
-			var shadow_cast_mode: String = ext["shadow_cast_mode"]
-			match shadow_cast_mode:
-				"OFF":
-					setting = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-				"ON":
-					setting = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-				"DOUBLE_SIDED":
-					setting = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
-				"SHADOWS_ONLY":
-					setting = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
-				_:
-					Goblend.log_msg("Unknown shadow cast mode found: " + shadow_cast_mode, "WARNING")
-			node.cast_shadow = setting
+			if ext.has("shadow_cast_mode"):
+				var shadow_cast_mode: String = ext["shadow_cast_mode"]
+				match shadow_cast_mode:
+					"OFF":
+						setting = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					"ON":
+						setting = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+					"DOUBLE_SIDED":
+						setting = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
+					"SHADOWS_ONLY":
+						setting = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+					_:
+						Goblend.log_msg("Unknown shadow cast mode found: " + shadow_cast_mode, "WARNING")
+				node.cast_shadow = setting
+
+			var layers := 0
+			if ext.has("render_layers"):
+				for layer in ext["render_layers"]:
+					layers += 2 ** layer
+			# since bit 20 and above is managed by godot internally we do not want to modify those
+			var lowest_20_bits := (1 << 20) - 1
+			layers &= lowest_20_bits
+			node.layers &= ~lowest_20_bits
+			node.layers |= layers
 	for child in node.get_children():
 		iterate_nodes(state, child)

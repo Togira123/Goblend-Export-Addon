@@ -23,15 +23,18 @@ root_dir = None
 
 layers_enum_cache = []
 group_list_enum_cache = []
+render_layers_enum_cache = []
 godot_scene_panel_props_enum_cache = []
 
 
 def reset_cache_enums():
     global layers_enum_cache
     global group_list_enum_cache
+    global render_layers_enum_cache
     global godot_scene_panel_props_enum_cache
     layers_enum_cache = []
     group_list_enum_cache = []
+    render_layers_enum_cache = []
     godot_scene_panel_props_enum_cache = []
 
 

@@ -18,6 +18,7 @@
 
 import bpy
 
+from ..lists.DefaultRenderLayersList import DefaultRenderLayerListItem
 from .enum_items import transparency_enum_items, culling_enum_items
 from ...export.glTF.glTFExtension import glTFExtension
 
@@ -224,6 +225,11 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=culling_enum_items,
         default="BACK",
     )
+
+    use_render_layer_config_value: bpy.props.BoolProperty(name="Use Config Default Value", default=True)
+    default_render_layers_panel_open: bpy.props.BoolProperty(default=True)
+    default_render_layers_list: bpy.props.CollectionProperty(type=DefaultRenderLayerListItem)
+    default_render_layers_list_index: bpy.props.IntProperty()
 
     process_linked_collections: bpy.props.BoolProperty(
         name="Process Linked Collections",

@@ -69,3 +69,25 @@ class SCENE_PT_ObjectsPanel(bpy.types.Panel):
                     else:
                         col.prop(item, "uv_map")
                 col.prop(item, "shadow_cast_mode")
+
+                col.prop(item, "render_layers_override_enabled")
+                if item.render_layers_override_enabled:
+                    render_layers_override_header, render_layers_override_panel = panel.panel_prop(
+                        item, "render_layers_override_panel_open"
+                    )
+                    render_layers_override_header.label(text="Render Layer Overrides")
+                    if render_layers_override_panel:
+                        row = render_layers_override_panel.row()
+                        row.template_list(
+                            "SCENE_UL_RenderLayersList",
+                            "render_layers_list",
+                            item,
+                            "render_layers_override_list",
+                            item,
+                            "render_layers_list_index",
+                        )
+
+                        inner_col = row.column(align=True)
+                        inner_col.context_pointer_set(name="list", data=item)
+                        inner_col.operator("render_layers_list.add_item", icon="ADD", text="")
+                        inner_col.operator("render_layers_list.remove_item", icon="REMOVE", text="")

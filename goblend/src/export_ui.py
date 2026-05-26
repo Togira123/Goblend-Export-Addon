@@ -55,6 +55,18 @@ from .ui.lists.GroupList import (
     LIST_OT_RemoveItemFromGroupsList,
     SCENE_UL_GroupsList,
 )
+from .ui.lists.DefaultRenderLayersList import (
+    DefaultRenderLayerListItem,
+    LIST_OT_AddItemToDefaultRenderLayersList,
+    LIST_OT_RemoveItemFromDefaultRenderLayersList,
+    SCENE_UL_DefaultRenderLayersList,
+)
+from .ui.lists.RenderLayersList import (
+    RenderLayerListItem,
+    LIST_OT_AddItemToRenderLayersList,
+    LIST_OT_RemoveItemFromRenderLayersList,
+    SCENE_UL_RenderLayersList,
+)
 from .ui.operators.AddAnimationSetting import SCENE_OT_AddAnimationSetting
 from .ui.operators.AddCollisionSetting import SCENE_OT_AddCollisionSetting
 from .ui.operators.AddGodotScenesSetting import SCENE_OT_AddGodotScenesSetting
@@ -90,6 +102,7 @@ from .export.glTF.glTFCollisionShape import glTFCollisionShape
 from .export.glTF.glTFSavePaths import glTFSavePaths
 from .export.glTF.glTFTextureGroup import glTFTextureGroup, MaterialName
 from .export.glTF.glTFPhysicsBody import glTFPhysicsBody, StringValue, IntValue
+from .export.glTF.glTFObject import glTFObject
 from .export.glTF.glTFMaterial import glTFMaterial, glTFMaterialShaderUniform
 from .export.glTF.glTFGodotScene import glTFGodotScene
 from .export.glTF.glTFExtension import glTFExtension
@@ -103,6 +116,7 @@ classes = (
     glTFTextureGroup,
     glTFSavePaths,
     glTFPhysicsBody,
+    glTFObject,
     glTFMaterial,
     glTFGodotScene,
     glTFExtension,
@@ -118,6 +132,10 @@ classes = (
     SCENE_UL_GroupsList,
     LIST_OT_AddItemToGroupsList,
     LIST_OT_RemoveItemFromGroupsList,
+    RenderLayerListItem,
+    SCENE_UL_RenderLayersList,
+    LIST_OT_AddItemToRenderLayersList,
+    LIST_OT_RemoveItemFromRenderLayersList,
     DefaultCollisionLayerListItem,
     SCENE_UL_DefaultCollisionLayersList,
     LIST_OT_AddItemToDefaultLayersList,
@@ -130,6 +148,10 @@ classes = (
     SCENE_UL_DefaultGroupList,
     LIST_OT_AddItemToDefaultGroupList,
     LIST_OT_RemoveItemFromDefaultGroupList,
+    DefaultRenderLayerListItem,
+    SCENE_UL_DefaultRenderLayersList,
+    LIST_OT_AddItemToDefaultRenderLayersList,
+    LIST_OT_RemoveItemFromDefaultRenderLayersList,
     AddonPreferences,
     PanelProperties,
     MaterialPanelProperties,

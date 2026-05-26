@@ -17,7 +17,6 @@
 
 
 import bpy
-import os
 import subprocess
 
 from .handle_materials import handle_materials, check_convert_to_shader
@@ -131,6 +130,19 @@ def prep_for_export(
         for group in settings_for_godot["default_groups"]:
             g = root_physics_body.groups.add()
             g.value = group
+
+    for sett in settings_for_godot["objects"]:
+        gltf_object = gltf_extension.objects.add()
+        gltf_object.name = sett["name"]
+        gltf_object.shadow_cast_mode = sett["shadow_cast_mode"]
+        if "layer_overrides" in sett:
+            for layer in sett["layer_overrides"]:
+                l = gltf_object.render_layers.add()
+                l.value = int(layer)
+        else:
+            for layer in settings_for_godot["default_render_layers"]:
+                l = gltf_object.render_layers.add()
+                l.value = int(layer)
 
     # finally also add lights
     for obj in bpy.context.scene.objects:
