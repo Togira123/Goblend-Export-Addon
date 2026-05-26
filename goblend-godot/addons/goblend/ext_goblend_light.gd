@@ -81,5 +81,12 @@ func try_set_prop_on_light(node: Light3D, ext: Dictionary, prop: String) -> void
 	elif prop.begins_with("spot_"):
 		if node is SpotLight3D:
 			node[prop] = ext[prop]
+	elif prop == "light_cull_mask":
+		# need to handle separately because we want to make sure that we do not change the upper 12 bits
+		var lowest_20_bits := (1 << 20) - 1
+		var original_layers: int = ext[prop]
+		var layers := original_layers & lowest_20_bits
+		node.light_cull_mask &= ~lowest_20_bits
+		node.light_cull_mask |= layers
 	else:
 		node[prop] = ext[prop]
