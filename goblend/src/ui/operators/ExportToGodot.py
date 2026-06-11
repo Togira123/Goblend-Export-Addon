@@ -61,12 +61,9 @@ def get_export_paths(config, props):
 
     blend_path = os.path.normcase(bpy.data.filepath)
 
-    hierarchy_path_start = blend_path.index(paths["same_hierarchy_target"]) + len(paths["same_hierarchy_target"])
-    # remove forward and backward slashes from the beginning of the path
-    hierarchy_path = blend_path[hierarchy_path_start : len(blend_path) - len(os.path.basename(blend_path))].lstrip(
-        "/\\"
-    )
-    log("Hierarchy path: " + hierarchy_path)
+    # only compute actual hierarchy path if needed
+    # this way there are no errors if hierarchy path is not a subpath of current file but is never used
+    hierarchy_path = None
 
     idx = 0
     for save_path in save_path_keys:
@@ -75,12 +72,38 @@ def get_export_paths(config, props):
             continue  # this is the exception, has no use hierarchy setting
         path = paths[save_path]
         if paths[hierarchy_key_array[idx]]:
+            if hierarchy_path == None:
+                try:
+                    hierarchy_path_start = blend_path.index(paths["same_hierarchy_target"]) + len(
+                        paths["same_hierarchy_target"]
+                    )
+                except ValueError:
+                    error_msg = (
+                        "Your hierarchy path target has to be a parent directory of this current directory. Hierarchy path target: '"
+                        + paths["same_hierarchy_target"]
+                        + "', this file's path: '"
+                        + blend_path
+                        + "'"
+                    )
+                    log(
+                        error_msg,
+                        "ERROR",
+                    )
+                    raise Exception(error_msg)
+                # remove forward and backward slashes from the beginning of the path
+                hierarchy_path = blend_path[
+                    hierarchy_path_start : len(blend_path) - len(os.path.basename(blend_path))
+                ].lstrip("/\\")
+                log("Hierarchy path: " + hierarchy_path)
             # append path
             path = os.path.join(os.path.normcase(path), hierarchy_path)
         if save_path_uses_scene_name[idx]:
             path = os.path.join(os.path.normcase(path), props.gltf_extension.scene_name)
         paths[save_path] = abs_path(path)
         idx += 1
+
+    if hierarchy_path == None:
+        log("No hierarchy path needed")
 
     whether_to_save_separately_keys = [
         "save_material_separately",
