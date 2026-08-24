@@ -63,7 +63,7 @@
             0,
             2
         ],
-        "collision_mask": [],
+        "collision_masks": [],
         "render_layers": [
             0,
             1
