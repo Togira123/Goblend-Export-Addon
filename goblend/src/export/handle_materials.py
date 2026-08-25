@@ -162,10 +162,22 @@ def save_mesh_and_modifiers(obj, old_meshes, orig_mod_per_obj):
             case "NODES":  # geometry nodes
                 ng = m.node_group
                 mod_data["node_group"] = ng
-                for i, item in enumerate(ng.interface.items_tree):
+                for item in ng.interface.items_tree:
                     identifier = item.identifier
-                    if identifier in m:
-                        mod_data["props"][identifier] = m[identifier]
+                    # geometry nodes modifier api changed in 5.2, see here: https://developer.blender.org/docs/release_notes/5.2/python_api/
+                    if bpy.app.version >= (5, 2, 0):
+                        if hasattr(m.properties.inputs, identifier) and hasattr(
+                            getattr(m.properties.inputs, identifier), "value"
+                        ):
+                            mod_data["props"][identifier] = getattr(m.properties.inputs, identifier).value
+                        elif hasattr(m.properties.outputs, identifier) and hasattr(
+                            getattr(m.properties.outputs, identifier), "value"
+                        ):
+                            mod_data["props"][identifier] = getattr(m.properties.outputs, identifier).value
+                    else:
+                        # old way of accessing modifier properties
+                        if identifier in m:
+                            mod_data["props"][identifier] = m[identifier]
                 original_modifiers.append(mod_data)
                 # apply geometry nodes modifier
                 bpy.ops.object.modifier_apply(modifier=m.name)

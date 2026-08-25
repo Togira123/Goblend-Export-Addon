@@ -81,7 +81,15 @@ def clean_up(
                 case "NODES":
                     mod.node_group = m["node_group"]
                     for identifier, val in m["props"].items():
-                        mod[identifier] = val
+                        # geometry nodes modifier api changed in 5.2, see here: https://developer.blender.org/docs/release_notes/5.2/python_api/
+                        if bpy.app.version >= (5, 2, 0):
+                            if hasattr(mod.properties.inputs, identifier):
+                                getattr(mod.properties.inputs, identifier).value = val
+                            elif hasattr(mod.properties.outputs, identifier):
+                                getattr(mod.properties.outputs, identifier).value = val
+                        else:
+                            # old way of accessing modifier properties
+                            mod[identifier] = val
 
     # remove the tmp_goblend_export directory
     content = os.listdir(export_path_glb)
