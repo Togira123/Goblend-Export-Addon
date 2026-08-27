@@ -16,17 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from typing import cast
+
 import bpy
 
 from ...ui.lists.RenderLayersList import RenderLayerListItem
 from .enum_items import shadow_cast_enum_items
+from ...types import BoolProp, PointerProp, EnumProp, CollectionProp, IntProp, typed_prop_group
 
 
-def can_add_object_constraint(self, object):
+def can_add_object_constraint(self: bpy.types.PropertyGroup, object: bpy.types.Object) -> bool:
     scene = bpy.context.scene
     if object.type != "MESH":
         return False
-    if object.library != None:
+    if object.library is not None:
         return False
 
     # this is much slower than a simple bpy.data.collections.get(bpy.context.scene.panel_props.collision_collection),
@@ -46,43 +49,44 @@ def can_add_object_constraint(self, object):
     return True
 
 
+@typed_prop_group
 class ObjectPanelProperties(bpy.types.PropertyGroup):
-    open: bpy.props.BoolProperty(default=True)
-    obj: bpy.props.PointerProperty(
+    open = BoolProp(default=True)
+    obj = PointerProp(
         name="Object",
         type=bpy.types.Object,
         poll=can_add_object_constraint,
     )
-    enabled: bpy.props.BoolProperty(
-        name="Enable Constraint", description="Whether this constraint should be enabled", default=True
-    )
+    enabled = BoolProp(name="Enable Constraint", description="Whether this constraint should be enabled", default=True)
 
-    def uvmaps(self, context):
+    def uvmaps(self: "ObjectPanelProperties", context: bpy.types.Context | None) -> list[tuple[str, str, str]]:
         if self.obj:
-            return [(uv.name, uv.name, "") for uv in self.obj.data.uv_layers][:8]  # godot only allows up to 8 uv maps
+            return [(uv.name, uv.name, "") for uv in cast(bpy.types.Mesh, self.obj.data).uv_layers][
+                :8
+            ]  # godot only allows up to 8 uv maps
         return []
 
-    uv_map_enabled: bpy.props.BoolProperty(
+    uv_map_enabled = BoolProp(
         name="Override UV Map", description="Whether to use a separate UV Map as bake target", default=False
     )
 
-    uv_map_per_texture_enabled: bpy.props.BoolProperty(
+    uv_map_per_texture_enabled = BoolProp(
         name="Per Texture", description="Whether to use a different UV map per texture", default=False
     )
 
-    uv_map: bpy.props.EnumProperty(name="UV Map", items=uvmaps)
-    uv_map_base_color: bpy.props.EnumProperty(name="Base Color", items=uvmaps)
-    uv_map_metallic_roughness: bpy.props.EnumProperty(name="Metallic/Roughness", items=uvmaps)
-    uv_map_normal: bpy.props.EnumProperty(name="Normal", items=uvmaps)
+    uv_map = EnumProp(name="UV Map", items=uvmaps)
+    uv_map_base_color = EnumProp(name="Base Color", items=uvmaps)
+    uv_map_metallic_roughness = EnumProp(name="Metallic/Roughness", items=uvmaps)
+    uv_map_normal = EnumProp(name="Normal", items=uvmaps)
 
-    shadow_cast_mode: bpy.props.EnumProperty(
+    shadow_cast_mode = EnumProp(
         name="Shadow Cast Mode",
         description="These are the options that 'cast_shadow' has in Godot on a GeometryInstance3D",
         items=shadow_cast_enum_items,
         default="ON",
     )
 
-    render_layers_override_enabled: bpy.props.BoolProperty(name="Override Render Layers", default=False)
-    render_layers_override_panel_open: bpy.props.BoolProperty(default=True)
-    render_layers_override_list: bpy.props.CollectionProperty(type=RenderLayerListItem)
-    render_layers_list_index: bpy.props.IntProperty()
+    render_layers_override_enabled = BoolProp(name="Override Render Layers", default=False)
+    render_layers_override_panel_open = BoolProp(default=True)
+    render_layers_override_list = CollectionProp(type=RenderLayerListItem)
+    render_layers_list_index = IntProp()

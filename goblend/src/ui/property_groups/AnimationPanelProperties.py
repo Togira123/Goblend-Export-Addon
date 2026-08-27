@@ -18,9 +18,11 @@
 
 import bpy
 
+from ...types import BoolProp, PointerProp, typed_prop_group
 
-def is_not_action_picked_already(self, action):
-    if action.library != None:
+
+def is_not_action_picked_already(self: bpy.types.PropertyGroup, action: bpy.types.Action) -> bool:
+    if action.library is not None:
         return False
     scene = bpy.context.scene
     for item in scene.animation_panel_props:
@@ -29,10 +31,9 @@ def is_not_action_picked_already(self, action):
     return True
 
 
+@typed_prop_group
 class AnimationPanelProperties(bpy.types.PropertyGroup):
-    open: bpy.props.BoolProperty(default=True)
-    animation: bpy.props.PointerProperty(name="Animation", type=bpy.types.Action, poll=is_not_action_picked_already)
-    autoplay: bpy.props.BoolProperty(
-        name="Autoplay", description="Mark Animation to play automatically on load", default=False
-    )
-    loop: bpy.props.BoolProperty(name="Loop", description="Make the animation loop", default=False)
+    open = BoolProp(default=True)
+    animation = PointerProp(name="Animation", type=bpy.types.Action, poll=is_not_action_picked_already)
+    autoplay = BoolProp(name="Autoplay", description="Mark Animation to play automatically on load", default=False)
+    loop = BoolProp(name="Loop", description="Make the animation loop", default=False)

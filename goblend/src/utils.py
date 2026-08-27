@@ -19,15 +19,15 @@
 import bpy
 import os
 
-root_dir = None
+root_dir: str | None = None
 
 layers_enum_cache = []
 group_list_enum_cache = []
 render_layers_enum_cache = []
-godot_scene_panel_props_enum_cache = []
+godot_scene_panel_props_enum_cache: list[tuple[str, str, str]] = []
 
 
-def reset_cache_enums():
+def reset_cache_enums() -> None:
     global layers_enum_cache
     global group_list_enum_cache
     global render_layers_enum_cache
@@ -38,9 +38,9 @@ def reset_cache_enums():
     godot_scene_panel_props_enum_cache = []
 
 
-def get_root_dir():
+def get_root_dir() -> str:
     global root_dir
-    if root_dir != None:
+    if root_dir is not None:
         return root_dir
     if bpy.data.filepath == "":
         return ""
@@ -56,7 +56,7 @@ def get_root_dir():
                 root_dir = head
                 break
         filepath = head
-    if root_dir == None:
+    if root_dir is None:
         # no godot project found
         raise Exception("No Godot project found")
     return root_dir

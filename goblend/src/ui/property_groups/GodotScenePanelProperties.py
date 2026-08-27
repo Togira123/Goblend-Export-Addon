@@ -20,9 +20,10 @@ import bpy
 
 from ... import config as conf
 from ... import utils
+from ...types import typed_prop_group
 
 
-def is_godot_scene(self, obj):
+def is_godot_scene(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool:
     scene = bpy.context.scene
     for item in scene.godot_scene_panel_props:
         if obj == item.obj:
@@ -41,7 +42,7 @@ def is_godot_scene(self, obj):
     return obj.name in godot_scenes.objects
 
 
-def scenes(_self, _context):
+def scenes(_self: bpy.types.PropertyGroup, _context: bpy.types.Context | None) -> list[tuple[str, str, str]]:
     if len(utils.godot_scene_panel_props_enum_cache) == 0:
         config = conf.get_config()
         for scene in config["godot_scenes"]:
@@ -52,15 +53,16 @@ def scenes(_self, _context):
     return utils.godot_scene_panel_props_enum_cache
 
 
+@typed_prop_group
 class GodotScenePanelProperties(bpy.types.PropertyGroup):
-    open: bpy.props.BoolProperty(default=True)
-    obj: bpy.props.PointerProperty(
+    open = bpy.props.BoolProperty(default=True)
+    obj = bpy.props.PointerProperty(
         name="Target Object",
         description="The object to be replaced with the scene.",
         type=bpy.types.Object,
         poll=is_godot_scene,
     )
-    scene: bpy.props.EnumProperty(
+    scene = bpy.props.EnumProperty(
         name="Scene",
         description="The Godot Scene to place at the object's position. Use the config file to register more scenes.",
         items=scenes,

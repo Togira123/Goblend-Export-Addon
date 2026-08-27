@@ -19,9 +19,10 @@
 import bpy
 
 from math import radians
+from ...types import BoolProp, PointerProp, EnumProp, FloatProp, FloatVectorProp, IntProp, typed_prop_group
 
 
-def can_add_light(self, obj):
+def can_add_light(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool:
     if obj.type != "LIGHT":
         return False
     light = obj.data
@@ -33,14 +34,15 @@ def can_add_light(self, obj):
     return True
 
 
+@typed_prop_group
 class LightPanelProperties(bpy.types.PropertyGroup):
-    open: bpy.props.BoolProperty(default=True)
-    light: bpy.props.PointerProperty(
+    open = BoolProp(default=True)
+    light = PointerProp(
         name="Light",
         type=bpy.types.Object,
         poll=can_add_light,
     )
-    type: bpy.props.EnumProperty(
+    type = EnumProp(
         name="Light Node Type",
         description="The type of light node used in Godot",
         items=[
@@ -50,9 +52,9 @@ class LightPanelProperties(bpy.types.PropertyGroup):
         ],
     )
     # omni specific settings
-    omni_range: bpy.props.FloatProperty(name="Range", default=5.0)
-    omni_attenuation: bpy.props.FloatProperty(name="Attenuation", default=1.0)
-    omni_shadow_mode: bpy.props.EnumProperty(
+    omni_range = FloatProp(name="Range", default=5.0)
+    omni_attenuation = FloatProp(name="Attenuation", default=1.0)
+    omni_shadow_mode = EnumProp(
         name="Shadow Mode",
         items=[
             ("0", "Dual Paraboloid", "Use Shadow Mode 'Dual Paraboloid' in Godot", 0),
@@ -61,23 +63,23 @@ class LightPanelProperties(bpy.types.PropertyGroup):
         default=1,
     )
     # spot specific settings
-    spot_range: bpy.props.FloatProperty(name="Range", default=5.0, subtype="DISTANCE")
-    spot_attenuation: bpy.props.FloatProperty(name="Attenuation", default=1.0)
-    spot_angle: bpy.props.FloatProperty(name="Angle", default=radians(45.0), subtype="ANGLE")
-    spot_angle_attenuation: bpy.props.FloatProperty(name="Angle Attenuation", default=1.0)
+    spot_range = FloatProp(name="Range", default=5.0, subtype="DISTANCE")
+    spot_attenuation = FloatProp(name="Attenuation", default=1.0)
+    spot_angle = FloatProp(name="Angle", default=radians(45.0), subtype="ANGLE")
+    spot_angle_attenuation = FloatProp(name="Angle Attenuation", default=1.0)
 
     # general settings
-    light_color: bpy.props.FloatVectorProperty(
+    light_color = FloatVectorProp(
         name="Color", size=3, subtype="COLOR_GAMMA", default=[1.0, 1.0, 1.0], min=0.0, max=1.0
     )
-    light_energy: bpy.props.FloatProperty(name="Energy", default=1.0)
-    light_indirect_energy: bpy.props.FloatProperty(name="Indirect Energy", default=1.0)
-    light_volumetric_fog_energy: bpy.props.FloatProperty(name="Volumetric Fog Energy", default=1.0)
-    light_angular_distance: bpy.props.FloatProperty(name="Angular Distance", default=0.0, subtype="ANGLE")
-    light_size: bpy.props.FloatProperty(name="Size", default=0.0, subtype="DISTANCE")
-    light_negative: bpy.props.BoolProperty(name="Negative", default=False)
-    light_specular: bpy.props.FloatProperty(name="Specular", default=0.5)  # default is 1.0 for DirectionalLight3D
-    light_bake_mode: bpy.props.EnumProperty(
+    light_energy = FloatProp(name="Energy", default=1.0)
+    light_indirect_energy = FloatProp(name="Indirect Energy", default=1.0)
+    light_volumetric_fog_energy = FloatProp(name="Volumetric Fog Energy", default=1.0)
+    light_angular_distance = FloatProp(name="Angular Distance", default=0.0, subtype="ANGLE")
+    light_size = FloatProp(name="Size", default=0.0, subtype="DISTANCE")
+    light_negative = BoolProp(name="Negative", default=False)
+    light_specular = FloatProp(name="Specular", default=0.5)  # default is 1.0 for DirectionalLight3D
+    light_bake_mode = EnumProp(
         name="Bake Mode",
         items=[
             ("0", "Disabled", "Use Bake Mode 'Disabled' in Godot", 0),
@@ -86,5 +88,5 @@ class LightPanelProperties(bpy.types.PropertyGroup):
         ],
         default=2,
     )
-    light_cull_mask: bpy.props.IntProperty(name="Cull Mask", default=1048575, subtype="UNSIGNED")
-    shadow_enabled: bpy.props.BoolProperty(name="Shadow", default=False)
+    light_cull_mask = IntProp(name="Cull Mask", default=1048575, subtype="UNSIGNED")
+    shadow_enabled = BoolProp(name="Shadow", default=False)

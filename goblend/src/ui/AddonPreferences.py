@@ -19,19 +19,23 @@
 import bpy
 from ... import __package__ as base_package
 
+from typing import cast
+from ..types import typed_prop_group, StringProp, BoolProp
 
+
+@typed_prop_group
 class AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = base_package
+    bl_idname = cast(str, base_package)
 
-    godot_file_path: bpy.props.StringProperty(
+    godot_file_path = StringProp(
         name="Godot Executable", description="Choose the Godot Executable", subtype="FILE_PATH"
     )
-    create_log_file: bpy.props.BoolProperty(
+    create_log_file = BoolProp(
         name="Create Log File",
         description="If this is checked, each export will write its log to a log file created in the root of your project.",
         default=True,
     )
 
-    def draw(self, context):
+    def draw(self: bpy.types.AddonPreferences, context: bpy.types.Context) -> None:
         self.layout.prop(self, "godot_file_path")
         self.layout.prop(self, "create_log_file")
