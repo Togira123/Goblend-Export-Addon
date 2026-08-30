@@ -18,18 +18,22 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp, FloatProp, CollectionProp
 
+
+@typed_prop_group
 class glTFMaterialShaderUniform(bpy.types.PropertyGroup):
-    var_name: bpy.props.StringProperty()
-    uniform_data: bpy.props.StringProperty()
+    var_name = StringProp()
+    uniform_data = StringProp()
 
 
+@typed_prop_group
 class glTFMaterial(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
+    name = StringProp()
 
-    transparency_mode: bpy.props.StringProperty()
-    transparency_alpha_scissor_threshold: bpy.props.FloatProperty()
-    cull_mode: bpy.props.StringProperty()
+    transparency_mode = StringProp()
+    transparency_alpha_scissor_threshold = FloatProp()
+    cull_mode = StringProp()
 
-    shader_code: bpy.props.StringProperty(default="")
-    shader_uniforms: bpy.props.CollectionProperty(type=glTFMaterialShaderUniform)
+    shader_code = StringProp(default="")
+    shader_uniforms = CollectionProp(type=glTFMaterialShaderUniform)

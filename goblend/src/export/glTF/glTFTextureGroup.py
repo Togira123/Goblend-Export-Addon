@@ -18,12 +18,16 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp, CollectionProp
 
+
+@typed_prop_group
 class MaterialName(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
+    name = StringProp()
 
 
+@typed_prop_group
 class glTFTextureGroup(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
+    name = StringProp()
     # the materials that are to be replaced by this texture group
-    materials: bpy.props.CollectionProperty(type=MaterialName)
+    materials = CollectionProp(type=MaterialName)

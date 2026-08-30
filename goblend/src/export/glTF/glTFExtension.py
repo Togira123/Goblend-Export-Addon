@@ -25,20 +25,23 @@ from .glTFMaterial import glTFMaterial
 from .glTFTextureGroup import glTFTextureGroup
 from .glTFGodotScene import glTFGodotScene
 
+from ...types.property_types import typed_prop_group, PointerProp, CollectionProp, StringProp, BoolProp
 
+
+@typed_prop_group
 class glTFExtension(bpy.types.PropertyGroup):
-    save_paths: bpy.props.PointerProperty(type=glTFSavePaths)
-    collision_shapes: bpy.props.CollectionProperty(type=glTFCollisionShape)
-    physics_bodies: bpy.props.CollectionProperty(type=glTFPhysicsBody)
-    objects: bpy.props.CollectionProperty(type=glTFObject)
-    materials: bpy.props.CollectionProperty(type=glTFMaterial)
-    texture_groups: bpy.props.CollectionProperty(type=glTFTextureGroup)
+    save_paths = PointerProp(type=glTFSavePaths)
+    collision_shapes = CollectionProp(type=glTFCollisionShape)
+    physics_bodies = CollectionProp(type=glTFPhysicsBody)
+    objects = CollectionProp(type=glTFObject)
+    materials = CollectionProp(type=glTFMaterial)
+    texture_groups = CollectionProp(type=glTFTextureGroup)
     # also includes linked collections, not just scenes in GodotScenes
-    godot_scenes: bpy.props.CollectionProperty(type=glTFGodotScene)
+    godot_scenes = CollectionProp(type=glTFGodotScene)
 
-    default_render_layers: bpy.props.CollectionProperty(type=IntValue)
+    default_render_layers = CollectionProp(type=IntValue)
 
     # scene name
-    scene_name: bpy.props.StringProperty()
+    scene_name = StringProp()
 
-    is_exporting_with_goblend: bpy.props.BoolProperty(default=False)
+    is_exporting_with_goblend = BoolProp(default=False)

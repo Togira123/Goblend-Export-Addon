@@ -23,7 +23,7 @@ from ...ui.lists.CollisionMasksList import CollisionMaskListItem
 
 from .enum_items import physics_objects
 
-from ...types import BoolProp, PointerProp, EnumProp, CollectionProp, IntProp, typed_prop_group
+from ...types.property_types import BoolProp, PointerProp, EnumProp, CollectionProp, IntProp, typed_prop_group
 
 
 def is_collision_collection(self: bpy.types.PropertyGroup, collection: bpy.types.Collection) -> bool:

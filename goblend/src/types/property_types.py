@@ -1,4 +1,4 @@
-# types.py
+# property_types.py
 #
 # Copyright (C) 2026-present Goblend contributers, see https://github.com/Togira123/Goblend-Export-Addon
 #
@@ -19,19 +19,7 @@
 from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
 import bpy
-import bpy.stub_internal.rna_enums as rna_enums
 import collections.abc as abc
-
-from .ui.property_groups.AnimationPanelProperties import AnimationPanelProperties
-from .ui.property_groups.CollisionPanelProperties import CollisionPanelProperties
-from .ui.property_groups.DefaultCollisionPanelProperties import (
-    DefaultCollisionPanelProperties,
-)
-from .ui.property_groups.GodotScenePanelProperties import GodotScenePanelProperties
-from .ui.property_groups.LightPanelProperties import LightPanelProperties
-from .ui.property_groups.MaterialPanelProperties import MaterialPanelProperties
-from .ui.property_groups.ObjectPanelProperties import ObjectPanelProperties
-from .ui.property_groups.PanelProperties import PanelProperties
 
 # this is needed to not get type errors when accessing these properties
 # At runtime it will just be bpy.types.Scene
@@ -82,40 +70,16 @@ if TYPE_CHECKING:
         update: abc.Callable[[T2, bpy.types.Context], None] | None = None,
     ) -> T4: ...
 
-    class GoblendScene(bpy.types.Scene):
-        panel_props: PanelProperties
-
-        object_panel_props: bpy.types.bpy_prop_collection_idprop[ObjectPanelProperties]
-        material_panel_props: bpy.types.bpy_prop_collection_idprop[MaterialPanelProperties]
-        collision_panel_props: bpy.types.bpy_prop_collection_idprop[CollisionPanelProperties]
-        animation_panel_props: bpy.types.bpy_prop_collection_idprop[AnimationPanelProperties]
-        default_collision_panel_props: DefaultCollisionPanelProperties
-        godot_scene_panel_props: bpy.types.bpy_prop_collection_idprop[GodotScenePanelProperties]
-        light_panel_props: bpy.types.bpy_prop_collection_idprop[LightPanelProperties]
-        show_all_light_settings: bool
-        is_root_scene: bool
-
-    class SceneOperators:
-        export_to_godot: Callable[None, set[rna_enums.OperatorReturnItems]]
-
-    class GoblendContext(bpy.types.Context):
-        scene: GoblendScene
-
 else:
     BoolProp = bpy.props.BoolProperty
     IntProp = bpy.props.IntProperty
     FloatProp = bpy.props.FloatProperty
-    StringProp = bpy.props.StringPropjkerty
+    StringProp = bpy.props.StringProperty
     IntVectorProp = bpy.props.IntVectorProperty
     FloatVectorProp = bpy.props.FloatVectorProperty
     EnumProp = bpy.props.EnumProperty
     CollectionProp = bpy.props.CollectionProperty
     PointerProp = bpy.props.PointerProperty
-
-    GoblendScene = bpy.types.Scene
-    RegisterGoblendScene = bpy.types.Scene
-    SceneOperators = bpy.ops.scene
-    GoblendContext = bpy.types.Context
 
 U = TypeVar("U", bound=bpy.types.bpy_struct)
 
@@ -124,10 +88,8 @@ U = TypeVar("U", bound=bpy.types.bpy_struct)
 # that way we can use foo = Prop(...) instead of foo: Prop(...)
 # which will allow us to use the correct types together with the definitions above
 def typed_prop_group(cls: type[U]) -> type[U]:
-    if cls.__annotations__ is None:
-        cls.__annotations__ = {}
     for name, value in list(vars(cls).items()):
-        if not name.startswith("bl_"):
+        if isinstance(value, bpy.props._PropertyDeferred):
             cls.__annotations__[name] = value
             delattr(cls, name)
     return cls

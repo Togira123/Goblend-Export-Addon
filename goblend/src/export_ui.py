@@ -18,7 +18,8 @@
 
 import bpy
 
-from .types import GoblendScene, PointerProp, CollectionProp, BoolProp
+from .types.goblend_types import GoblendScene
+from .types.property_types import PointerProp, CollectionProp, BoolProp
 
 from .export.glTF.glTFCollisionShape import glTFCollisionShape
 from .export.glTF.glTFExtension import glTFExtension

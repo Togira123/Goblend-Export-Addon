@@ -18,7 +18,7 @@
 
 import bpy
 
-from ...types import typed_prop_group, EnumProp, BoolProp, CollectionProp, IntProp
+from ...types.property_types import typed_prop_group, EnumProp, BoolProp, CollectionProp, IntProp
 from ...ui.lists.DefaultCollisionLayersList import DefaultCollisionLayerListItem
 from ...ui.lists.GroupList import GroupListItem
 from ...ui.lists.CollisionMasksList import CollisionMaskListItem

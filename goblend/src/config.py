@@ -20,6 +20,8 @@ import bpy
 import os
 import json
 
+from typing import Literal, TypedDict, cast
+
 from .utils import get_root_dir, reset_cache_enums
 
 from . import log
@@ -32,13 +34,151 @@ root_dir = None
 prev_filepath = ""
 
 
-def get_collision_groups(collision_config):
-    groups = []
+class CollisionGroup(TypedDict):
+    display_name: str
+    godot_group_name: str
+    description: str
+
+
+class Layer(TypedDict):
+    bit: int
+    display_name: str
+
+
+class CollisionConfig(TypedDict):
+    groups: list[CollisionGroup]
+    layers: list[Layer]
+
+
+class GodotScene(TypedDict):
+    display_name: str
+    name: str
+    godot_scene_path: str
+
+
+class VisualConfig(TypedDict, total=False):
+    render_layers: list[Layer]
+
+
+class NonTotalPaths(TypedDict, total=False):
+    same_hierarchy_target: str
+    scene_save_path: str
+    scene_use_same_hierarchy: bool
+    material_save_path: str
+    material_use_same_hierarchy: bool
+    texture_save_path: str
+    texture_use_same_hierarchy: bool
+    animation_library_save_path: str
+    animation_library_use_same_hierarchy: bool
+    animation_save_path: str
+    animation_use_same_hierarchy: bool
+    shader_save_path: str
+    shader_use_same_hierarchy: bool
+    mesh_save_path: str
+    mesh_use_same_hierarchy: bool
+    collision_shapes_save_path: str
+    reuse_collision_shapes: bool
+    save_material_separately: bool
+    save_animation_library_separately: bool
+    save_animation_separately: bool
+    save_shader_separately: bool
+    save_mesh_separately: bool
+
+
+class Paths(TypedDict):
+    same_hierarchy_target: str
+    scene_save_path: str
+    scene_use_same_hierarchy: bool
+    material_save_path: str
+    material_use_same_hierarchy: bool
+    texture_save_path: str
+    texture_use_same_hierarchy: bool
+    animation_library_save_path: str
+    animation_library_use_same_hierarchy: bool
+    animation_save_path: str
+    animation_use_same_hierarchy: bool
+    shader_save_path: str
+    shader_use_same_hierarchy: bool
+    mesh_save_path: str
+    mesh_use_same_hierarchy: bool
+    collision_shapes_save_path: str
+    reuse_collision_shapes: bool
+    save_material_separately: bool
+    save_animation_library_separately: bool
+    save_animation_separately: bool
+    save_shader_separately: bool
+    save_mesh_separately: bool
+
+
+PathKeysStringVal = Literal[
+    "same_hierarchy_target",
+    "scene_save_path",
+    "material_save_path",
+    "texture_save_path",
+    "animation_library_save_path",
+    "animation_save_path",
+    "shader_save_path",
+    "collision_shapes_save_path",
+    "mesh_save_path",
+]
+
+PathKeysBoolVal = Literal[
+    "scene_use_same_hierarchy",
+    "material_use_same_hierarchy",
+    "texture_use_same_hierarchy",
+    "animation_library_use_same_hierarchy",
+    "animation_use_same_hierarchy",
+    "shader_use_same_hierarchy",
+    "reuse_collision_shapes",
+    "mesh_use_same_hierarchy",
+    "save_material_separately",
+    "save_animation_library_separately",
+    "save_animation_separately",
+    "save_shader_separately",
+    "save_mesh_separately",
+]
+
+PathKeys = PathKeysStringVal | PathKeysBoolVal
+
+
+class DefaultConfig(TypedDict):
+    paths: Paths
+    collision_layers: list[int]
+    collision_masks: list[int]
+    render_layers: list[int]
+
+
+class NonTotalDefaultConfig(TypedDict, total=False):
+    paths: NonTotalPaths
+    collision_layers: list[int]
+    collision_masks: list[int]
+    render_layers: list[int]
+
+
+class NonTotalConfig(TypedDict, total=False):
+    collisions: CollisionConfig
+    godot_scenes: list[GodotScene]
+    visuals: VisualConfig
+    defaults: NonTotalDefaultConfig
+
+
+class Config(TypedDict):
+    collisions: CollisionConfig
+    godot_scenes: list[GodotScene]
+    visuals: VisualConfig
+    defaults: DefaultConfig
+
+
+config: NonTotalConfig = {}
+
+
+def get_collision_groups(collision_config: CollisionConfig) -> list[CollisionGroup]:
+    groups: list[CollisionGroup] = []
     if "groups" in collision_config:
         groups_config = collision_config["groups"]
-        if not type(groups_config) is list:
+        if type(groups_config) is not list:
             raise Exception("Invalid groups attribute")
-        seen_names = set()
+        seen_names: set[str] = set()
         for group in groups_config:
             if "display_name" in group and "godot_group_name" in group:
                 if group["godot_group_name"] in seen_names:
@@ -46,24 +186,26 @@ def get_collision_groups(collision_config):
                 if not (type(group["display_name"]) is str and type(group["godot_group_name"]) is str):
                     raise Exception("Incorrect type for 'display_name' or 'godot_group_name'")
                 seen_names.add(group["godot_group_name"])
-                obj = {"display_name": group["display_name"], "godot_group_name": group["godot_group_name"]}
+                obj: CollisionGroup = {
+                    "display_name": group["display_name"],
+                    "godot_group_name": group["godot_group_name"],
+                    "description": "",
+                }
                 if "description" in group and type(group["description"]) is str:
                     obj["description"] = group["description"]
-                else:
-                    obj["description"] = ""
                 groups.append(obj)
             else:
                 raise Exception("Malformed collision group")
     return groups
 
 
-def get_collision_layers(collision_config):
-    layers = []
+def get_collision_layers(collision_config: CollisionConfig) -> list[Layer]:
+    layers: list[Layer] = []
     if "layers" in collision_config:
         layers_config = collision_config["layers"]
-        if not type(layers_config) is list:
+        if type(layers_config) is not list:
             raise Exception("Invalid layers attribute")
-        seen_bits = set()
+        seen_bits: set[int] = set()
         for layer in layers_config:
             if "bit" in layer and "display_name" in layer:
                 if layer["bit"] in seen_bits:
@@ -76,7 +218,7 @@ def get_collision_layers(collision_config):
     return layers
 
 
-def get_collision_config(config):
+def get_collision_config(config: Config) -> tuple[list[CollisionGroup], list[Layer]]:
     if "collisions" in config:
         groups = get_collision_groups(config["collisions"])
         layers = get_collision_layers(config["collisions"])
@@ -84,7 +226,7 @@ def get_collision_config(config):
     return ([], [])
 
 
-def abs_path(path):
+def abs_path(path: str) -> str:
     if path.startswith("res://"):
         root_dir = os.path.join(os.path.normcase(get_root_dir()), "")
         path = path.replace("res://", root_dir, 1)
@@ -92,34 +234,34 @@ def abs_path(path):
     return path
 
 
-def validate_hierarchy_props(paths_config, key, has_hierarchy):
-    if not type(paths_config[key]) is bool:
+def validate_hierarchy_props(paths_config: Paths, key: PathKeysBoolVal, has_hierarchy: bool) -> None:
+    if type(paths_config[key]) is not bool:
         raise Exception("Incorrect type for '" + key + "', should be bool")
     if paths_config[key] and not has_hierarchy:
         raise Exception("'same_hierarchy_target' has to be set in order to use '" + key + "'")
 
 
-def get_default_paths(config):
-    paths = {}
-    save_keys = [
-        ["scene_save_path", "scene_use_same_hierarchy", "res://goblend/scenes/"],
-        ["material_save_path", "material_use_same_hierarchy", "res://goblend/materials/"],
-        ["texture_save_path", "texture_use_same_hierarchy", "res://goblend/textures/"],
-        ["animation_library_save_path", "animation_library_use_same_hierarchy", "res://goblend/animation_libraries/"],
-        ["animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"],
-        ["shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"],
-        ["mesh_save_path", "mesh_use_same_hierarchy", "res://goblend/meshes/"],
+def get_default_paths(config: NonTotalDefaultConfig) -> NonTotalPaths:
+    paths: NonTotalPaths = {}
+    save_keys: list[tuple[PathKeysStringVal, PathKeysBoolVal, str]] = [
+        ("scene_save_path", "scene_use_same_hierarchy", "res://goblend/scenes/"),
+        ("material_save_path", "material_use_same_hierarchy", "res://goblend/materials/"),
+        ("texture_save_path", "texture_use_same_hierarchy", "res://goblend/textures/"),
+        ("animation_library_save_path", "animation_library_use_same_hierarchy", "res://goblend/animation_libraries/"),
+        ("animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"),
+        ("shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"),
+        ("mesh_save_path", "mesh_use_same_hierarchy", "res://goblend/meshes/"),
     ]
-    whether_to_save_separately_keys = [
-        ["save_material_separately", True],
-        ["save_animation_library_separately", True],
-        ["save_animation_separately", True],
-        ["save_shader_separately", True],
-        ["save_mesh_separately", False],
+    whether_to_save_separately_keys: list[tuple[PathKeysBoolVal, bool]] = [
+        ("save_material_separately", True),
+        ("save_animation_library_separately", True),
+        ("save_animation_separately", True),
+        ("save_shader_separately", True),
+        ("save_mesh_separately", False),
     ]
 
     if "paths" in config:
-        paths_config = config["paths"]
+        paths_config = cast(Paths, config["paths"])
         has_hierarchy = False
         if "same_hierarchy_target" in paths_config:
             if type(paths_config["same_hierarchy_target"]) is str:
@@ -130,8 +272,9 @@ def get_default_paths(config):
 
         for keys in save_keys:
             if keys[0] in paths_config:
-                if type(paths_config[keys[0]]) is str:
-                    paths[keys[0]] = abs_path(paths_config[keys[0]])
+                val = paths_config[keys[0]]
+                if type(val) is str:
+                    paths[keys[0]] = abs_path(val)
                 else:
                     raise Exception("Incorrect type for '" + keys[0] + "', should be string")
             else:
@@ -177,12 +320,12 @@ def get_default_paths(config):
     return paths
 
 
-def get_collision_defaults(config):
+def get_collision_defaults(config: NonTotalDefaultConfig) -> tuple[list[int], list[int], list[int]]:
     layers = [0]
     if "collision_layers" in config:
         if type(config["collision_layers"]) is list:
             for bit in config["collision_layers"]:
-                if not type(bit) is int:
+                if type(bit) is not int:
                     raise Exception("Incorrect type for element of 'collision_layers', should be int")
             layers = config["collision_layers"]
         else:
@@ -192,7 +335,7 @@ def get_collision_defaults(config):
     if "collision_masks" in config:
         if type(config["collision_masks"]) is list:
             for bit in config["collision_masks"]:
-                if not type(bit) is int:
+                if type(bit) is not int:
                     raise Exception("Incorrect type for element of 'collision_masks', should be int")
             masks = config["collision_masks"]
         else:
@@ -202,7 +345,7 @@ def get_collision_defaults(config):
     if "render_layers" in config:
         if type(config["render_layers"]) is list:
             for bit in config["render_layers"]:
-                if not type(bit) is int:
+                if type(bit) is not int:
                     raise Exception("Incorrect type for element of 'render_layers', should be int")
             render_layers = config["render_layers"]
         else:
@@ -211,8 +354,8 @@ def get_collision_defaults(config):
     return (layers, masks, render_layers)
 
 
-def get_defaults(config):
-    defaults = {}
+def get_defaults(config: NonTotalConfig) -> NonTotalDefaultConfig:
+    defaults: NonTotalDefaultConfig = {}
     if "defaults" in config:
         defaults["paths"] = get_default_paths(config["defaults"])
         layers, masks, render_layers = get_collision_defaults(config["defaults"])
@@ -229,8 +372,8 @@ def get_defaults(config):
     return defaults
 
 
-def get_godot_scenes(config):
-    scenes = []
+def get_godot_scenes(config: NonTotalConfig) -> list[GodotScene]:
+    scenes: list[GodotScene] = []
     if "godot_scenes" in config:
         conf_scenes = config["godot_scenes"]
         if type(conf_scenes) is list:
@@ -261,13 +404,13 @@ def get_godot_scenes(config):
     return scenes
 
 
-def get_render_layers(object_config):
-    layers = []
-    if "render_layers" in object_config:
-        layers_config = object_config["render_layers"]
-        if not type(layers_config) is list:
+def get_render_layers(visual_config: VisualConfig) -> list[Layer]:
+    layers: list[Layer] = []
+    if "render_layers" in visual_config:
+        layers_config = visual_config["render_layers"]
+        if type(layers_config) is not list:
             raise Exception("Invalid layers attribute")
-        seen_bits = set()
+        seen_bits: set[int] = set()
         for layer in layers_config:
             if "bit" in layer and "display_name" in layer:
                 if layer["bit"] in seen_bits:
@@ -280,8 +423,8 @@ def get_render_layers(object_config):
     return layers
 
 
-def get_visual_settings(config):
-    visuals = {}
+def get_visual_settings(config: Config) -> VisualConfig:
+    visuals: VisualConfig = {}
     layers = []
     if "visuals" in config:
         layers = get_render_layers(config["visuals"])
@@ -289,10 +432,7 @@ def get_visual_settings(config):
     return visuals
 
 
-config = {}
-
-
-def read_config():
+def read_config() -> None:
     global config
     root_dir = get_root_dir()
     config_file_name = "goblend.json"
@@ -302,9 +442,7 @@ def read_config():
             with open(file, "r") as f:
                 content = json.load(f)
                 groups, layers = get_collision_config(content)
-                config["collisions"] = {}
-                config["collisions"]["groups"] = groups
-                config["collisions"]["layers"] = layers
+                config["collisions"] = {"groups": groups, "layers": layers}
                 config["defaults"] = get_defaults(content)
                 config["godot_scenes"] = get_godot_scenes(content)
                 config["visuals"] = get_visual_settings(content)
@@ -317,21 +455,18 @@ def read_config():
         except Exception as e:
             log.log("Exception while reading config: " + repr(e), "ERROR")
 
-    config["collisions"] = {}
-    config["collisions"]["groups"] = []
-    config["collisions"]["layers"] = []
+    config["collisions"] = {"groups": [], "layers": []}
     config["defaults"] = get_defaults({})
     config["godot_scenes"] = get_godot_scenes({})
-    config["visuals"] = {}
-    config["visuals"]["render_layers"] = []
+    config["visuals"] = {"render_layers": []}
 
 
 @bpy.app.handlers.persistent
-def get_config_at_startup(_file):
+def get_config_at_startup(_file: str) -> None:
     get_config()
 
 
-def get_config():
+def get_config() -> Config:
     global config
     global prev_filepath
     if not config or prev_filepath != bpy.data.filepath:
@@ -340,4 +475,4 @@ def get_config():
         # reset cached values
         reset_cache_enums()
         log.log("Config loaded:\n" + str(config))
-    return config
+    return cast(Config, config)

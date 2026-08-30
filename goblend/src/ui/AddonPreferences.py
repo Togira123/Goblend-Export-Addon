@@ -20,7 +20,7 @@ import bpy
 from ... import __package__ as base_package
 
 from typing import cast
-from ..types import typed_prop_group, StringProp, BoolProp
+from ..types.property_types import typed_prop_group, StringProp, BoolProp
 
 
 @typed_prop_group

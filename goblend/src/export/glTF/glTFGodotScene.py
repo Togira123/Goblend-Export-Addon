@@ -18,7 +18,10 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp
 
+
+@typed_prop_group
 class glTFGodotScene(bpy.types.PropertyGroup):
-    object_name: bpy.props.StringProperty()
-    scene_path: bpy.props.StringProperty()
+    object_name = StringProp()
+    scene_path = StringProp()

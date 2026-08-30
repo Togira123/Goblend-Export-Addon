@@ -20,9 +20,12 @@ import bpy
 
 from .glTFPhysicsBody import IntValue
 
+from ...types.property_types import typed_prop_group, StringProp, CollectionProp
 
+
+@typed_prop_group
 class glTFObject(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
+    name = StringProp()
 
-    shadow_cast_mode: bpy.props.StringProperty()
-    render_layers: bpy.props.CollectionProperty(type=IntValue)
+    shadow_cast_mode = StringProp()
+    render_layers = CollectionProp(type=IntValue)

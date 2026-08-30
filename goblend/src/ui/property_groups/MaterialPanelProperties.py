@@ -19,7 +19,16 @@
 import bpy
 
 from .enum_items import transparency_enum_items, culling_enum_items
-from ...types import BoolProp, PointerProp, StringProp, IntVectorProp, EnumProp, IntProp, FloatProp, typed_prop_group
+from ...types.property_types import (
+    BoolProp,
+    PointerProp,
+    StringProp,
+    IntVectorProp,
+    EnumProp,
+    IntProp,
+    FloatProp,
+    typed_prop_group,
+)
 
 
 def can_add_material(self: bpy.types.PropertyGroup, material: bpy.types.Material) -> bool:

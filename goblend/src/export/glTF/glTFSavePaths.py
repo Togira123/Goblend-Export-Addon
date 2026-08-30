@@ -30,5 +30,5 @@ class glTFSavePaths(bpy.types.PropertyGroup):
     mesh_save_path: bpy.props.StringProperty()
 
     @classmethod
-    def paths(cls):
+    def paths(cls) -> list[str]:
         return list(cls.__annotations__.keys())

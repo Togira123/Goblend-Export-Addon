@@ -20,7 +20,7 @@ import bpy
 
 from ... import config as conf
 from ... import utils
-from ...types import typed_prop_group
+from ...types.property_types import typed_prop_group, BoolProp, PointerProp, EnumProp
 
 
 def is_godot_scene(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool:
@@ -55,14 +55,14 @@ def scenes(_self: bpy.types.PropertyGroup, _context: bpy.types.Context | None) -
 
 @typed_prop_group
 class GodotScenePanelProperties(bpy.types.PropertyGroup):
-    open = bpy.props.BoolProperty(default=True)
-    obj = bpy.props.PointerProperty(
+    open = BoolProp(default=True)
+    obj = PointerProp(
         name="Target Object",
         description="The object to be replaced with the scene.",
         type=bpy.types.Object,
         poll=is_godot_scene,
     )
-    scene = bpy.props.EnumProperty(
+    scene = EnumProp(
         name="Scene",
         description="The Godot Scene to place at the object's position. Use the config file to register more scenes.",
         items=scenes,

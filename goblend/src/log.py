@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from io import TextIOWrapper
+
 from .. import __package__ as base_package
 
 import bpy
@@ -24,41 +26,42 @@ import os
 
 from .utils import get_root_dir
 
-log_file = None
+log_file: TextIOWrapper | None = None
 
 
-def init_log_file():
+def init_log_file() -> None:
     global log_file
     if log_file:
         # old file was not closed for some reason
         log_file.close()
     root_dir = get_root_dir()
     if root_dir == "":
-        return False
+        return
     file_path = os.path.join(root_dir, "goblend.log")
     try:
         log_file = open(file_path, "a")
-        return True
-    except:
+        return
+    except Exception:
         log_file = None
-        return False
+        return
 
 
-def close_log_file():
+def close_log_file() -> None:
     global log_file
     if log_file:
         log_file.close()
         log_file = None
 
 
-def log(message, type="INFO"):
+def log(message: str, type: str = "INFO") -> None:
     global log_file
-    msg = type + ": " + str(message)
+    msg = type + ": " + message
     now = datetime.datetime.now()
     msg = ("[%02d:%02d:%02d] (BLEND) " % (now.hour, now.minute, now.second)) + msg
     print(msg)
     addon_prefs = bpy.context.preferences.addons[base_package].preferences
     if addon_prefs.create_log_file:
-        if init_log_file():
+        init_log_file()
+        if log_file is not None:
             log_file.write(msg + "\n")
             close_log_file()

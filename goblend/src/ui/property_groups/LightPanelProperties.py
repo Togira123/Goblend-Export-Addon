@@ -19,7 +19,15 @@
 import bpy
 
 from math import radians
-from ...types import BoolProp, PointerProp, EnumProp, FloatProp, FloatVectorProp, IntProp, typed_prop_group
+from ...types.property_types import (
+    BoolProp,
+    PointerProp,
+    EnumProp,
+    FloatProp,
+    FloatVectorProp,
+    IntProp,
+    typed_prop_group,
+)
 
 
 def can_add_light(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool:

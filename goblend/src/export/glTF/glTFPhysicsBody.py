@@ -18,19 +18,24 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp, IntProp, CollectionProp
 
+
+@typed_prop_group
 class StringValue(bpy.types.PropertyGroup):
-    value: bpy.props.StringProperty()
+    value = StringProp()
 
 
+@typed_prop_group
 class IntValue(bpy.types.PropertyGroup):
-    value: bpy.props.IntProperty()
+    value = IntProp()
 
 
+@typed_prop_group
 class glTFPhysicsBody(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
-    type: bpy.props.StringProperty()
+    name = StringProp()
+    type = StringProp()
 
-    layers: bpy.props.CollectionProperty(type=IntValue)
-    masks: bpy.props.CollectionProperty(type=IntValue)
-    groups: bpy.props.CollectionProperty(type=StringValue)
+    layers = CollectionProp(type=IntValue)
+    masks = CollectionProp(type=IntValue)
+    groups = CollectionProp(type=StringValue)

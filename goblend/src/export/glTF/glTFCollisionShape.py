@@ -18,17 +18,20 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp, PointerProp, FloatVectorProp, FloatProp
 
+
+@typed_prop_group
 class glTFCollisionShape(bpy.types.PropertyGroup):
-    type: bpy.props.StringProperty()
-    parent_name: bpy.props.StringProperty()
-    object: bpy.props.PointerProperty(type=bpy.types.Object)
+    type = StringProp()
+    parent_name = StringProp()
+    object = PointerProp(type=bpy.types.Object)
 
     # for box
-    dimensions: bpy.props.FloatVectorProperty(size=3)
+    dimensions = FloatVectorProp(size=3)
 
     # for cylinder
-    height: bpy.props.FloatProperty()
+    height = FloatProp()
 
     # for cylinder and sphere
-    radius: bpy.props.FloatProperty()
+    radius = FloatProp()

@@ -22,7 +22,7 @@ import bpy
 
 from ...ui.lists.RenderLayersList import RenderLayerListItem
 from .enum_items import shadow_cast_enum_items
-from ...types import BoolProp, PointerProp, EnumProp, CollectionProp, IntProp, typed_prop_group
+from ...types.property_types import BoolProp, PointerProp, EnumProp, CollectionProp, IntProp, typed_prop_group
 
 
 def can_add_object_constraint(self: bpy.types.PropertyGroup, object: bpy.types.Object) -> bool:

@@ -18,8 +18,46 @@
 
 import os
 
+from typing import TypedDict, cast
 
-def parse_float(scene, state, idx):
+
+class TypeValue(TypedDict):
+    type: str
+    args: list["LastReadValue"]
+
+
+class LastReadValue(TypedDict):
+    type: str
+    value: str | int | float | list["LastReadValue"] | dict[str, "LastReadValue"] | bool | TypeValue
+
+
+class Node(TypedDict):
+    meta: dict[str, LastReadValue]
+    props: dict[str, LastReadValue]
+
+
+class Scene(TypedDict):
+    nodes: dict[str, Node]
+    ext_resources: dict
+    sub_resources: dict
+    connections: dict
+    gd_scene: dict
+
+
+class State(TypedDict):
+    last_read_string: str
+    last_read_identifier: str
+    last_read_kv_pairs: dict[str, LastReadValue]
+    last_read_type_key: str
+    last_read_key: str
+    last_read_value: LastReadValue
+    last_read_number: int | float
+    last_read_type_value: bool | TypeValue
+    last_read_arguments: list[LastReadValue]
+    last_read_object: dict[str, LastReadValue]
+
+
+def parse_float(scene: str, state: State, idx: int) -> int:
     f = ""
     seen_dot = False
     seen_e = 0
@@ -44,7 +82,7 @@ def parse_float(scene, state, idx):
     return len(scene)
 
 
-def parse_number(scene, state, idx):
+def parse_number(scene: str, state: State, idx: int) -> int:
     n = ""
     minus = 0
     if scene[idx] == "-":
@@ -67,7 +105,7 @@ def parse_number(scene, state, idx):
     return len(scene)
 
 
-def parse_string(scene, state, idx):
+def parse_string(scene: str, state: State, idx: int) -> int:
     s = ""
     for i in range(idx, len(scene)):
         if scene[i] == '"':
@@ -77,10 +115,10 @@ def parse_string(scene, state, idx):
     raise Exception("Non-terminated string")
 
 
-def parse_arguments(scene, state, idx):
+def parse_arguments(scene: str, state: State, idx: int) -> int:
     i = idx
     scene_len = len(scene)
-    args = []
+    args: list[LastReadValue] = []
     while i < scene_len:
         while i < scene_len and scene[i].isspace():
             i += 1
@@ -97,10 +135,10 @@ def parse_arguments(scene, state, idx):
     return scene_len
 
 
-def parse_type_value(scene, state, idx):
+def parse_type_value(scene: str, state: State, idx: int) -> int:
     i = parse_identifier(scene, state, idx)
     if state["last_read_identifier"] == "true" or state["last_read_identifier"] == "false":
-        state["last_read_type_value"] = True if state["last_read_identifier"] == "true" else False
+        state["last_read_type_value"] = state["last_read_identifier"] == "true"
         return i
     else:
         identifier = state["last_read_identifier"]
@@ -112,7 +150,7 @@ def parse_type_value(scene, state, idx):
         raise Exception("Unexpected token when parsing type value: " + scene[i])
 
 
-def parse_identifier(scene, state, idx):
+def parse_identifier(scene: str, state: State, idx: int) -> int:
     id = ""
     for i in range(idx, len(scene)):
         if scene[i].isalnum() or scene[i] == "_" or scene[i] == "/":
@@ -124,7 +162,7 @@ def parse_identifier(scene, state, idx):
     return len(scene)
 
 
-def parse_key(scene, state, idx):
+def parse_key(scene: str, state: State, idx: int) -> int:
     if scene[idx] == '"':
         i = parse_string(scene, state, idx + 1)
         key = state["last_read_string"]
@@ -139,7 +177,7 @@ def parse_key(scene, state, idx):
         raise Exception("Unexpected token when parsing key: " + scene[idx])
 
 
-def parse_value(scene, state, idx):
+def parse_value(scene: str, state: State, idx: int) -> int:
     if scene[idx] == '"':
         i = parse_string(scene, state, idx + 1)
         value = state["last_read_string"]
@@ -151,9 +189,10 @@ def parse_value(scene, state, idx):
         state["last_read_value"] = {"type": "number", "value": value}
         return i
     elif scene[idx].isalnum() or scene[idx] == "_":
+        # parses either booleans or godot types (e.g. ExtResource)
         i = parse_type_value(scene, state, idx)
         type_value = state["last_read_type_value"]
-        if type_value == True or type_value == False:
+        if isinstance(type_value, bool):
             state["last_read_value"] = {"type": "bool", "value": type_value}
         else:
             state["last_read_value"] = {"type": "type_value", "value": type_value}
@@ -176,7 +215,7 @@ def parse_value(scene, state, idx):
         raise Exception("Unexpected token when parsing value: " + scene[idx])
 
 
-def parse_object(scene, state, idx):
+def parse_object(scene: str, state: State, idx: int) -> int:
     obj = {}
     i = idx
     scene_len = len(scene)
@@ -209,7 +248,7 @@ def parse_object(scene, state, idx):
     return scene_len
 
 
-def parse_kv_pairs(scene, state, idx):
+def parse_kv_pairs(scene: str, state: State, idx: int) -> int:
     properties = {}
     i = idx
     scene_len = len(scene)
@@ -239,7 +278,7 @@ def parse_kv_pairs(scene, state, idx):
     return scene_len
 
 
-def parse_gd_scene(scene, data, state, idx):
+def parse_gd_scene(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_kv_pairs(scene, state, idx)
     if scene[i] != "]":
         raise Exception("Unexpected token when parsing gd_scene header: " + scene[i])
@@ -251,13 +290,13 @@ def parse_gd_scene(scene, data, state, idx):
     return i
 
 
-def parse_connection(scene, data, state, idx):
+def parse_connection(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_kv_pairs(scene, state, idx)
     if scene[i] != "]":
         raise Exception("Unexpected token when parsing connection header: " + scene[i])
     i += 1
     meta = state["last_read_kv_pairs"]
-    if not "signal" in meta:
+    if "signal" not in meta:
         raise Exception("Missing signal attribute in connection header")
     data["connections"][meta["signal"]["value"]] = {"meta": meta}
     i = parse_kv_pairs(scene, state, i)
@@ -265,13 +304,13 @@ def parse_connection(scene, data, state, idx):
     return i
 
 
-def parse_sub_resource(scene, data, state, idx):
+def parse_sub_resource(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_kv_pairs(scene, state, idx)
     if scene[i] != "]":
         raise Exception("Unexpected token when parsing sub_resource header: " + scene[i])
     i += 1
     meta = state["last_read_kv_pairs"]
-    if not "id" in meta:
+    if "id" not in meta:
         raise Exception("Missing id attribute in sub_resource header")
     data["sub_resources"][meta["id"]["value"]] = {"meta": meta}
     i = parse_kv_pairs(scene, state, i)
@@ -279,13 +318,13 @@ def parse_sub_resource(scene, data, state, idx):
     return i
 
 
-def parse_ext_resource(scene, data, state, idx):
+def parse_ext_resource(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_kv_pairs(scene, state, idx)
     if scene[i] != "]":
         raise Exception("Unexpected token when parsing ext_resource header: " + scene[i])
     i += 1
     meta = state["last_read_kv_pairs"]
-    if not "id" in meta:
+    if "id" not in meta:
         raise Exception("Missing id attribute in ext_resource header")
     data["ext_resources"][meta["id"]["value"]] = {"meta": meta}
     i = parse_kv_pairs(scene, state, i)
@@ -293,21 +332,24 @@ def parse_ext_resource(scene, data, state, idx):
     return i
 
 
-def parse_node(scene, data, state, idx):
+def parse_node(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_kv_pairs(scene, state, idx)
     if scene[i] != "]":
         raise Exception("Unexpected token when parsing node header: " + scene[i])
     i += 1
     meta = state["last_read_kv_pairs"]
-    if not "name" in meta:
+    if "name" not in meta:
         raise Exception("Missing name attribute in node header")
-    data["nodes"][meta["name"]["value"]] = {"meta": meta}
+    val = meta["name"]["value"]
+    if type(val) is not str:
+        raise Exception("Node name should be string")
     i = parse_kv_pairs(scene, state, i)
-    data["nodes"][meta["name"]["value"]]["props"] = state["last_read_kv_pairs"]
+    node_dict: Node = {"meta": meta, "props": state["last_read_kv_pairs"]}
+    data["nodes"][val] = node_dict
     return i
 
 
-def parse_resource(scene, data, state, idx):
+def parse_resource(scene: str, data: Scene, state: State, idx: int) -> int:
     i = parse_identifier(scene, state, idx)
     def_type = state["last_read_identifier"]
     match def_type:
@@ -326,19 +368,21 @@ def parse_resource(scene, data, state, idx):
     return new_idx
 
 
-def parse_scene(path):
-    data = {"nodes": {}, "ext_resources": {}, "sub_resources": {}, "connections": {}, "gd_scene": {}}
-    state = {
+def parse_scene(path: str) -> Scene:
+    data: Scene = {"nodes": {}, "ext_resources": {}, "sub_resources": {}, "connections": {}, "gd_scene": {}}
+    state: State = {
         "last_read_string": "",
         "last_read_identifier": "",
         "last_read_kv_pairs": {},
         "last_read_type_key": "",
         "last_read_key": "",
-        "last_read_value": "",
+        "last_read_value": cast(
+            LastReadValue, {}
+        ),  # allow empty object here since we will not read if we have not written to it before
         "last_read_number": 0,
-        "last_read_type_value": None,
+        "last_read_type_value": False,
         "last_read_arguments": [],
-        "last_read_array": [],
+        "last_read_object": {},
     }
     if os.path.isfile(path):
         with open(path, "r") as file:

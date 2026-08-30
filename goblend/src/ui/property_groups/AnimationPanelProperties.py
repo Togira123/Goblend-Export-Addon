@@ -18,7 +18,7 @@
 
 import bpy
 
-from ...types import BoolProp, PointerProp, typed_prop_group
+from ...types.property_types import BoolProp, PointerProp, typed_prop_group
 
 
 def is_not_action_picked_already(self: bpy.types.PropertyGroup, action: bpy.types.Action) -> bool:

@@ -22,7 +22,7 @@ from ..lists.DefaultRenderLayersList import DefaultRenderLayerListItem
 from .enum_items import transparency_enum_items, culling_enum_items
 from ...export.glTF.glTFExtension import glTFExtension
 
-from ...types import (
+from ...types.property_types import (
     typed_prop_group,
     BoolProp,
     StringProp,
