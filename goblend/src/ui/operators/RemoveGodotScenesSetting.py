@@ -15,8 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
 
 import bpy
+
+
+from typing import cast
+
+
+class GodotScenesPanelContext(GoblendContext):
+    godot_scene_to_remove: bpy.types.Object
 
 
 class SCENE_OT_RemoveGodotScenesSetting(bpy.types.Operator):
@@ -24,10 +33,11 @@ class SCENE_OT_RemoveGodotScenesSetting(bpy.types.Operator):
     bl_label = "Remove Godot Scene"
     bl_description = "Remove Godot scene"
 
-    def execute(self, context):
-        obj = context.godot_scene_to_remove
-        for i in range(len(context.scene.godot_scene_panel_props)):
-            if context.scene.godot_scene_panel_props[i].obj == obj:
-                context.scene.godot_scene_panel_props.remove(i)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(GodotScenesPanelContext, context)
+        obj = ctx.godot_scene_to_remove
+        for i in range(len(ctx.scene.godot_scene_panel_props)):
+            if ctx.scene.godot_scene_panel_props[i].obj == obj:
+                ctx.scene.godot_scene_panel_props.remove(i)
                 break
         return {"FINISHED"}

@@ -16,7 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from typing import cast
+
 import bpy
+
+from ...types.goblend_types import GoblendContext
 
 
 class SCENE_PT_LightsPanel(bpy.types.Panel):
@@ -26,10 +30,13 @@ class SCENE_PT_LightsPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
-        scene = context.scene
+        if not layout:
+            return
+
+        scene = cast(GoblendContext, context).scene
         light_panel_props = scene.light_panel_props
         show_all_light_settings = scene.show_all_light_settings
 

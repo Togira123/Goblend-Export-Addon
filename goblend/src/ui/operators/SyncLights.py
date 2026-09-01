@@ -16,12 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from typing import cast
+
 import bpy
 import os
 
 from ...config import abs_path, get_config
 from ...log import log
-from ...parse_scene import parse_scene
+from ...parse_scene import parse_scene, TypeValue
+
+from ...types.goblend_types import GoblendContext, OperatorReturnItems
 
 
 class SCENE_OT_SyncLights(bpy.types.Operator):
@@ -29,8 +33,8 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
     bl_label = "Sync All Lights"
     bl_description = "For each light in the scene that has a respective node in the respective Godot scene, read the light settings for that node and save them here. On further export, lights in Godot will automatically be set with these values"
 
-    def execute(self, context):
-        scene = context.scene
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        scene = cast(GoblendContext, context).scene
         props = scene.panel_props
         paths = get_config()["defaults"]["paths"].copy()
         if props.same_hierarchy_target.lower() != "default":
@@ -51,7 +55,7 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
         if paths["scene_use_same_hierarchy"]:
             scene_path = abs_path(os.path.join(os.path.normcase(scene_path), hierarchy_path))
 
-        scene_path = os.path.join(scene_path, context.scene.panel_props.gltf_extension.scene_name) + ".tscn"
+        scene_path = os.path.join(scene_path, scene.panel_props.gltf_extension.scene_name) + ".tscn"
 
         try:
             data = parse_scene(scene_path)
@@ -68,11 +72,13 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                     light_panel = scene.light_panel_props.add()
                     light_panel.light = obj
                     node_type = nodes[validated_obj_name]["meta"]["type"]["value"]
-                    if node_type != "DirectionalLight3D" and node_type != "OmniLight3D" and node_type != "SpotLight3D":
+                    if type(node_type) is not str or (
+                        node_type != "DirectionalLight3D" and node_type != "OmniLight3D" and node_type != "SpotLight3D"
+                    ):
                         continue
                     light_panel.type = node_type
                     if (
-                        not "light_specular" in node_props
+                        "light_specular" not in node_props
                         and nodes[validated_obj_name]["meta"]["type"] == "DirectionalLight3D"
                     ):
                         # has a different default value for DirecitonalLight3D's than OmniLight3D's or SpotLight3D's
@@ -80,23 +86,27 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                     if "light_cull_mask" in node_props:
                         # only store the lower 20 bits, as the rest are managed by godot internally so we never want to change them
                         lower20bits = (1 << 20) - 1
-                        node_props["light_cull_mask"]["value"] = node_props["light_cull_mask"]["value"] & lower20bits
+                        light_cull_mask_value = node_props["light_cull_mask"]["value"]
+                        if type(light_cull_mask_value) is not int:
+                            raise Exception("Expected property 'light_cull_mask' to be of type str")
+                        node_props["light_cull_mask"]["value"] = light_cull_mask_value & lower20bits
                     for prop, value in node_props.items():
                         if hasattr(light_panel, prop):
                             match value["type"]:
                                 case "str" | "number" | "bool":
                                     setattr(light_panel, prop, value["value"])
                                 case "type_value":
-                                    class_name = value["value"]["type"]
+                                    type_val = cast(TypeValue, value["value"])
+                                    class_name = type_val["type"]
                                     match class_name:
                                         case "Color":
                                             setattr(
                                                 light_panel,
                                                 prop,
                                                 [
-                                                    value["value"]["args"][0]["value"],
-                                                    value["value"]["args"][1]["value"],
-                                                    value["value"]["args"][2]["value"],
+                                                    type_val["args"][0]["value"],
+                                                    type_val["args"][1]["value"],
+                                                    type_val["args"][2]["value"],
                                                 ],
                                             )
                                         case _:

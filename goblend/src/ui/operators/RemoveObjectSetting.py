@@ -15,8 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
+
+from typing import cast
 
 import bpy
+
+
+class ObjectPanelContext(GoblendContext):
+    object_setting_to_remove: bpy.types.Object
 
 
 class SCENE_OT_RemoveObjectSetting(bpy.types.Operator):
@@ -24,10 +32,11 @@ class SCENE_OT_RemoveObjectSetting(bpy.types.Operator):
     bl_label = "Remove Object Constraint"
     bl_description = "Remove constraints for an object"
 
-    def execute(self, context):
-        obj = context.object_setting_to_remove
-        for i in range(len(context.scene.object_panel_props)):
-            if context.scene.object_panel_props[i].obj == obj:
-                context.scene.object_panel_props.remove(i)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(ObjectPanelContext, context)
+        obj = ctx.object_setting_to_remove
+        for i in range(len(ctx.scene.object_panel_props)):
+            if ctx.scene.object_panel_props[i].obj == obj:
+                ctx.scene.object_panel_props.remove(i)
                 break
         return {"FINISHED"}

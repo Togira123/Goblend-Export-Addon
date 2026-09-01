@@ -56,7 +56,7 @@ class GodotScene(TypedDict):
     godot_scene_path: str
 
 
-class VisualConfig(TypedDict, total=False):
+class VisualConfig(TypedDict):
     render_layers: list[Layer]
 
 
@@ -424,11 +424,10 @@ def get_render_layers(visual_config: VisualConfig) -> list[Layer]:
 
 
 def get_visual_settings(config: Config) -> VisualConfig:
-    visuals: VisualConfig = {}
     layers = []
     if "visuals" in config:
         layers = get_render_layers(config["visuals"])
-    visuals["render_layers"] = layers
+    visuals: VisualConfig = {"render_layers": layers}
     return visuals
 
 

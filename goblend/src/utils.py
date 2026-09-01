@@ -21,9 +21,9 @@ import os
 
 root_dir: str | None = None
 
-layers_enum_cache = []
-group_list_enum_cache = []
-render_layers_enum_cache = []
+layers_enum_cache: list[tuple[str, str, str]] = []
+group_list_enum_cache: list[tuple[str, str, str]] = []
+render_layers_enum_cache: list[tuple[str, str, str]] = []
 godot_scene_panel_props_enum_cache: list[tuple[str, str, str]] = []
 
 

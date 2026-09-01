@@ -18,12 +18,14 @@
 
 import bpy
 
+from ...types.blender_types import OperatorReturnItems
+
 
 class SCENE_OT_AddCollisionSetting(bpy.types.Operator):
     bl_idname = "scene.add_collision_setting"
     bl_label = "Add Collision Setting"
     bl_description = "Customize collision settings for different collision collections"
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
         context.scene.collision_panel_props.add()
         return {"FINISHED"}

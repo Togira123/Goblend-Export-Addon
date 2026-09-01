@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
+
+from typing import cast
 
 import bpy
 
@@ -28,10 +32,11 @@ class SCENE_OT_SaveSceneInTmpFile(bpy.types.Operator):
     bl_label = "Save Scene in Temporary File"
     bl_description = "Saves the path of this scene in the .tmp.goblend file."
 
-    def execute(self, context):
-        determine_correct_scene(context)
-        set_scene_name(context.scene.panel_props)
-        paths = get_export_paths(get_config(), props=context.scene.panel_props)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(GoblendContext, context)
+        determine_correct_scene(ctx)
+        set_scene_name(ctx.scene.panel_props)
+        paths = get_export_paths(get_config(), props=ctx.scene.panel_props)
 
         write_tmp_file(paths)
         return {"FINISHED"}

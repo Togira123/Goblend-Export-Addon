@@ -15,8 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
 
 import bpy
+
+
+from typing import cast
+
+
+class CollisionPanelContext(GoblendContext):
+    collision_collection_to_remove: bpy.types.Collection
 
 
 class SCENE_OT_RemoveCollisionSetting(bpy.types.Operator):
@@ -24,10 +33,11 @@ class SCENE_OT_RemoveCollisionSetting(bpy.types.Operator):
     bl_label = "Remove Collision"
     bl_description = "Remove the collision settings for a collision collection"
 
-    def execute(self, context):
-        collection = context.collision_collection_to_remove
-        for i in range(len(context.scene.collision_panel_props)):
-            if context.scene.collision_panel_props[i].collection == collection:
-                context.scene.collision_panel_props.remove(i)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(CollisionPanelContext, context)
+        collection = ctx.collision_collection_to_remove
+        for i in range(len(ctx.scene.collision_panel_props)):
+            if ctx.scene.collision_panel_props[i].collection == collection:
+                ctx.scene.collision_panel_props.remove(i)
                 break
         return {"FINISHED"}

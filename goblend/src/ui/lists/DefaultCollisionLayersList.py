@@ -17,26 +17,51 @@
 
 
 import bpy
+
+from ...types.goblend_types import GoblendContext, OperatorReturnItems
 from .CollisionLayersList import layer_items
 
+from ...types.property_types import BoolProp, EnumProp, typed_prop_group
 
+from typing import cast, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..property_groups.DefaultCollisionPanelProperties import DefaultCollisionPanelProperties
+
+
+@typed_prop_group
 class DefaultCollisionLayerListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this layer", default=True)
-    force_disabled: bpy.props.BoolProperty(
+    enabled = BoolProp(name="Enable", description="Enable or disable this layer", default=True)
+    force_disabled = BoolProp(
         name="Force Disabled", description="There exists another entry for this layer already", default=False
     )
-    layer: bpy.props.EnumProperty(
+    layer = EnumProp(
         name="Layer",
         items=layer_items,
     )
 
 
 class SCENE_UL_DefaultCollisionLayersList(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: "DefaultCollisionPanelProperties | None",
+        item: DefaultCollisionLayerListItem | None,
+        icon: int | None,
+        active_data: "DefaultCollisionPanelProperties",
+        active_property: str | None,
+        index: int | None,
+        flt_flag: int | None,
+    ) -> None:
         split = layout.split()
         row = split.row()
         col1 = row.row()
         duplicate = False
+        if not data or not item:
+            return
+        if not index:
+            index = 0
         for i in range(index):
             if data.default_layers_list[i].layer == item.layer:
                 # another one before has the same prop, disable
@@ -58,18 +83,21 @@ class LIST_OT_AddItemToDefaultLayersList(bpy.types.Operator):
     bl_label = "Add a layer"
 
     @classmethod
-    def poll(cls, context):
-        return len(context.scene.default_collision_panel_props.default_layers_list) < len(layer_items(cls, context))
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return len(cast(GoblendContext, context).scene.default_collision_panel_props.default_layers_list) < len(
+            layer_items(cls, context)
+        )
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(GoblendContext, context)
         # find first unused layer
-        existing = set()
-        for override in context.scene.default_collision_panel_props.default_layers_list:
+        existing: set[str] = set()
+        for override in ctx.scene.default_collision_panel_props.default_layers_list:
             existing.add(override.layer)
-        item = context.scene.default_collision_panel_props.default_layers_list.add()
+        item = ctx.scene.default_collision_panel_props.default_layers_list.add()
         all_layers = layer_items(self, context)
         for layer in all_layers:
-            if not layer[0] in existing:
+            if layer[0] not in existing:
                 item.layer = layer[0]
                 break
         return {"FINISHED"}
@@ -80,13 +108,14 @@ class LIST_OT_RemoveItemFromDefaultLayersList(bpy.types.Operator):
     bl_label = "Remove a layer"
 
     @classmethod
-    def poll(cls, context):
-        return context.scene.default_collision_panel_props.default_layers_list
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return len(cast(GoblendContext, context).scene.default_collision_panel_props.default_layers_list) > 0
 
-    def execute(self, context):
-        li = context.scene.default_collision_panel_props.default_layers_list
-        index = context.scene.default_collision_panel_props.default_layers_list_index
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(GoblendContext, context)
+        li = ctx.scene.default_collision_panel_props.default_layers_list
+        index = ctx.scene.default_collision_panel_props.default_layers_list_index
         li.remove(index)
-        context.scene.default_collision_panel_props.default_layers_list_index = min(max(0, index - 1), len(li) - 1)
+        ctx.scene.default_collision_panel_props.default_layers_list_index = min(max(0, index - 1), len(li) - 1)
 
         return {"FINISHED"}

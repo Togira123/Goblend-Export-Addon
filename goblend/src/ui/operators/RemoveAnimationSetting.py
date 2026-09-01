@@ -15,8 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
 
 import bpy
+
+
+from typing import cast
+
+
+class AnimationPanelContext(GoblendContext):
+    animation_to_remove: bpy.types.Action
 
 
 class SCENE_OT_RemoveAnimationSetting(bpy.types.Operator):
@@ -24,10 +33,11 @@ class SCENE_OT_RemoveAnimationSetting(bpy.types.Operator):
     bl_label = "Remove Animation Setting"
     bl_description = "Remove the animation setting for this animation"
 
-    def execute(self, context):
-        animation = context.animation_to_remove
-        for i in range(len(context.scene.animation_panel_props)):
-            if context.scene.animation_panel_props[i].animation == animation:
-                context.scene.animation_panel_props.remove(i)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(AnimationPanelContext, context)
+        animation = ctx.animation_to_remove
+        for i in range(len(ctx.scene.animation_panel_props)):
+            if ctx.scene.animation_panel_props[i].animation == animation:
+                ctx.scene.animation_panel_props.remove(i)
                 break
         return {"FINISHED"}

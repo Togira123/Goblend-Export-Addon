@@ -16,26 +16,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
-from typing import TYPE_CHECKING, Callable, Literal
+from typing import TYPE_CHECKING, Callable
+
+from .blender_types import OperatorReturnItems
 
 import bpy
-
-from ..ui.property_groups.AnimationPanelProperties import AnimationPanelProperties
-from ..ui.property_groups.CollisionPanelProperties import CollisionPanelProperties
-from ..ui.property_groups.DefaultCollisionPanelProperties import (
-    DefaultCollisionPanelProperties,
-)
-from ..ui.property_groups.GodotScenePanelProperties import GodotScenePanelProperties
-from ..ui.property_groups.LightPanelProperties import LightPanelProperties
-from ..ui.property_groups.MaterialPanelProperties import MaterialPanelProperties
-from ..ui.property_groups.ObjectPanelProperties import ObjectPanelProperties
-from ..ui.property_groups.PanelProperties import PanelProperties
-
-OperatorReturnItems = Literal["RUNNING_MODAL", "CANCELLED", "FINISHED", "PASS_THROUGH", "INTERFACE"]
 
 # this is needed to not get type errors when accessing these properties
 # At runtime it will just be bpy.types.Scene
 if TYPE_CHECKING:
+
+    from ..ui.property_groups.AnimationPanelProperties import AnimationPanelProperties
+    from ..ui.property_groups.CollisionPanelProperties import CollisionPanelProperties
+    from ..ui.property_groups.DefaultCollisionPanelProperties import (
+        DefaultCollisionPanelProperties,
+    )
+    from ..ui.property_groups.GodotScenePanelProperties import GodotScenePanelProperties
+    from ..ui.property_groups.LightPanelProperties import LightPanelProperties
+    from ..ui.property_groups.MaterialPanelProperties import MaterialPanelProperties
+    from ..ui.property_groups.ObjectPanelProperties import ObjectPanelProperties
+    from ..ui.property_groups.PanelProperties import PanelProperties
 
     class GoblendScene(bpy.types.Scene):
         panel_props: PanelProperties

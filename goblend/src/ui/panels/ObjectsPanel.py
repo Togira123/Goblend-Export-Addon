@@ -16,6 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from typing import cast
+
+from ...types.goblend_types import GoblendContext
+
 import bpy
 
 
@@ -26,10 +30,13 @@ class SCENE_PT_ObjectsPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
-        scene = context.scene
+        if not layout:
+            return
+
+        scene = cast(GoblendContext, context).scene
 
         object_panel_props = scene.object_panel_props
 

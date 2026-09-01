@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
 
 import bpy
 
@@ -24,6 +25,6 @@ class SCENE_OT_AddGodotScenesSetting(bpy.types.Operator):
     bl_label = "Add Godot Scene"
     bl_description = "Add an existing Godot Scene on import"
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
         context.scene.godot_scene_panel_props.add()
         return {"FINISHED"}

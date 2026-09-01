@@ -15,8 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import GoblendContext
+
+from typing import cast
 
 import bpy
+
+
+class LightPanelContext(GoblendContext):
+    light_setting_to_remove: bpy.types.Object
 
 
 class SCENE_OT_RemoveLightSetting(bpy.types.Operator):
@@ -24,10 +32,11 @@ class SCENE_OT_RemoveLightSetting(bpy.types.Operator):
     bl_label = "Remove Light Setting"
     bl_description = "Remove this light setting"
 
-    def execute(self, context):
-        light = context.light_setting_to_remove
-        for i in range(len(context.scene.light_panel_props)):
-            if context.scene.light_panel_props[i].light == light:
-                context.scene.light_panel_props.remove(i)
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(LightPanelContext, context)
+        light = ctx.light_setting_to_remove
+        for i in range(len(ctx.scene.light_panel_props)):
+            if ctx.scene.light_panel_props[i].light == light:
+                ctx.scene.light_panel_props.remove(i)
                 break
         return {"FINISHED"}

@@ -1,4 +1,4 @@
-# AddAnimationSetting.py
+# blender_types.py
 #
 # Copyright (C) 2026-present Goblend contributers, see https://github.com/Togira123/Goblend-Export-Addon
 #
@@ -15,17 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from typing import Literal
 
-import bpy
-
-from ...types.blender_types import OperatorReturnItems
-
-
-class SCENE_OT_AddAnimationSetting(bpy.types.Operator):
-    bl_idname = "scene.add_animation_setting"
-    bl_label = "Add Animation Setting"
-    bl_description = "Customize Animation settings for Godot"
-
-    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
-        context.scene.animation_panel_props.add()
-        return {"FINISHED"}
+OperatorReturnItems = Literal["RUNNING_MODAL", "CANCELLED", "FINISHED", "PASS_THROUGH", "INTERFACE"]

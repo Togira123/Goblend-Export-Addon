@@ -16,27 +16,51 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
+from typing import cast, TYPE_CHECKING
+
 import bpy
 from .GroupList import group_items
 
+from ...types.property_types import typed_prop_group, BoolProp, EnumProp
 
+if TYPE_CHECKING:
+    from ..property_groups.DefaultCollisionPanelProperties import DefaultCollisionPanelProperties
+from ...types.goblend_types import GoblendContext, OperatorReturnItems
+
+
+@typed_prop_group
 class DefaultGroupListItem(bpy.types.PropertyGroup):
-    enabled: bpy.props.BoolProperty(name="Enable", description="Enable or disable this group", default=True)
-    force_disabled: bpy.props.BoolProperty(
+    enabled = BoolProp(name="Enable", description="Enable or disable this group", default=True)
+    force_disabled = BoolProp(
         name="Force Disabled", description="There exists another entry for this group already", default=False
     )
-    group: bpy.props.EnumProperty(
+    group = EnumProp(
         name="Group",
         items=group_items,
     )
 
 
 class SCENE_UL_DefaultGroupList(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: "DefaultCollisionPanelProperties | None",
+        item: DefaultGroupListItem | None,
+        icon: int | None,
+        active_data: "DefaultCollisionPanelProperties",
+        active_property: str | None,
+        index: int | None,
+        flt_flag: int | None,
+    ) -> None:
         split = layout.split()
         row = split.row()
         col1 = row.row()
         duplicate = False
+        if not data or not item:
+            return
+        if not index:
+            index = 0
         for i in range(index):
             if data.default_groups_list[i].group == item.group:
                 # another one before has the same prop, disable
@@ -58,18 +82,21 @@ class LIST_OT_AddItemToDefaultGroupList(bpy.types.Operator):
     bl_label = "Add a group"
 
     @classmethod
-    def poll(cls, context):
-        return len(context.scene.default_collision_panel_props.default_groups_list) < len(group_items(cls, context))
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return len(cast(GoblendContext, context).scene.default_collision_panel_props.default_groups_list) < len(
+            group_items(cls, context)
+        )
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
+        ctx = cast(GoblendContext, context)
         # find first unused mask
-        existing = set()
-        for override in context.scene.default_collision_panel_props.default_groups_list:
+        existing: set[str] = set()
+        for override in ctx.scene.default_collision_panel_props.default_groups_list:
             existing.add(override.group)
-        item = context.scene.default_collision_panel_props.default_groups_list.add()
+        item = ctx.scene.default_collision_panel_props.default_groups_list.add()
         all_groups = group_items(self, context)
         for group in all_groups:
-            if not group[0] in existing:
+            if group[0] not in existing:
                 item.group = group[0]
                 break
         return {"FINISHED"}
@@ -80,10 +107,10 @@ class LIST_OT_RemoveItemFromDefaultGroupList(bpy.types.Operator):
     bl_label = "Remove a group"
 
     @classmethod
-    def poll(cls, context):
-        return context.scene.default_collision_panel_props.default_groups_list
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return len(cast(GoblendContext, context).scene.default_collision_panel_props.default_groups_list) > 0
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
         li = context.scene.default_collision_panel_props.default_groups_list
         index = context.scene.default_collision_panel_props.default_groups_list_index
         li.remove(index)

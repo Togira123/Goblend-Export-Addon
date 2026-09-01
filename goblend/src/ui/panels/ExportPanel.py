@@ -18,6 +18,9 @@
 
 import bpy
 
+from ...types.goblend_types import GoblendContext
+
+from typing import cast
 
 class SCENE_PT_ExportPanel(bpy.types.Panel):
     bl_label = "Goblend: Export to Godot"
@@ -26,10 +29,13 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
-        scene = context.scene
+        if not layout:
+            return
+
+        scene = cast(GoblendContext, context).scene
 
         panel_props = scene.panel_props
 

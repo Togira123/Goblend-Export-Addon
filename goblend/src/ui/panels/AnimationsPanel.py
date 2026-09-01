@@ -18,6 +18,9 @@
 
 import bpy
 
+from ...types.goblend_types import GoblendContext
+
+from typing import cast
 
 class SCENE_PT_AnimationsPanel(bpy.types.Panel):
     bl_parent_id = "SCENE_PT_export_to_godot"
@@ -26,10 +29,12 @@ class SCENE_PT_AnimationsPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+        if not layout:
+            return
 
-        scene = context.scene
+        scene = cast(GoblendContext, context).scene
         animation_panel_props = scene.animation_panel_props
 
         layout.use_property_split = True
