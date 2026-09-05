@@ -14,3 +14,5 @@ reportUnknownArgumentType = "error"
 reportUnknownParameterType = "error"
 reportUnknownLambdaType = "error"
 reportMissingTypeStubs = "error"
+extraPaths = ["goblend/typings/blender"]
+stubPath = "goblend/typings/stubs"

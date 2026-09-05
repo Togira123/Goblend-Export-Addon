@@ -16,10 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
-import os
 import bpy
 from mathutils import Quaternion
+
+from ..export.glTF.glTFObject import glTFObject
+
+from ..export.glTF.glTFGodotScene import glTFGodotScene
+from ..ui.property_groups.LightPanelProperties import LightPanelProperties
+
+from ..types.goblend_types import GoblendContext, GoblendScene
 from ..log import log
+from typing import TYPE_CHECKING, Required, TypedDict, cast, Literal, Any
+
+if TYPE_CHECKING:
+    from io_scene_gltf2.io.com.gltf2_io import Gltf, Scene, Material, Node, Animation, RealizedNode, Mesh
+    from io_scene_gltf2.io.com.gltf2_io_extensions import Extension, ChildOfRootExtension
 
 omi_physics_body = "OMI_physics_body"
 omi_physics_shape = "OMI_physics_shape"
@@ -33,31 +44,138 @@ goblend_object = "EXT_goblend_object"
 godot_single_root = "GODOT_single_root"
 
 
+class GoblendMaterialExtShaderUniform(TypedDict):
+    var_name: str
+    uniform_data: str
+
+
+class GoblendMaterialExt(TypedDict, total=False):
+    transparency_mode: Required[str]
+    transparency_alpha_scissor_threshold: float
+    shader_code: str
+    shader_uniforms: list[GoblendMaterialExtShaderUniform]
+    cull_mode: Required[str]
+
+
+class GoblendObjectExt(TypedDict, total=False):
+    render_layers: Required[list[int]]
+    shadow_cast_mode: str
+
+
+class GoblendLightExt(TypedDict):
+    omni_range: float
+    omni_attenuation: float
+    omni_shadow_mode: int
+    spot_range: float
+    spot_attenuation: float
+    spot_angle: float
+    spot_angle_attenuation: float
+    light_color: list[float]
+    light_energy: float
+    light_indirect_energy: float
+    light_volumetric_fog_energy: float
+    light_angular_distance: float
+    light_size: float
+    light_negative: bool
+    light_specular: float
+    light_bake_mode: int
+    light_cull_mask: int
+    shadow_enabled: bool
+
+
+class GoblendGeneralExt(TypedDict):
+    save_paths: dict[str, str]
+
+
+# need to add some arbitrary extension for GODOT_single_root to be in extensions_used
+class GoblendSingleRootExt(TypedDict):
+    foo: list[bool]
+
+
+class GoblendGodotSceneExt(TypedDict):
+    scene_path: str
+
+
+class GoblendAnimationExt(TypedDict):
+    autoplay: bool
+    loop: bool
+
+
+class GoblendPhysicsBodyAttributesExt(TypedDict, total=False):
+    layers: list[int] | None
+    masks: list[int] | None
+    groups: list[str] | None
+
+
+class OMIPhysicsBodyExtTrigger(TypedDict, total=False):
+    nodes: list[int]
+    shape: "ChildOfRootExtension | None"
+
+
+class OMIPhysicsBodyExtMotion(TypedDict):
+    type: Literal["static", "kinematic", "dynamic", "character"]
+
+
+class OMIPhysicsBodyExtCollider(TypedDict):
+    shape: "ChildOfRootExtension | None"
+
+
+class OMIPhysicsBodyExt(TypedDict, total=False):
+    trigger: OMIPhysicsBodyExtTrigger
+    motion: OMIPhysicsBodyExtMotion
+    collider: OMIPhysicsBodyExtCollider
+
+
 # this class is special, it is used to add a gltf extension
 # it must be defined in the __init__.py file for it to work
 # hence we import it there
 class glTF2ExportUserExtension:
-    def __init__(self):
+    if TYPE_CHECKING:
+        from io_scene_gltf2.io.com.gltf2_io_extensions import (
+            Extension as glTFExtension,
+            ChildOfRootExtension as glTFChildOfRootExtension,
+        )
+
+        from io_scene_gltf2.io.com.gltf2_io import Node
+
+        Extension: type[glTFExtension]
+        ChildOfRootExtension: type[glTFChildOfRootExtension]
+        godot_scenes_dict: dict[str, glTFGodotScene]
+        root_node: Node | None
+        blender_object_name_to_gltf_node: dict[str, Node]
+        object_props_dict: dict[str, glTFObject]
+
+    def __init__(self) -> None:
         _init(self)
 
-    def gather_gltf_extensions_hook(self, gltf2_plan, _export_settings):
+    def gather_gltf_extensions_hook(self, gltf2_plan: "Gltf", _export_settings: dict[Any, Any]) -> None:
         if bpy.context.scene.panel_props.gltf_extension.is_exporting_with_goblend:
             _gather_gltf_extensions_hook(self, gltf2_plan)
 
-    def gather_scene_hook(self, gltf2_scene, blender_scene, _export_settings):
+    def gather_scene_hook(
+        self, gltf2_scene: "Scene", blender_scene: GoblendScene, _export_settings: dict[Any, Any]
+    ) -> None:
         if bpy.context.scene.panel_props.gltf_extension.is_exporting_with_goblend:
             _gather_scene_hook(self, gltf2_scene, blender_scene)
 
-    def gather_node_hook(self, gltf2_object, blender_object, _export_settings):
+    def gather_node_hook(
+        self, gltf2_object: "Node", blender_object: bpy.types.Object, _export_settings: dict[Any, Any]
+    ) -> None:
         if bpy.context.scene.panel_props.gltf_extension.is_exporting_with_goblend:
             _gather_node_hook(self, gltf2_object, blender_object)
 
-    def gather_gltf_hook(self, _active_scene_idx, _scenes, animations, _export_settings):
+    def gather_gltf_hook(
+        self,
+        _active_scene_idx: int,
+        _scenes: list["Scene"],
+        animations: list["Animation"],
+        _export_settings: dict[Any, Any],
+    ) -> None:
         if bpy.context.scene.panel_props.gltf_extension.is_exporting_with_goblend:
             _gather_gltf_hook(self, animations)
 
 
-def _init(self):
+def _init(self: glTF2ExportUserExtension) -> None:
     from io_scene_gltf2.io.com.gltf2_io_extensions import Extension, ChildOfRootExtension
 
     self.Extension = Extension
@@ -65,38 +183,42 @@ def _init(self):
     self.godot_scenes_dict = {}
     self.root_node = None
     self.blender_object_name_to_gltf_node = {}
-    for godot_scene in bpy.context.scene.panel_props.gltf_extension.godot_scenes:
+    scene = cast(GoblendScene, bpy.context.scene)
+    for godot_scene in scene.panel_props.gltf_extension.godot_scenes:
         self.godot_scenes_dict[godot_scene.object_name] = godot_scene
     self.object_props_dict = {}
-    for object_prop in bpy.context.scene.panel_props.gltf_extension.objects:
+    for object_prop in scene.panel_props.gltf_extension.objects:
         self.object_props_dict[object_prop.name] = object_prop
 
 
-def _gather_gltf_extensions_hook(self, gltf2_plan):
+def _gather_gltf_extensions_hook(self: glTF2ExportUserExtension, gltf2_plan: "Gltf") -> None:
     if gltf2_plan.extensions is None:
         gltf2_plan.extensions = {}
 
-    gltf_extension = bpy.context.scene.panel_props.gltf_extension
+    ctx = cast(GoblendContext, bpy.context)
+
+    gltf_extension = ctx.scene.panel_props.gltf_extension
     # add save paths
-    paths = {}
+    paths: dict[str, str] = {}
     path_keys = gltf_extension.save_paths.paths()
     for path_key in path_keys:
         paths[path_key] = getattr(gltf_extension.save_paths, path_key)
 
-    gltf2_plan.extensions[goblend_general] = self.Extension(
-        name=goblend_general, extension={"save_paths": paths}, required=False
-    )
+    general_ext: GoblendGeneralExt = {"save_paths": paths}
+
+    gltf2_plan.extensions[goblend_general] = self.Extension(name=goblend_general, extension=general_ext, required=False)
     # need to add some arbitrary property for GODOT_single_root to be in extensions_used
     # since we set it to an empty array it won't be added in the "extensions" dict
     # but still be under "extensionsUsed"
+    dummy_ext: GoblendSingleRootExt = {"foo": []}
     gltf2_plan.extensions[godot_single_root] = self.Extension(
-        name=godot_single_root, extension={"foo": []}, required=False
+        name=godot_single_root, extension=dummy_ext, required=False
     )
 
     # have to ensure that root node is at position 0
     if len(gltf2_plan.nodes) > 1 and gltf2_plan.nodes[0] != self.root_node:
         # make sure to place the root node at first place
-        index_of_root_node = gltf2_plan.nodes.index(self.root_node)
+        index_of_root_node = gltf2_plan.nodes.index(cast("RealizedNode", self.root_node))
         gltf2_plan.nodes[0], gltf2_plan.nodes[index_of_root_node] = (
             gltf2_plan.nodes[index_of_root_node],
             gltf2_plan.nodes[0],
@@ -122,7 +244,7 @@ def _gather_gltf_extensions_hook(self, gltf2_plan):
                     continue
                 for ext_name in channel_extensions:
                     ext = channel_extensions[ext_name]
-                    if ext_name != "KHR_animation_pointer" or not "pointer" in ext:
+                    if ext_name != "KHR_animation_pointer" or "pointer" not in ext:
                         continue
                     if ext["pointer"].startswith("/nodes/"):
                         node_idx = ext["pointer"][len("/nodes/") : ext["pointer"].index("/", len("/nodes/"))]
@@ -132,16 +254,16 @@ def _gather_gltf_extensions_hook(self, gltf2_plan):
                             ext["pointer"] = "/nodes/0" + ext["pointer"][len("/nodes/" + str(index_of_root_node)) :]
 
 
-def _gather_scene_hook(self, gltf2_scene, blender_scene):
+def _gather_scene_hook(self: glTF2ExportUserExtension, gltf2_scene: "Scene", blender_scene: GoblendScene) -> None:
     gltf_extension = blender_scene.panel_props.gltf_extension
     collisions_collection = bpy.context.scene.panel_props.collision_collection
 
-    texture_group_dict = {}
+    texture_group_dict: dict[str, str] = {}
     for texture_group in gltf_extension.texture_groups:
         for mat_name in texture_group.materials:
             texture_group_dict[mat_name.name] = texture_group.name
 
-    materials = set()
+    materials: set["Material"] = set()
     for node in gltf2_scene.nodes:
         if node.mesh:
             for primitive in node.mesh.primitives:
@@ -149,7 +271,7 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
                     materials.add(primitive.material)
 
     # iterate over all materials, if it belongs to a texture group rename it the first time and otherwise discard it
-    material_dict = {}
+    material_dict: dict[str, "Material"] = {}
     for material in materials:
         if material.name in texture_group_dict:
             actual_name = texture_group_dict[material.name]
@@ -170,12 +292,10 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
         mat_name = material.name
         if mat_name in texture_group_dict:
             mat_name = texture_group_dict[mat_name]
-        if not mat_name in material_dict:
+        if mat_name not in material_dict:
             continue
         material_node = material_dict[mat_name]
-        ext = {
-            "transparency_mode": material.transparency_mode,
-        }
+        ext: GoblendMaterialExt = {"transparency_mode": material.transparency_mode, "cull_mode": material.cull_mode}
         if material.transparency_mode == "SCISSOR":
             ext["transparency_alpha_scissor_threshold"] = material.transparency_alpha_scissor_threshold
         if material.shader_code != "":
@@ -183,7 +303,6 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
             ext["shader_uniforms"] = []
             for uniform in material.shader_uniforms:
                 ext["shader_uniforms"].append({"var_name": uniform.var_name, "uniform_data": uniform.uniform_data})
-        ext["cull_mode"] = material.cull_mode
         material_node.extensions[goblend_material] = self.Extension(
             name=goblend_material,
             extension=ext,
@@ -191,12 +310,12 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
         )
 
     # get physics types to distinguish between area shapes and body shapes
-    physics_body_types = {}
+    physics_body_types: dict[str, str] = {}
     for physics_body in gltf_extension.physics_bodies:
         physics_body_types[physics_body.name] = physics_body.type
 
     # create shape nodes
-    shapes_dict = {}
+    shapes_dict: dict[str, list["Node"]] = {}
     for shape in gltf_extension.collision_shapes:
         gltf2_scene.nodes.remove(self.blender_object_name_to_gltf_node[shape.object.name])
         parent_type = None
@@ -237,17 +356,17 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
             log("Unknown shape type: " + shape.type, "WARNING")
             continue
         if next((b for b in gltf_extension.physics_bodies if b.name == shape.parent_name), None):
-            if not shape.parent_name in shapes_dict:
+            if shape.parent_name not in shapes_dict:
                 shapes_dict[shape.parent_name] = []
             shapes_dict[shape.parent_name].append(shape_node)
         else:
             # if the parent collection isn't a physics body (because it wasn't added as a setting) add the shape to the "Collisions" collection
-            if not collisions_collection in shapes_dict:
+            if collisions_collection not in shapes_dict:
                 shapes_dict[collisions_collection] = []
             shapes_dict[collisions_collection].append(shape_node)
     root_physics_body_node = None
     for physics_body in gltf_extension.physics_bodies:
-        if not physics_body.name in shapes_dict:
+        if physics_body.name not in shapes_dict:
             # body has no shapes
             shapes_dict[physics_body.name] = []
         # place the collision shape centered in terms of origins of the shapes
@@ -286,28 +405,30 @@ def _gather_scene_hook(self, gltf2_scene, blender_scene):
             root_physics_body_node = physics_body_node
         # add node to the scene
         gltf2_scene.nodes.append(physics_body_node)
-    children_of_root = []
+    children_of_root: list["Node"] = []
     for node in gltf2_scene.nodes:
         if node != root_physics_body_node:
             children_of_root.append(node)
     # make the root node the only scene child and add the rest as children of that root node
-    gltf2_scene.nodes = [root_physics_body_node]
-    root_physics_body_node.children.extend(children_of_root)
+    # it is guaranteed that root_physics_body_node is not None here
+    gltf2_scene.nodes = [cast("Node", root_physics_body_node)]
+    cast("Node", root_physics_body_node).children.extend(children_of_root)
     self.root_node = root_physics_body_node
 
 
-def _gather_node_hook(self, gltf2_object, blender_object):
-    scene = bpy.context.scene
+def _gather_node_hook(self: glTF2ExportUserExtension, gltf2_object: "Node", blender_object: bpy.types.Object) -> None:
+    scene = cast(GoblendScene, bpy.context.scene)
     self.blender_object_name_to_gltf_node[blender_object.name] = gltf2_object
     if blender_object.name in self.godot_scenes_dict:
         # is godot scene
         if gltf2_object.extensions is None:
             gltf2_object.extensions = {}
+        scene_ext: GoblendGodotSceneExt = {
+            "scene_path": self.godot_scenes_dict[blender_object.name].scene_path,
+        }
         gltf2_object.extensions[goblend_godot_scene] = self.Extension(
             name=goblend_godot_scene,
-            extension={
-                "scene_path": self.godot_scenes_dict[blender_object.name].scene_path,
-            },
+            extension=scene_ext,
             required=False,
         )
         gltf2_object.mesh = None
@@ -320,7 +441,7 @@ def _gather_node_hook(self, gltf2_object, blender_object):
 
     if blender_object.name in self.object_props_dict:
         props = self.object_props_dict[blender_object.name]
-        ext_obj = {
+        ext_obj: GoblendObjectExt = {
             "render_layers": [layer.value for layer in props.render_layers],
         }
         if not is_light:
@@ -331,38 +452,38 @@ def _gather_node_hook(self, gltf2_object, blender_object):
         gltf2_object.extensions[goblend_object] = self.Extension(name=goblend_object, extension=ext_obj, required=False)
 
     if is_light:
-        light_settings = None
+        light_settings: LightPanelProperties | None = None
         for setting in scene.light_panel_props:
             if setting.light == blender_object:
                 light_settings = setting
                 break
         if not light_settings:
             return
-        ext = {
-            "omni_range": setting.omni_range,
-            "omni_attenuation": setting.omni_attenuation,
-            "omni_shadow_mode": int(setting.omni_shadow_mode),
-            "spot_range": setting.spot_range,
-            "spot_attenuation": setting.spot_attenuation,
-            "spot_angle": setting.spot_angle,
-            "spot_angle_attenuation": setting.spot_angle_attenuation,
-            "light_color": [x for x in setting.light_color],
-            "light_energy": setting.light_energy,
-            "light_indirect_energy": setting.light_indirect_energy,
-            "light_volumetric_fog_energy": setting.light_volumetric_fog_energy,
-            "light_angular_distance": setting.light_angular_distance,
-            "light_size": setting.light_size,
-            "light_negative": setting.light_negative,
-            "light_specular": setting.light_specular,
-            "light_bake_mode": int(setting.light_bake_mode),
-            "light_cull_mask": setting.light_cull_mask,
-            "shadow_enabled": setting.shadow_enabled,
+        ext: GoblendLightExt = {
+            "omni_range": light_settings.omni_range,
+            "omni_attenuation": light_settings.omni_attenuation,
+            "omni_shadow_mode": int(light_settings.omni_shadow_mode),
+            "spot_range": light_settings.spot_range,
+            "spot_attenuation": light_settings.spot_attenuation,
+            "spot_angle": light_settings.spot_angle,
+            "spot_angle_attenuation": light_settings.spot_angle_attenuation,
+            "light_color": [x for x in light_settings.light_color],
+            "light_energy": light_settings.light_energy,
+            "light_indirect_energy": light_settings.light_indirect_energy,
+            "light_volumetric_fog_energy": light_settings.light_volumetric_fog_energy,
+            "light_angular_distance": light_settings.light_angular_distance,
+            "light_size": light_settings.light_size,
+            "light_negative": light_settings.light_negative,
+            "light_specular": light_settings.light_specular,
+            "light_bake_mode": int(light_settings.light_bake_mode),
+            "light_cull_mask": light_settings.light_cull_mask,
+            "shadow_enabled": light_settings.shadow_enabled,
         }
         gltf2_object.extensions[goblend_light] = self.Extension(name=goblend_light, extension=ext, required=False)
         return
 
 
-def _gather_gltf_hook(self, animations):
+def _gather_gltf_hook(self: glTF2ExportUserExtension, animations: list["Animation"]) -> None:
     # NOTE: animating alpha value is broken before blender 5.1
     # the experimental option of Blender's gltf exporter "export_convert_animation_pointer" will take care of material animations
     animation_props = bpy.context.scene.animation_panel_props
@@ -373,15 +494,15 @@ def _gather_gltf_hook(self, animations):
             if animation_prop.animation.name == animation.name:
                 anim_prop = animation_prop
                 break
-        if anim_prop == None:
+        if anim_prop is None:
             continue
-        ext = {"autoplay": anim_prop.autoplay, "loop": anim_prop.loop}
-        if animation.extensions == None:
+        ext: GoblendAnimationExt = {"autoplay": anim_prop.autoplay, "loop": anim_prop.loop}
+        if animation.extensions is None:
             animation.extensions = {}
         animation.extensions[goblend_animation] = self.Extension(name=goblend_animation, extension=ext, required=False)
 
 
-def _get_middle_point(shapes):
+def _get_middle_point(shapes: list["Node"]) -> list[float]:
     if len(shapes) == 0:
         return [0.0, 0.0, 0.0]
     xmin = shapes[0].translation[0]
@@ -406,7 +527,12 @@ def _get_middle_point(shapes):
     return [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2]
 
 
-def _create_node(name, extensions={}, translation=[0, 0, 0], children=[], rotation=None, scale=None):
+def _create_node(
+    name: str,
+    extensions: dict[str, "Extension"] = {},
+    translation: list[float] = [0, 0, 0],
+    rotation: list[float] | None = None,
+) -> "Node":
     from io_scene_gltf2.io.com import gltf2_io
     from io_scene_gltf2.blender.com import gltf2_blender_math
 
@@ -431,29 +557,29 @@ def _create_node(name, extensions={}, translation=[0, 0, 0], children=[], rotati
         rotation=rotation,
         matrix=[],
         camera=None,
-        children=children,
+        children=[],
         extras=None,
         mesh=None,
-        scale=scale,
+        scale=None,
         skin=None,
         weights=None,
     )
 
 
 def _create_physics_body(
-    self,
-    type,
-    shape,
-    name,
-    is_area_shape=False,
-    translation=[0, 0, 0],
-    rotation=None,
-    layers=None,
-    masks=None,
-    groups=None,
-):
-    ext = {}
-    physics_body_ext = {}
+    self: glTF2ExportUserExtension,
+    type: str | None,
+    shape: "ChildOfRootExtension | None",
+    name: str,
+    is_area_shape: bool = False,
+    translation: list[float] = [0, 0, 0],
+    rotation: list[float] | None = None,
+    layers: list[int] | None = None,
+    masks: list[int] | None = None,
+    groups: list[str] | None = None,
+) -> "Node":
+    ext: dict[str, "Extension"] = {}
+    physics_body_ext: OMIPhysicsBodyExt = {}
     if type and type != "NODE":
         if type == "AREA":
             # continue here, set up trigger correctly
@@ -470,7 +596,7 @@ def _create_physics_body(
                 omi_type = "character"
 
             physics_body_ext["motion"] = {"type": omi_type}
-    if not shape is None:
+    if shape is not None:
         if is_area_shape:
             physics_body_ext["trigger"] = {"shape": shape}
         else:
@@ -478,12 +604,12 @@ def _create_physics_body(
     if physics_body_ext:
         ext[omi_physics_body] = self.Extension(name=omi_physics_body, extension=physics_body_ext, required=False)
 
-    physics_body_attributes_ext = {}
-    if not layers is None:
+    physics_body_attributes_ext: GoblendPhysicsBodyAttributesExt = {}
+    if layers is not None:
         physics_body_attributes_ext["layers"] = layers
-    if not masks is None:
+    if masks is not None:
         physics_body_attributes_ext["masks"] = masks
-    if not groups is None:
+    if groups is not None:
         physics_body_attributes_ext["groups"] = groups
 
     if physics_body_attributes_ext:
@@ -499,7 +625,9 @@ def _create_physics_body(
     )
 
 
-def _add_box_shape(self, obj, is_area_shape, dim_x, dim_y, dim_z):
+def _add_box_shape(
+    self: glTF2ExportUserExtension, obj: bpy.types.Object, is_area_shape: bool, dim_x: float, dim_y: float, dim_z: float
+) -> "Node":
     shape = self.ChildOfRootExtension(
         path=["shapes"],
         name=omi_physics_shape,
@@ -515,7 +643,9 @@ def _add_box_shape(self, obj, is_area_shape, dim_x, dim_y, dim_z):
     return _create_shape_node(self, obj, shape, is_area_shape)
 
 
-def _add_cylinder_shape(self, obj, is_area_shape, radius, height):
+def _add_cylinder_shape(
+    self: glTF2ExportUserExtension, obj: bpy.types.Object, is_area_shape: bool, radius: float, height: float
+) -> "Node":
     shape = self.ChildOfRootExtension(
         path=["shapes"],
         name=omi_physics_shape,
@@ -531,7 +661,9 @@ def _add_cylinder_shape(self, obj, is_area_shape, radius, height):
     return _create_shape_node(self, obj, shape, is_area_shape)
 
 
-def _add_sphere_shape(self, obj, is_area_shape, radius):
+def _add_sphere_shape(
+    self: glTF2ExportUserExtension, obj: bpy.types.Object, is_area_shape: bool, radius: float
+) -> "Node":
     shape = self.ChildOfRootExtension(
         path=["shapes"],
         name=omi_physics_shape,
@@ -544,21 +676,30 @@ def _add_sphere_shape(self, obj, is_area_shape, radius):
     return _create_shape_node(self, obj, shape, is_area_shape)
 
 
-def _add_convex_shape(self, obj, is_area_shape, mesh):
+def _add_convex_shape(
+    self: glTF2ExportUserExtension, obj: bpy.types.Object, is_area_shape: bool, mesh: "Mesh | None"
+) -> "Node":
     shape = self.ChildOfRootExtension(
         path=["shapes"], name=omi_physics_shape, extension={"type": "convex", "convex": {"mesh": mesh}}, required=False
     )
     return _create_shape_node(self, obj, shape, is_area_shape)
 
 
-def _create_shape_node(self, obj, shape, is_area_shape):
+def _create_shape_node(
+    self: glTF2ExportUserExtension, obj: bpy.types.Object, shape: "ChildOfRootExtension", is_area_shape: bool
+) -> "Node":
     # swap y and z as godot uses y for up/down
     translation = [obj.location[0], obj.location[2], -obj.location[1]]
     rotation = None
     if obj.rotation_mode == "QUATERNION":
         rotation = [a for a in obj.rotation_quaternion]
     elif obj.rotation_mode == "AXIS_ANGLE":
-        rotation = [a for a in Quaternion(obj.rotation_axis_angle[1:], obj.rotation_axis_angle[0])]
+        rotation = [
+            a
+            for a in Quaternion(
+                cast(list[float], obj.rotation_axis_angle)[1:], cast(list[float], obj.rotation_axis_angle)[0]
+            )
+        ]
     else:
         rotation = [a for a in obj.rotation_euler.to_quaternion()]
     return _create_physics_body(
