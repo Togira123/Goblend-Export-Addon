@@ -419,6 +419,8 @@ def _gather_scene_hook(self: glTF2ExportUserExtension, gltf2_scene: "Scene", ble
 def _gather_node_hook(self: glTF2ExportUserExtension, gltf2_object: "Node", blender_object: bpy.types.Object) -> None:
     scene = cast(GoblendScene, bpy.context.scene)
     self.blender_object_name_to_gltf_node[blender_object.name] = gltf2_object
+    for key in self.godot_scenes_dict:
+        log("key" + str(key) + ", val: " + self.godot_scenes_dict[key].scene_path)
     if blender_object.name in self.godot_scenes_dict:
         # is godot scene
         if gltf2_object.extensions is None:

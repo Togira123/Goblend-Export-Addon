@@ -16,10 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
-from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 import bpy
-import collections.abc as abc
+from collections.abc import Callable
 
 # this is needed to not get type errors when accessing these properties
 # At runtime it will just be bpy.types.Scene
@@ -66,8 +66,8 @@ if TYPE_CHECKING:
         description: str | None = "",
         translation_context: str | None = "*",
         tags: set[str] | None = set(),
-        poll: abc.Callable[[T2, T3], bool] | None = None,
-        update: abc.Callable[[T2, bpy.types.Context], None] | None = None,
+        poll: Callable[[T2, T3], bool] | None = None,
+        update: Callable[[T2, bpy.types.Context], None] | None = None,
     ) -> T4: ...
 
 else:

@@ -15,13 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from ...export.glTF.glTFTextureGroup import glTFTextureGroup
+
+from ...types.blender_types import OperatorReturnItems
+from ...types.goblend_types import (
+    GoblendScene,
+    SceneOperators,
+    SettingsForGodot,
+    SettingsForGodotCollision,
+    SettingsForGodotObject,
+    UvMapOverride,
+)
+
+from typing import cast
 
 import bpy
 import os
 import mathutils
 import traceback
 
-from ...config import abs_path, get_config
+
+from ..property_groups.PanelProperties import PanelProperties
+from ..AddonPreferences import AddonPreferences
+
+from ...config import abs_path, get_config, Config, Paths
 from ...export.export import export
 from ...export.setup import save_path_keys, save_path_hierarchy_keys, save_path_uses_scene_name
 from ...log import log
@@ -34,15 +51,15 @@ class SCENE_OT_RootExportToGodot(bpy.types.Operator):
     bl_description = "Export all meshes in the current scene to Godot"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
         log("------------ STARTING EXPORT ------------")
         context.scene.is_root_scene = True
         context.scene.panel_props.linked_collection_identifier = "root_scene"
-        bpy.ops.scene.export_to_godot()
+        cast(SceneOperators, bpy.ops.scene).export_to_godot()
         return {"FINISHED"}
 
 
-def get_export_paths(config, props):
+def get_export_paths(config: Config, props: PanelProperties) -> Paths:
     paths = config["defaults"]["paths"].copy()
     if props.same_hierarchy_target.lower() != "default":
         paths["same_hierarchy_target"] = abs_path(props.same_hierarchy_target)
@@ -55,7 +72,7 @@ def get_export_paths(config, props):
         if getattr(props, path_key) != "DEFAULT":
             paths[path_key] = True if getattr(props, path_key) == "YES" else False
 
-    hierarchy_key_array = []
+    hierarchy_key_array: list[str] = []
     for save_hierarchy in save_path_hierarchy_keys:
         hierarchy_key_array.append(save_hierarchy)
 
@@ -72,7 +89,7 @@ def get_export_paths(config, props):
             continue  # this is the exception, has no use hierarchy setting
         path = paths[save_path]
         if paths[hierarchy_key_array[idx]]:
-            if hierarchy_path == None:
+            if hierarchy_path is None:
                 try:
                     hierarchy_path_start = blend_path.index(paths["same_hierarchy_target"]) + len(
                         paths["same_hierarchy_target"]
@@ -102,7 +119,7 @@ def get_export_paths(config, props):
         paths[save_path] = abs_path(path)
         idx += 1
 
-    if hierarchy_path == None:
+    if hierarchy_path is None:
         log("No hierarchy path needed")
 
     whether_to_save_separately_keys = [
@@ -134,7 +151,7 @@ def get_export_paths(config, props):
     return paths
 
 
-def set_scene_name(props):
+def set_scene_name(props: PanelProperties) -> None:
     stripped_scene_name = props.exported_scene_name.strip()
     if len(stripped_scene_name) == 0:
         blend_path = os.path.normcase(bpy.data.filepath)
@@ -144,7 +161,7 @@ def set_scene_name(props):
         props.gltf_extension.scene_name = stripped_scene_name
 
 
-def determine_correct_scene(context):
+def determine_correct_scene(context: bpy.types.Context) -> None:
     collection_name = context.scene.panel_props.collection_name
     # check which scene the linked collection is in
     # and make sure to make that scene active
@@ -173,13 +190,13 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
     bl_description = "Export all meshes in the current scene to Godot"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> set[OperatorReturnItems]:
         if not context.scene.is_root_scene:
             determine_correct_scene(context)
-        scene = context.scene
+        scene = cast(GoblendScene, context.scene)
         props = scene.panel_props
         default_collision_props = scene.default_collision_panel_props
-        addon_prefs = bpy.context.preferences.addons[base_package].preferences
+        addon_prefs = cast(AddonPreferences, bpy.context.preferences.addons[base_package].preferences)
 
         if addon_prefs.godot_file_path == "":
             log(
@@ -203,61 +220,61 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
 
         texture_dim = {"x": props.texture_dim[0], "y": props.texture_dim[1]}
 
-        uv_map_override = {}
-        texture_groups = {}
+        uv_map_override: UvMapOverride = {}
+        texture_groups: dict[str, str] = {}
 
-        texture_overrides = {}
+        texture_overrides: dict[str, list[int]] = {}
 
-        bake_margins = {}
+        bake_margins: dict[str, int] = {}
 
         config = get_config()
 
-        default_layers = []
-        seen = set()
+        default_layers: list[str] = []
+        seen: set[str] = set()
         if default_collision_props.use_layer_config_value:
             for layer in config["defaults"]["collision_layers"]:
-                l = str(layer)
-                if not l in seen:
-                    default_layers.append(l)
-                    seen.add(l)
+                layer_str = str(layer)
+                if layer_str not in seen:
+                    default_layers.append(layer_str)
+                    seen.add(layer_str)
         else:
             for default_layer in default_collision_props.default_layers_list:
-                if default_layer.enabled and not default_layer.layer in seen:
+                if default_layer.enabled and default_layer.layer not in seen:
                     default_layers.append(default_layer.layer)
                     seen.add(default_layer.layer)
 
-        default_masks = []
+        default_masks: list[str] = []
         seen = set()
         if default_collision_props.use_mask_config_value:
             for mask in config["defaults"]["collision_masks"]:
                 m = str(mask)
-                if not m in seen:
+                if m not in seen:
                     default_masks.append(m)
                     seen.add(m)
         else:
             for default_mask in default_collision_props.default_masks_list:
-                if default_mask.enabled and not default_mask.mask in seen:
+                if default_mask.enabled and default_mask.mask not in seen:
                     default_masks.append(default_mask.mask)
                     seen.add(default_mask.mask)
 
-        default_groups = []
+        default_groups: list[str] = []
         seen = set()
         for default_group in default_collision_props.default_groups_list:
-            if default_group.enabled and not default_group.group in seen:
+            if default_group.enabled and default_group.group not in seen:
                 default_groups.append(default_group.group)
                 seen.add(default_group.group)
 
-        default_render_layers = []
+        default_render_layers: list[str] = []
         seen = set()
         if props.use_render_layer_config_value:
             for layer in config["defaults"]["render_layers"]:
-                l = str(layer)
-                if not l in seen:
-                    default_render_layers.append(l)
-                    seen.add(l)
+                layer_str = str(layer)
+                if layer_str not in seen:
+                    default_render_layers.append(layer_str)
+                    seen.add(layer_str)
         else:
             for default_render_layer in props.default_render_layers_list:
-                if default_render_layer.enabled and not default_render_layer.layer in seen:
+                if default_render_layer.enabled and default_render_layer.layer not in seen:
                     default_render_layers.append(default_render_layer.layer)
                     seen.add(default_render_layer.layer)
 
@@ -265,7 +282,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             val = props.gltf_extension.default_render_layers.add()
             val.value = int(default_render_layer)
 
-        settings_for_godot = {
+        settings_for_godot: SettingsForGodot = {
             "transparency_mode": props.default_transparency_mode,
             "scissor_value": props.default_transparency_alpha_scissor_threshold,
             "cull_mode": props.default_cull_mode,
@@ -305,18 +322,18 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                         "Normal": item.uv_map,
                         "obj": item.obj,
                     }
-            obj_dict = {"shadow_cast_mode": item.shadow_cast_mode, "name": item.obj.name}
+            obj_dict: SettingsForGodotObject = {"shadow_cast_mode": item.shadow_cast_mode, "name": item.obj.name}
             if item.render_layers_override_enabled:
                 seen = set()
-                layers = []
+                layers: list[str] = []
                 for layer_override in item.render_layers_override_list:
-                    if layer_override.enabled and not layer_override.layer in seen:
+                    if layer_override.enabled and layer_override.layer not in seen:
                         layers.append(layer_override.layer)
                         seen.add(layer_override.layer)
                 obj_dict["layer_overrides"] = layers
             settings_for_godot["objects"].append(obj_dict)
 
-        gltf_texture_groups = {}
+        gltf_texture_groups: dict[str, glTFTextureGroup] = {}
         for mat in scene.material_panel_props:
             if not mat.mat:
                 continue
@@ -337,7 +354,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 ] = None  # object, will be set when iterating over materials
             else:
                 if mat.texture_group != "":
-                    if not mat.texture_group in gltf_texture_groups:
+                    if mat.texture_group not in gltf_texture_groups:
                         gltf_texture_groups[mat.texture_group] = props.gltf_extension.texture_groups.add()
                         gltf_texture_groups[mat.texture_group].name = mat.texture_group
                     m = gltf_texture_groups[mat.texture_group].materials.add()
@@ -356,9 +373,9 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 }
 
         for item in scene.collision_panel_props:
-            if item.collection == None:
+            if item.collection is None:
                 continue
-            obj = {
+            obj: SettingsForGodotCollision = {
                 "collection": item.collection,
                 "type": item.type,
                 "layer_overrides": None,
@@ -369,23 +386,23 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 seen = set()
                 layers = []
                 for layer_override in item.layers_override_list:
-                    if layer_override.enabled and not layer_override.layer in seen:
+                    if layer_override.enabled and layer_override.layer not in seen:
                         layers.append(layer_override.layer)
                         seen.add(layer_override.layer)
                 obj["layer_overrides"] = layers
             if item.masks_override_enabled:
                 seen = set()
-                masks = []
+                masks: list[str] = []
                 for mask_override in item.masks_override_list:
-                    if mask_override.enabled and not mask_override.mask in seen:
+                    if mask_override.enabled and mask_override.mask not in seen:
                         masks.append(mask_override.mask)
                         seen.add(mask_override.mask)
                 obj["mask_overrides"] = masks
             if item.groups_override_enabled:
                 seen = set()
-                groups = []
+                groups: list[str] = []
                 for group_override in item.groups_override_list:
-                    if group_override.enabled and not group_override.group in seen:
+                    if group_override.enabled and group_override.group not in seen:
                         groups.append(group_override.group)
                         seen.add(group_override.group)
                 obj["group_overrides"] = groups
@@ -393,12 +410,12 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
             settings_for_godot["collisions"].append(obj)
 
         for item in scene.animation_panel_props:
-            if item.animation == None:
+            if item.animation is None:
                 continue
             settings_for_godot["animations"][item.animation.name] = {"autoplay": item.autoplay, "loop": item.loop}
 
         for item in scene.godot_scene_panel_props:
-            if item.obj == None:
+            if item.obj is None:
                 continue
             scene_path = ""
             for godot_scene in config["godot_scenes"]:
@@ -441,7 +458,9 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 elif type(value) is bool:
                     settings_for_godot["lights"][item.light.name][prop] = "true" if value else "false"
                 elif type(value) is list:
-                    settings_for_godot["lights"][item.light.name][prop] = map(str, value)
+                    settings_for_godot["lights"][item.light.name][prop] = list(
+                        map(str, value)  # pyright: ignore[reportUnknownArgumentType]
+                    )
                 elif type(value) is mathutils.Color:
                     settings_for_godot["lights"][item.light.name][prop] = [str(value.r), str(value.g), str(value.b)]
                 else:
@@ -469,7 +488,7 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 log("------------ EXPORT DONE ------------")
             else:
                 log("Sub-export done")
-        except Exception as e:
+        except Exception:
             props.gltf_extension.is_exporting_with_goblend = False
             log(traceback.format_exc(), "ERROR")
             log(
@@ -477,10 +496,11 @@ class SCENE_OT_ExportToGodot(bpy.types.Operator):
                 "ERROR",
             )
 
-            def draw_error(self, _context):
-                self.layout.label(
-                    text="Undo (Ctrl/Cmd + z) to return to your previous state. Check the log file for more details. If there is no log file, make sure to enable it in the addon preferences"
-                )
+            def draw_error(self: bpy.types.UIPopupMenu, _context: bpy.types.Context) -> None:
+                if self.layout:
+                    self.layout.label(
+                        text="Undo (Ctrl/Cmd + z) to return to your previous state. Check the log file for more details. If there is no log file, make sure to enable it in the addon preferences"
+                    )
 
             bpy.context.window_manager.popup_menu(draw_error, title="An Error happened", icon="ERROR")
         return {"FINISHED"}

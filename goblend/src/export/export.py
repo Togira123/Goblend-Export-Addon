@@ -19,14 +19,20 @@
 import bpy
 import subprocess
 
+from typing import cast
+
+from ..config import Paths
+
+from ..types.goblend_types import GoblendContext, SettingsForGodot, UvMapOverride
+
 from .handle_materials import handle_materials, check_convert_to_shader
 from .clean_up import clean_up
 from .setup import setup
 from ..utils import get_root_dir
 
 
-def handle_collision_shapes(collision_objects, paths):
-    collision_shapes = bpy.context.scene.panel_props.gltf_extension.collision_shapes
+def handle_collision_shapes(collision_objects: set[tuple[bpy.types.Object, str]], paths: Paths) -> None:
+    collision_shapes = cast(GoblendContext, bpy.context).scene.panel_props.gltf_extension.collision_shapes
     for val in collision_objects:
         obj = val[0]
         if "boxshape" in obj.name.lower():
@@ -56,8 +62,14 @@ def handle_collision_shapes(collision_objects, paths):
 
 
 def prep_for_export(
-    objects, found_col_objects, collision_objects, collision_collection, settings_for_godot, godot_scene_nodes, paths
-):
+    objects: list[bpy.types.Object],
+    found_col_objects: list[bpy.types.Object],
+    collision_objects: set[tuple[bpy.types.Object, str]],
+    collision_collection: bpy.types.Collection | None,
+    settings_for_godot: SettingsForGodot,
+    godot_scene_nodes: set[bpy.types.Object],
+    paths: Paths,
+) -> None:
     # select all objects since we only export selected
     for obj in objects:
         obj.select_set(True)
@@ -81,7 +93,7 @@ def prep_for_export(
 
     added_root_node = False
 
-    if collision_collection != None:
+    if collision_collection is not None:
         for sett in settings_for_godot["collisions"]:
             added_root_node = (
                 added_root_node or sett["collection"].name == bpy.context.scene.panel_props.collision_collection
@@ -89,16 +101,16 @@ def prep_for_export(
             physics_body = gltf_extension.physics_bodies.add()
             physics_body.name = sett["collection"].name
             physics_body.type = sett["type"]
-            if sett["layer_overrides"] == None:
+            if sett["layer_overrides"] is None:
                 for layer in settings_for_godot["default_collision_layers"]:
-                    l = physics_body.layers.add()
-                    l.value = int(layer)
+                    new_layer = physics_body.layers.add()
+                    new_layer.value = int(layer)
             else:
                 for layer in sett["layer_overrides"]:
-                    l = physics_body.layers.add()
-                    l.value = int(layer)
+                    new_layer = physics_body.layers.add()
+                    new_layer.value = int(layer)
 
-            if sett["mask_overrides"] == None:
+            if sett["mask_overrides"] is None:
                 for mask in settings_for_godot["default_collision_masks"]:
                     m = physics_body.masks.add()
                     m.value = int(mask)
@@ -107,7 +119,7 @@ def prep_for_export(
                     m = physics_body.masks.add()
                     m.value = int(mask)
 
-            if sett["group_overrides"] == None:
+            if sett["group_overrides"] is None:
                 for group in settings_for_godot["default_groups"]:
                     g = physics_body.groups.add()
                     g.value = group
@@ -122,8 +134,8 @@ def prep_for_export(
         root_physics_body.name = bpy.context.scene.panel_props.collision_collection
         root_physics_body.type = settings_for_godot["default_physics_type"]
         for layer in settings_for_godot["default_collision_layers"]:
-            l = root_physics_body.layers.add()
-            l.value = int(layer)
+            new_layer = root_physics_body.layers.add()
+            new_layer.value = int(layer)
         for mask in settings_for_godot["default_collision_masks"]:
             m = root_physics_body.masks.add()
             m.value = int(mask)
@@ -137,31 +149,31 @@ def prep_for_export(
         gltf_object.shadow_cast_mode = sett["shadow_cast_mode"]
         if "layer_overrides" in sett:
             for layer in sett["layer_overrides"]:
-                l = gltf_object.render_layers.add()
-                l.value = int(layer)
+                new_layer = gltf_object.render_layers.add()
+                new_layer.value = int(layer)
         else:
             for layer in settings_for_godot["default_render_layers"]:
-                l = gltf_object.render_layers.add()
-                l.value = int(layer)
+                new_layer = gltf_object.render_layers.add()
+                new_layer.value = int(layer)
 
     # finally also add lights
     for obj in bpy.context.scene.objects:
-        if obj.type == "LIGHT" and not obj.hide_render and obj.library == None:
+        if obj.type == "LIGHT" and not obj.hide_render and obj.library is None:
             obj.hide_set(False)
             obj.select_set(True)
 
 
 def export(
-    godot_exec_path,
-    texture_dim,
-    uv_map_override,
-    bake_margins,
-    texture_groups,
-    texture_overrides,
-    settings_for_godot,
-    paths,
-    process_linked_collections,
-):
+    godot_exec_path: str,
+    texture_dim: dict[str, int],
+    uv_map_override: UvMapOverride,
+    bake_margins: dict[str, int],
+    texture_groups: dict[str, str],
+    texture_overrides: dict[str, list[int]],
+    settings_for_godot: SettingsForGodot,
+    paths: Paths,
+    process_linked_collections: bool,
+) -> None:
     (
         objects,
         found_col_objects,

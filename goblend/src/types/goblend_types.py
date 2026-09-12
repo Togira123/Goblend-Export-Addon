@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, NotRequired, TypedDict, Literal
 
-from .blender_types import OperatorReturnItems
+from .blender_types import OperatorReturnItems, ObjectModifierTypeItems
 
 import bpy
 
@@ -61,3 +61,78 @@ else:
     RegisterGoblendScene = bpy.types.Scene
     SceneOperators = bpy.ops.scene
     GoblendContext = bpy.types.Context
+
+
+class SettingsForGodotCollision(TypedDict):
+    collection: bpy.types.Collection
+    type: str
+    layer_overrides: None | list[str]
+    mask_overrides: None | list[str]
+    group_overrides: None | list[str]
+
+
+class SettingsForGodotObject(TypedDict):
+    shadow_cast_mode: str
+    name: str
+    layer_overrides: NotRequired[list[str]]
+
+
+class SettingsForGodotAnimation(TypedDict):
+    autoplay: bool
+    loop: bool
+
+
+class SettingsForGodotMaterialTransparencyModeOverride(TypedDict):
+    mode: str
+    scissor: float
+
+
+class SettingsforGodotLimitUVEffectNormal(TypedDict):
+    min_x: float
+    max_x: float
+    min_y: float
+    max_y: float
+    obj: bpy.types.Object | None
+
+
+class SettingsForGodot(TypedDict):
+    transparency_mode: str
+    scissor_value: float
+    cull_mode: str
+    default_collision_layers: list[str]
+    default_collision_masks: list[str]
+    default_groups: list[str]
+    default_render_layers: list[str]
+    default_physics_type: str
+    collisions: list[SettingsForGodotCollision]
+    material_transparency_mode_overrides: dict[str, SettingsForGodotMaterialTransparencyModeOverride]
+    material_cull_mode_overrides: dict[str, str]
+    use_shader_mats: dict[str, bpy.types.Object | None]
+    limit_uv_effect_normal: dict[str, SettingsforGodotLimitUVEffectNormal]
+    objects: list[SettingsForGodotObject]
+    animations: dict[str, SettingsForGodotAnimation]
+    godot_scenes: dict[str, str]
+    lights: dict[str, dict[str, str | list[str]]]
+
+
+type UvMapOverrideValueKeys = Literal["Base Color", "Metallic/Roughness", "Normal"]
+
+
+UvMapOverrideValue = TypedDict(
+    "UvMapOverrideValue",
+    {
+        "Base Color": str,
+        "Metallic/Roughness": str,
+        "Normal": str,
+        "obj": bpy.types.Object,
+    },
+)
+
+type UvMapOverride = dict[str, UvMapOverrideValue]
+
+
+class ModifierData(TypedDict):
+    name: str
+    type: ObjectModifierTypeItems
+    props: dict[str, Any]
+    node_group: NotRequired[bpy.types.NodeTree]

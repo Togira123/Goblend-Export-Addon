@@ -20,11 +20,17 @@ import bpy
 import os
 import subprocess
 
+from typing import cast
+
+from ..types.goblend_types import SettingsForGodot
+
+from ..config import PathKeysStringVal, PathKeysBoolVal, Paths
+
 from ..utils import get_root_dir
 
 from ...src.log import log
 
-save_path_keys = [
+save_path_keys: list[PathKeysStringVal] = [
     "scene_save_path",
     "material_save_path",
     "texture_save_path",
@@ -37,7 +43,7 @@ save_path_keys = [
 
 save_path_uses_scene_name = [False, True, True, True, True, True, False, True]
 
-save_path_hierarchy_keys = [
+save_path_hierarchy_keys: list[PathKeysBoolVal] = [
     "scene_use_same_hierarchy",
     "material_use_same_hierarchy",
     "texture_use_same_hierarchy",
@@ -49,18 +55,23 @@ save_path_hierarchy_keys = [
 ]
 
 
-def find_objs_and_cols(root, found_col_objects, seen_linked_collections, process_linked_collections):
-    collision_collection = None
+def find_objs_and_cols(
+    root: bpy.types.Collection,
+    found_col_objects: list[bpy.types.Object],
+    seen_linked_collections: set[str],
+    process_linked_collections: bool,
+) -> bpy.types.Collection | None:
+    collision_collection: bpy.types.Collection | None = None
     if root.name == bpy.context.scene.panel_props.collision_collection:
         collision_collection = root
     for child in root.children:
         coll = find_objs_and_cols(child, found_col_objects, seen_linked_collections, process_linked_collections)
-        if coll != None:
+        if coll is not None:
             collision_collection = coll
     for obj in root.objects:
         if obj.instance_type == "COLLECTION" and obj.instance_collection and not obj.hide_render:
             col = obj.instance_collection
-            if col.library != None:
+            if col.library is not None:
                 blender_binary_path = bpy.app.binary_path
 
                 library_blend_file = os.path.normpath(os.path.abspath(bpy.path.abspath(col.library.filepath)))
@@ -71,7 +82,7 @@ def find_objs_and_cols(root, found_col_objects, seen_linked_collections, process
                 bpy.ops.object.mode_set(mode="OBJECT")
                 bpy.ops.mesh.primitive_cube_add(location=obj.location, rotation=obj.rotation_euler)
 
-                cube = bpy.context.active_object
+                cube = cast(bpy.types.Object, bpy.context.active_object)
                 cube.name = obj.name + "__tmp_name"
                 cube.scale = obj.scale  # add scale after creating because otherwise it directly applies it
 
@@ -80,7 +91,7 @@ def find_objs_and_cols(root, found_col_objects, seen_linked_collections, process
                 collection_name = col.name.replace("'", "\\'")
                 collection_identifier = col.library.filepath + collection_name
 
-                if not collection_identifier in seen_linked_collections:
+                if collection_identifier not in seen_linked_collections:
                     log("Found Library: " + col.library.name)
                     seen_linked_collections.add(collection_identifier)
                     if process_linked_collections:
@@ -141,12 +152,12 @@ def find_objs_and_cols(root, found_col_objects, seen_linked_collections, process
     return collision_collection
 
 
-def get_objects_to_export(texture_groups):
-    objects = []
-    hidden_objects = set()
-    for obj in bpy.context.scene.objects:
+def get_objects_to_export(texture_groups: set[str]) -> tuple[list[bpy.types.Object], set[bpy.types.Object]]:
+    objects: list[bpy.types.Object] = []
+    hidden_objects: set[bpy.types.Object] = set()
+    for obj in cast(bpy.types.Scene, bpy.context.scene).objects:
         # only export object if it's a mesh, not hidden from rendering and not from a library
-        if obj.type == "MESH" and not obj.hide_render and obj.library == None and not obj.name.endswith("__tmp_name"):
+        if obj.type == "MESH" and not obj.hide_render and obj.library is None and not obj.name.endswith("__tmp_name"):
             if obj.hide_get():
                 hidden_objects.add(obj)
             obj.hide_set(False)  # make every object that we take into consideration visible
@@ -156,19 +167,21 @@ def get_objects_to_export(texture_groups):
 
         for slot in obj.material_slots:
             for grp in texture_groups:
-                if slot.material.name == grp:
+                if slot.material and slot.material.name == grp:
                     raise Exception(
                         "There is a material named" + slot.material.name + " which conflicts with a texture group name"
                     )
     return objects, hidden_objects
 
 
-def get_collision_objects(collision_collection, objects):
-    collision_objects = set()
-    if collision_collection != None:
+def get_collision_objects(
+    collision_collection: bpy.types.Collection | None, objects: list[bpy.types.Object]
+) -> set[tuple[bpy.types.Object, str]]:
+    collision_objects: set[tuple[bpy.types.Object, str]] = set()
+    if collision_collection is not None:
 
-        def remove_collision_from_render(col):
-            to_remove = set()
+        def remove_collision_from_render(col: bpy.types.Collection) -> None:
+            to_remove: set[bpy.types.Object] = set()
             for obj in col.objects:
                 if obj in objects:
                     to_remove.add(obj)
@@ -182,20 +195,21 @@ def get_collision_objects(collision_collection, objects):
     return collision_objects
 
 
-def remove_godot_scene_objects(objects):
+def remove_godot_scene_objects(objects: list[bpy.types.Object]) -> set[bpy.types.Object]:
     # this is much slower than a simple bpy.data.collections.get("bpy.context.scene.panel_props.godot_scenes_collection"),
     # but it only includes collections of the current scene
     # it shouldn't matter too much with a low collection count
-    all_collections_in_scene = bpy.context.scene.collection.children_recursive
-    godot_scenes = None
+    scene: bpy.types.Scene | None = bpy.context.scene
+    all_collections_in_scene = scene.collection.children_recursive if scene else []
+    godot_scenes: bpy.types.Collection | None = None
     for coll in all_collections_in_scene:
         if coll.name == bpy.context.scene.panel_props.godot_scenes_collection:
             godot_scenes = coll
             break
-    godot_scene_nodes = set()
+    godot_scene_nodes: set[bpy.types.Object] = set()
     if not godot_scenes:
         return godot_scene_nodes
-    to_remove = set()
+    to_remove: set[bpy.types.Object] = set()
     for obj in godot_scenes.objects:
         if obj in objects:
             to_remove.add(obj)
@@ -207,7 +221,7 @@ def remove_godot_scene_objects(objects):
     return godot_scene_nodes
 
 
-def write_tmp_file(paths):
+def write_tmp_file(paths: Paths) -> None:
     root_dir = get_root_dir()
 
     # use temp file for storing paths of child scenes
@@ -222,18 +236,33 @@ def write_tmp_file(paths):
         )
 
 
-def setup(texture_group_assignments, settings_for_godot, process_linked_collections, paths):
+def setup(
+    texture_group_assignments: dict[str, str],
+    settings_for_godot: SettingsForGodot,
+    process_linked_collections: bool,
+    paths: Paths,
+) -> tuple[
+    list[bpy.types.Object],
+    list[bpy.types.Object],
+    set[tuple[bpy.types.Object, str]],
+    bpy.types.Collection | None,
+    str,
+    set[bpy.types.Object],
+    list[bpy.types.Object],
+    set[bpy.types.LayerCollection],
+    set[bpy.types.Object],
+]:
     log("Running export for: " + os.path.normcase(bpy.data.filepath))
 
     write_tmp_file(paths)
 
-    selected_objects = bpy.context.selected_objects.copy()
+    selected_objects = list(bpy.context.selected_objects)
 
     root_dir = get_root_dir()
 
-    seen_linked_collections = set()
+    seen_linked_collections: set[str] = set()
 
-    found_col_objects = []
+    found_col_objects: list[bpy.types.Object] = []
 
     bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
@@ -248,9 +277,9 @@ def setup(texture_group_assignments, settings_for_godot, process_linked_collecti
 
     # make all LayerCollections visible
     # we need this to later make all objects visible and then to export the visible objects
-    hidden_layer_collections = set()
+    hidden_layer_collections: set[bpy.types.LayerCollection] = set()
 
-    def loop_layer_collections(layer_coll):
+    def loop_layer_collections(layer_coll: bpy.types.LayerCollection) -> None:
         if layer_coll.hide_viewport:
             hidden_layer_collections.add(layer_coll)
         layer_coll.hide_viewport = False
@@ -259,10 +288,10 @@ def setup(texture_group_assignments, settings_for_godot, process_linked_collecti
 
     loop_layer_collections(bpy.context.view_layer.layer_collection)  # this is the root collection
 
-    texture_groups = set()
+    texture_groups: set[str] = set()
 
     for val in texture_group_assignments.values():
-        if not val in texture_groups:
+        if val not in texture_groups:
             log("INFO: Found  " + val)
             texture_groups.add(val)
 

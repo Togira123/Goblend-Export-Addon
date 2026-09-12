@@ -19,25 +19,34 @@
 import bpy
 import os
 
+from ..types.goblend_types import ModifierData
+from typing import cast
+
 from ..utils import get_root_dir
 from ..log import log
 
 
 def clean_up(
-    objects,
-    extra_shader_nodes,
-    inputs,
-    created_tex_nodes_per_mat_per_obj,
-    old_meshes,
-    orig_mod_per_obj,
-    images_created,
-    found_col_objects,
-    collision_objects,
-    export_path_glb,
-    selected_objects,
-    hidden_layer_collections,
-    hidden_objects,
-):
+    objects: list[bpy.types.Object],
+    extra_shader_nodes: list[tuple[bpy.types.Node, bpy.types.Nodes]],
+    inputs: list[str],
+    created_tex_nodes_per_mat_per_obj: dict[
+        bpy.types.Object,
+        dict[
+            bpy.types.Material,
+            dict[str, tuple[bpy.types.ShaderNodeTexImage, bpy.types.NodeSocket, bpy.types.NodeSocket, bpy.types.Node]],
+        ],
+    ],
+    old_meshes: dict[bpy.types.Object, bpy.types.Mesh],
+    orig_mod_per_obj: dict[bpy.types.Object, list[ModifierData]],
+    images_created: set[bpy.types.Image],
+    found_col_objects: list[bpy.types.Object],
+    collision_objects: set[tuple[bpy.types.Object, str]],
+    export_path_glb: str,
+    selected_objects: list[bpy.types.Object],
+    hidden_layer_collections: set[bpy.types.LayerCollection],
+    hidden_objects: set[bpy.types.Object],
+) -> None:
 
     # deselect afterwards
     bpy.ops.object.select_all(action="DESELECT")
@@ -56,15 +65,15 @@ def clean_up(
                     and mat in created_tex_nodes_per_mat_per_obj[obj]
                     and inp in created_tex_nodes_per_mat_per_obj[obj][mat]
                 ):
-                    mat.node_tree.links.new(
+                    cast(bpy.types.ShaderNodeTree, mat.node_tree).links.new(
                         created_tex_nodes_per_mat_per_obj[obj][mat][inp][2],
                         created_tex_nodes_per_mat_per_obj[obj][mat][inp][1],
                     )
 
     # reapply old meshes for every object
     for obj in objects:
-        orig_name = obj.data.name
-        cur_mesh = obj.data
+        orig_name = cast(bpy.types.Mesh, obj.data).name
+        cur_mesh = cast(bpy.types.Mesh, obj.data)
         obj.data = old_meshes[obj]
         bpy.data.meshes.remove(cur_mesh)
         obj.data.name = orig_name
@@ -79,6 +88,8 @@ def clean_up(
             mod.name = m["name"]
             match m["type"]:
                 case "NODES":
+                    if "node_group" not in m:
+                        continue
                     mod.node_group = m["node_group"]
                     for identifier, val in m["props"].items():
                         # geometry nodes modifier api changed in 5.2, see here: https://developer.blender.org/docs/release_notes/5.2/python_api/
@@ -92,6 +103,7 @@ def clean_up(
                             mod[identifier] = val
 
     # remove the tmp_goblend_export directory
+
     content = os.listdir(export_path_glb)
     for file in content:
         filepath = os.path.join(export_path_glb, file)
@@ -102,7 +114,7 @@ def clean_up(
 
     try:
         os.rmdir(export_path_glb)
-    except:
+    except Exception:
         log("Failed to remove temporary export directory", "ERROR")
 
     if bpy.context.scene.is_root_scene:
@@ -116,7 +128,7 @@ def clean_up(
 
     # remove extra cubes that were created for linked collections
     for obj in found_col_objects:
-        mesh = obj.data
+        mesh = cast(bpy.types.Mesh, obj.data)
         bpy.data.objects.remove(obj)
         bpy.data.meshes.remove(mesh)
 
