@@ -27,6 +27,7 @@ var ext_goblend_animation := GLTFDocumentExtensionEXTGoblendAnimation.new()
 var ext_goblend_convert_importer_mesh := GLTFDocumentExtensionEXTGoblendConvertImporterMesh.new()
 var ext_goblend_object := GLTFDocumentExtensionEXTGoblendObject.new()
 var ext_goblend_general := GLTFDocumentExtensionEXTGoblendGeneral.new()
+var ext_goblend_curve := GLTFDocumentExtensionEXTGoblendCurve.new()
 
 func _enter_tree():
 	GLTFDocument.register_gltf_document_extension(ext_goblend_physics_attribute)
@@ -37,6 +38,7 @@ func _enter_tree():
 	GLTFDocument.register_gltf_document_extension(ext_goblend_convert_importer_mesh)
 	GLTFDocument.register_gltf_document_extension(ext_goblend_object)
 	GLTFDocument.register_gltf_document_extension(ext_goblend_general)
+	GLTFDocument.register_gltf_document_extension(ext_goblend_curve)
 
 
 func _exit_tree():
@@ -48,6 +50,7 @@ func _exit_tree():
 	GLTFDocument.unregister_gltf_document_extension(ext_goblend_convert_importer_mesh)
 	GLTFDocument.unregister_gltf_document_extension(ext_goblend_object)
 	GLTFDocument.unregister_gltf_document_extension(ext_goblend_general)
+	GLTFDocument.unregister_gltf_document_extension(ext_goblend_curve)
 
 static func log_msg(message: String, type := "INFO"):
 	var msg := type + ": " + message

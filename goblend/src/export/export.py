@@ -156,9 +156,9 @@ def prep_for_export(
                 new_layer = gltf_object.render_layers.add()
                 new_layer.value = int(layer)
 
-    # finally also add lights
-    for obj in bpy.context.scene.objects:
-        if obj.type == "LIGHT" and not obj.hide_render and obj.library is None:
+    # finally also add lights and curves
+    for obj in cast(bpy.types.Scene, bpy.context.scene).objects:
+        if (obj.type == "LIGHT" or obj.type == "CURVE") and not obj.hide_render and obj.library is None:
             obj.hide_set(False)
             obj.select_set(True)
 

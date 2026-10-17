@@ -17,7 +17,7 @@
 
 
 import bpy
-from mathutils import Quaternion
+from mathutils import Quaternion, Vector
 
 from ..export.glTF.glTFObject import glTFObject
 
@@ -41,6 +41,7 @@ goblend_general = "EXT_goblend_general"
 goblend_godot_scene = "EXT_goblend_godot_scene"
 goblend_animation = "EXT_goblend_animation"
 goblend_object = "EXT_goblend_object"
+goblend_curve = "EXT_goblend_curve"
 godot_single_root = "GODOT_single_root"
 
 
@@ -124,6 +125,22 @@ class OMIPhysicsBodyExt(TypedDict, total=False):
     trigger: OMIPhysicsBodyExtTrigger
     motion: OMIPhysicsBodyExtMotion
     collider: OMIPhysicsBodyExtCollider
+
+
+class CurvePoint(TypedDict):
+    coord: list[float]
+    in_coord: list[float]
+    out_coord: list[float]
+    tilt: float
+
+
+class CurveObject(TypedDict):
+    points: list[CurvePoint]
+    closed: bool
+
+
+class GoblendCurveExt(TypedDict):
+    curves: list[CurveObject]
 
 
 # this class is special, it is used to add a gltf extension
@@ -436,6 +453,10 @@ def _gather_node_hook(self: glTF2ExportUserExtension, gltf2_object: "Node", blen
         gltf2_object.mesh = None
         return
 
+    if blender_object.type == "CURVE":
+        export_curve(self, gltf2_object, blender_object)
+        return
+
     is_light = gltf2_object.extensions and "KHR_lights_punctual" in gltf2_object.extensions
 
     if gltf2_object.extensions is None:
@@ -502,6 +523,49 @@ def _gather_gltf_hook(self: glTF2ExportUserExtension, animations: list["Animatio
         if animation.extensions is None:
             animation.extensions = {}
         animation.extensions[goblend_animation] = self.Extension(name=goblend_animation, extension=ext, required=False)
+
+
+def godot_coords(vec: Vector) -> list[float]:
+    return [vec[0], vec[2], -vec[1]]
+
+
+def export_curve(self: glTF2ExportUserExtension, gltf2_object: "Node", blender_object: bpy.types.Object) -> None:
+    curve = cast(bpy.types.Curve, blender_object.data)
+    splines = curve.splines
+    collected_splines: list[CurveObject] = []
+    if splines:
+        for spline in splines:
+            # each spline will be its own Curve3D object in godot
+            collected_points: list[CurvePoint] = []
+            if spline.type == "BEZIER":
+                for bezier_point in spline.bezier_points:
+                    collected_points.append(
+                        {
+                            "coord": godot_coords(bezier_point.co),
+                            "in_coord": godot_coords(bezier_point.handle_left),
+                            "out_coord": godot_coords(bezier_point.handle_right),
+                            "tilt": bezier_point.tilt,
+                        }
+                    )
+            elif spline.type == "POLY":
+                for point in spline.points:
+                    collected_points.append(
+                        {
+                            "coord": godot_coords(point.co),
+                            "in_coord": [0.0, 0.0, 0.0],
+                            "out_coord": [0.0, 0.0, 0.0],
+                            "tilt": point.tilt,
+                        }
+                    )
+            # do not export NURBS curve
+            curve_obj: CurveObject = {"points": collected_points, "closed": spline.use_cyclic_u}
+            collected_splines.append(curve_obj)
+
+    if gltf2_object.extensions is None:
+        gltf2_object.extensions = {}
+
+    ext: GoblendCurveExt = {"curves": collected_splines}
+    gltf2_object.extensions[goblend_curve] = self.Extension(name=goblend_curve, extension=ext, required=False)
 
 
 def _get_middle_point(shapes: list["Node"]) -> list[float]:
