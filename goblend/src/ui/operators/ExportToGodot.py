@@ -128,6 +128,7 @@ def get_export_paths(config: Config, props: PanelProperties) -> Paths:
         "save_animation_separately",
         "save_shader_separately",
         "save_mesh_separately",
+        "save_curve_separately",
     ]
 
     whether_to_save_separately_path_prop = [
@@ -136,6 +137,7 @@ def get_export_paths(config: Config, props: PanelProperties) -> Paths:
         "animation_save_path",
         "shader_save_path",
         "mesh_save_path",
+        "curve_save_path",
     ]
 
     for key in whether_to_save_separately_keys:

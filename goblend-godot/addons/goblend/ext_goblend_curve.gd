@@ -50,6 +50,7 @@ func _import_node(_state: GLTFState, gltf_node: GLTFNode, _json: Dictionary, nod
 		path3d.transform = node.transform
 		if curves.size() == 1:
 			var curve := create_curve_3d(curves[0])
+			curve.resource_name = old_node.name
 			path3d.curve = curve
 		node.replace_by(path3d)
 		path3d.name = old_node.name
@@ -58,10 +59,11 @@ func _import_node(_state: GLTFState, gltf_node: GLTFNode, _json: Dictionary, nod
 		for curve_data in curves:
 			var path3d := Path3D.new()
 			var curve := create_curve_3d(curve_data)
-			path3d.curve = curve
 			node.add_child(path3d)
+			path3d.curve = curve
 			path3d.owner = node.owner
 			path3d.name = node.name
+			path3d.curve.resource_name = path3d.name
 	return OK
 
 func arr_to_vec(arr: Array) -> Vector3:

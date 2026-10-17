@@ -39,9 +39,10 @@ save_path_keys: list[PathKeysStringVal] = [
     "shader_save_path",
     "collision_shapes_save_path",
     "mesh_save_path",
+    "curve_save_path",
 ]
 
-save_path_uses_scene_name = [False, True, True, True, True, True, False, True]
+save_path_uses_scene_name = [False, True, True, True, True, True, False, True, True]
 
 save_path_hierarchy_keys: list[PathKeysBoolVal] = [
     "scene_use_same_hierarchy",
@@ -52,6 +53,7 @@ save_path_hierarchy_keys: list[PathKeysBoolVal] = [
     "shader_use_same_hierarchy",
     "reuse_collision_shapes",
     "mesh_use_same_hierarchy",
+    "curve_use_same_hierarchy",
 ]
 
 

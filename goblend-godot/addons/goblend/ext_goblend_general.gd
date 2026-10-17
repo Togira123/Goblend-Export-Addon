@@ -21,7 +21,7 @@ class_name GLTFDocumentExtensionEXTGoblendGeneral extends GLTFDocumentExtension
 
 var ext_name := "EXT_goblend_general"
 
-func _import_preflight(state: GLTFState, extensions: PackedStringArray) -> Error:
+func _import_preflight(_state: GLTFState, extensions: PackedStringArray) -> Error:
 	if extensions.has(ext_name):
 		return OK
 	return ERR_SKIP
@@ -53,6 +53,10 @@ func _import_post(state: GLTFState, root: Node) -> Error:
 	var mesh_save_path: String = ext["mesh_save_path"] if ext.has("mesh_save_path") else ""
 
 	save_meshes_externally(root, mesh_save_path)
+
+	var curve_save_path: String = ext["curve_save_path"] if ext.has("curve_save_path") else ""
+
+	save_curves_externally(root, curve_save_path)
 
 	var scene_save_path: String = ext["scene_save_path"]
 	
@@ -225,3 +229,22 @@ func save_meshes_externally(root: Node, path: String) -> void:
 			Goblend.log_msg("Failed to save mesh at " + mesh_path, "WARNING")
 	for child in root.get_children():
 		save_meshes_externally(child, path)
+
+func save_curves_externally(root: Node, path: String) -> void:
+	if path == "":
+		Goblend.log_msg("Skip saving curves separately")
+		return
+	if root is Path3D:
+		var curve: Curve3D = root.curve
+		if curve:
+			var curve_path := path + curve.resource_name + ".res"
+			if not DirAccess.dir_exists_absolute(path):
+				DirAccess.make_dir_recursive_absolute(path)
+			var ok := ResourceSaver.save(curve, curve_path, ResourceSaver.FLAG_CHANGE_PATH)
+			if ok == OK:
+				Goblend.log_msg("Successfully saved curve at " + curve_path)
+				root.curve = load(curve_path)
+			else:
+				Goblend.log_msg("Failed to save curve at " + curve_path, "WARNING")
+	for child in root.get_children():
+		save_curves_externally(child, path)

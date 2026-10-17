@@ -196,6 +196,25 @@ class PanelProperties(bpy.types.PropertyGroup):
         items=hierarchy_defaults,
         default="DEFAULT",
     )
+    open_curve_path_panel = BoolProp(default=True)
+    save_curve_separately = EnumProp(
+        name="Save Curve Separately",
+        description="Whether to save curves in their own file or save them directly in the scene file",
+        items=save_externally_defaults,
+        default="DEFAULT",
+    )
+    curve_save_path = StringProp(
+        name="Curve Save Path",
+        description="The path to save the generated curves at",
+        subtype="FILE_PATH",
+        default="Default",
+    )
+    curve_use_same_hierarchy = EnumProp(
+        name="Curve Use Same Hierarchy",
+        description="Whether to save the resulting curves using the same folder hierarchy at the save path as the hierarchy for this blend file",
+        items=hierarchy_defaults,
+        default="DEFAULT",
+    )
 
     exported_scene_name = StringProp(
         name="Exported Scene Name",

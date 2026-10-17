@@ -18,16 +18,20 @@
 
 import bpy
 
+from ...types.property_types import typed_prop_group, StringProp
 
+
+@typed_prop_group
 class glTFSavePaths(bpy.types.PropertyGroup):
-    scene_save_path: bpy.props.StringProperty()
-    material_save_path: bpy.props.StringProperty()
-    texture_save_path: bpy.props.StringProperty()
-    animation_library_save_path: bpy.props.StringProperty()
-    animation_save_path: bpy.props.StringProperty()
-    shader_save_path: bpy.props.StringProperty()
-    collision_shapes_save_path: bpy.props.StringProperty()
-    mesh_save_path: bpy.props.StringProperty()
+    scene_save_path = StringProp()
+    material_save_path = StringProp()
+    texture_save_path = StringProp()
+    animation_library_save_path = StringProp()
+    animation_save_path = StringProp()
+    shader_save_path = StringProp()
+    collision_shapes_save_path = StringProp()
+    mesh_save_path = StringProp()
+    curve_save_path = StringProp()
 
     @classmethod
     def paths(cls) -> list[str]:

@@ -76,6 +76,8 @@ class NonTotalPaths(TypedDict, total=False):
     shader_use_same_hierarchy: bool
     mesh_save_path: str
     mesh_use_same_hierarchy: bool
+    curve_save_path: str
+    curve_use_same_hierarchy: bool
     collision_shapes_save_path: str
     reuse_collision_shapes: bool
     save_material_separately: bool
@@ -83,6 +85,7 @@ class NonTotalPaths(TypedDict, total=False):
     save_animation_separately: bool
     save_shader_separately: bool
     save_mesh_separately: bool
+    save_curve_separately: bool
 
 
 class Paths(TypedDict):
@@ -101,6 +104,8 @@ class Paths(TypedDict):
     shader_use_same_hierarchy: bool
     mesh_save_path: str
     mesh_use_same_hierarchy: bool
+    curve_save_path: str
+    curve_use_same_hierarchy: bool
     collision_shapes_save_path: str
     reuse_collision_shapes: bool
     save_material_separately: bool
@@ -108,6 +113,7 @@ class Paths(TypedDict):
     save_animation_separately: bool
     save_shader_separately: bool
     save_mesh_separately: bool
+    save_curve_separately: bool
 
 
 PathKeysStringVal = Literal[
@@ -120,6 +126,7 @@ PathKeysStringVal = Literal[
     "shader_save_path",
     "collision_shapes_save_path",
     "mesh_save_path",
+    "curve_save_path",
 ]
 
 PathKeysBoolVal = Literal[
@@ -131,11 +138,13 @@ PathKeysBoolVal = Literal[
     "shader_use_same_hierarchy",
     "reuse_collision_shapes",
     "mesh_use_same_hierarchy",
+    "curve_use_same_hierarchy",
     "save_material_separately",
     "save_animation_library_separately",
     "save_animation_separately",
     "save_shader_separately",
     "save_mesh_separately",
+    "save_curve_separately",
 ]
 
 PathKeys = PathKeysStringVal | PathKeysBoolVal
@@ -251,6 +260,7 @@ def get_default_paths(config: NonTotalDefaultConfig) -> NonTotalPaths:
         ("animation_save_path", "animation_use_same_hierarchy", "res://goblend/animations/"),
         ("shader_save_path", "shader_use_same_hierarchy", "res://goblend/shaders/"),
         ("mesh_save_path", "mesh_use_same_hierarchy", "res://goblend/meshes/"),
+        ("curve_save_path", "curve_use_same_hierarchy", "res://goblend/curves/"),
     ]
     whether_to_save_separately_keys: list[tuple[PathKeysBoolVal, bool]] = [
         ("save_material_separately", True),
@@ -258,6 +268,7 @@ def get_default_paths(config: NonTotalDefaultConfig) -> NonTotalPaths:
         ("save_animation_separately", True),
         ("save_shader_separately", True),
         ("save_mesh_separately", False),
+        ("save_curve_separately", False),
     ]
 
     if "paths" in config:

@@ -22,6 +22,7 @@ from ...types.goblend_types import GoblendContext
 
 from typing import cast
 
+
 class SCENE_PT_ExportPanel(bpy.types.Panel):
     bl_label = "Goblend: Export to Godot"
     bl_idname = "SCENE_PT_export_to_godot"
@@ -122,6 +123,14 @@ class SCENE_PT_ExportPanel(bpy.types.Panel):
                 mesh_paths_panel_col.prop(panel_props, "save_mesh_separately")
                 mesh_paths_panel_col.prop(panel_props, "mesh_save_path")
                 mesh_paths_panel_col.prop(panel_props, "mesh_use_same_hierarchy")
+
+            curve_paths_header, curve_paths_panel = paths_panel_col.panel_prop(panel_props, "open_curve_path_panel")
+            curve_paths_header.label(text="Curve Save Path")
+            if curve_paths_panel:
+                curve_paths_panel_col = curve_paths_panel.column()
+                curve_paths_panel_col.prop(panel_props, "save_curve_separately")
+                curve_paths_panel_col.prop(panel_props, "curve_save_path")
+                curve_paths_panel_col.prop(panel_props, "curve_use_same_hierarchy")
 
         col.prop(panel_props, "exported_scene_name")
         col.prop(panel_props, "collision_collection")
