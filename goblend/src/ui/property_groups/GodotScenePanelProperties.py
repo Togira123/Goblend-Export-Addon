@@ -47,7 +47,7 @@ def is_godot_scene(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool
     return obj in all_objects_in_godot_scenes_collection
 
 
-def scenes(_self: bpy.types.PropertyGroup, _context: bpy.types.Context | None) -> list[tuple[str, str, str]]:
+def scenes() -> list[tuple[str, str, str]]:
     if len(utils.godot_scene_panel_props_enum_cache) == 0:
         config = conf.get_config()
         for scene in config["godot_scenes"]:
@@ -56,6 +56,10 @@ def scenes(_self: bpy.types.PropertyGroup, _context: bpy.types.Context | None) -
             )
 
     return utils.godot_scene_panel_props_enum_cache
+
+
+def enum_scenes(_self: bpy.types.PropertyGroup, _context: bpy.types.Context | None) -> list[tuple[str, str, str]]:
+    return scenes()
 
 
 @typed_prop_group
@@ -70,5 +74,5 @@ class GodotScenePanelProperties(bpy.types.PropertyGroup):
     scene = EnumProp(
         name="Scene",
         description="The Godot Scene to place at the object's position. Use the config file to register more scenes.",
-        items=scenes,
+        items=enum_scenes,
     )
