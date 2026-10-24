@@ -83,7 +83,7 @@ class OUTLINER_MT_BulkAddGodotScenesSettingViaCollection(bpy.types.Menu):
                 )
 
 
-def draw_bulk_add_godot_scenes_setting_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
+def draw_bulk_add_godot_scenes_setting_via_collection_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     layout = self.layout
     coll_of_menu: bpy.types.Collection | None = context.collection
     if layout and coll_of_menu:

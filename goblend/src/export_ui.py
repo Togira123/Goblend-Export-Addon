@@ -21,7 +21,13 @@ import bpy
 from .ui.operators.BulkAddGodotScenesSettingViaCollection import (
     OUTLINER_MT_BulkAddGodotScenesSettingViaCollection,
     OUTLINER_OT_BulkAddGodotScenesSettingViaCollection,
-    draw_bulk_add_godot_scenes_setting_menu,
+    draw_bulk_add_godot_scenes_setting_via_collection_menu,
+)
+
+from .ui.operators.BulkAddGodotScenesSettingViaObject import (
+    OUTLINER_MT_BulkAddGodotScenesSettingViaObject,
+    OUTLINER_OT_BulkAddGodotScenesSettingViaObject,
+    draw_bulk_add_godot_scenes_setting_via_object_menu,
 )
 
 from .types.goblend_types import GoblendScene
@@ -199,6 +205,8 @@ classes = (
     LightPanelProperties,
     OUTLINER_OT_BulkAddGodotScenesSettingViaCollection,
     OUTLINER_MT_BulkAddGodotScenesSettingViaCollection,
+    OUTLINER_MT_BulkAddGodotScenesSettingViaObject,
+    OUTLINER_OT_BulkAddGodotScenesSettingViaObject,
 )
 
 
@@ -221,7 +229,8 @@ def register() -> None:
     )
     GoblendScene.is_root_scene = BoolProp(default=True)
 
-    bpy.types.OUTLINER_MT_collection.append(draw_bulk_add_godot_scenes_setting_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_collection.append(draw_bulk_add_godot_scenes_setting_via_collection_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_object.append(draw_bulk_add_godot_scenes_setting_via_object_menu)  # pyright: ignore
 
 
 def unregister() -> None:
@@ -238,4 +247,5 @@ def unregister() -> None:
     del GoblendScene.show_all_light_settings
     del GoblendScene.is_root_scene
 
-    bpy.types.OUTLINER_MT_collection.remove(draw_bulk_add_godot_scenes_setting_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_collection.remove(draw_bulk_add_godot_scenes_setting_via_collection_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_object.remove(draw_bulk_add_godot_scenes_setting_via_object_menu)  # pyright: ignore
