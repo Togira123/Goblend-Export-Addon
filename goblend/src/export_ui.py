@@ -30,6 +30,12 @@ from .ui.operators.BulkAddGodotScenesSettingViaObject import (
     draw_bulk_add_godot_scenes_setting_via_object_menu,
 )
 
+from .ui.operators.BulkAddCollisionSetting import (
+    OUTLINER_MT_BulkAddCollisionSetting,
+    OUTLINER_OT_BulkAddCollisionSetting,
+    draw_bulk_add_collision_setting_menu,
+)
+
 from .types.goblend_types import GoblendScene
 from .types.property_types import PointerProp, CollectionProp, BoolProp
 
@@ -207,6 +213,8 @@ classes = (
     OUTLINER_MT_BulkAddGodotScenesSettingViaCollection,
     OUTLINER_MT_BulkAddGodotScenesSettingViaObject,
     OUTLINER_OT_BulkAddGodotScenesSettingViaObject,
+    OUTLINER_MT_BulkAddCollisionSetting,
+    OUTLINER_OT_BulkAddCollisionSetting,
 )
 
 
@@ -231,6 +239,7 @@ def register() -> None:
 
     bpy.types.OUTLINER_MT_collection.append(draw_bulk_add_godot_scenes_setting_via_collection_menu)  # pyright: ignore
     bpy.types.OUTLINER_MT_object.append(draw_bulk_add_godot_scenes_setting_via_object_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_collection.append(draw_bulk_add_collision_setting_menu)  # pyright: ignore
 
 
 def unregister() -> None:
@@ -249,3 +258,4 @@ def unregister() -> None:
 
     bpy.types.OUTLINER_MT_collection.remove(draw_bulk_add_godot_scenes_setting_via_collection_menu)  # pyright: ignore
     bpy.types.OUTLINER_MT_object.remove(draw_bulk_add_godot_scenes_setting_via_object_menu)  # pyright: ignore
+    bpy.types.OUTLINER_MT_collection.remove(draw_bulk_add_collision_setting_menu)  # pyright: ignore
