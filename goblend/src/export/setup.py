@@ -212,7 +212,12 @@ def remove_godot_scene_objects(objects: list[bpy.types.Object]) -> set[bpy.types
     if not godot_scenes:
         return godot_scene_nodes
     to_remove: set[bpy.types.Object] = set()
-    for obj in godot_scenes.objects:
+    # take all objects in godot_scenes collection into account (also indirect children)
+    all_objects_in_godot_scenes_collection: set[bpy.types.Object] = set(godot_scenes.objects)
+    child_collections = godot_scenes.children_recursive
+    for coll in child_collections:
+        all_objects_in_godot_scenes_collection.update(coll.objects)
+    for obj in all_objects_in_godot_scenes_collection:
         if obj in objects:
             to_remove.add(obj)
         log("Found Object to be replaced with Godot Scene: " + obj.name)
