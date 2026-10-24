@@ -48,15 +48,12 @@ class OUTLINER_OT_BulkAddGodotScenesSettingViaObject(bpy.types.Operator):
 
         if not godot_scenes:
             return {"CANCELLED"}
-        all_child_collections = godot_scenes.children_recursive if godot_scenes else []
         # take all objects in godot_scenes collection into account (also indirect children)
-        all_objects_in_godot_scenes_collection: set[bpy.types.Object] = set(godot_scenes.objects)
-        for coll in all_child_collections:
-            all_objects_in_godot_scenes_collection.update(coll.objects)
+        all_objects_in_godot_scenes_collection = godot_scenes.all_objects
         already_existing_objects = dict([(s.obj.name, s) for s in scene.godot_scene_panel_props.values() if s.obj])
         for obj in selected_objects:
             # it has to be an object inside of a child collection of the GodotScenes collection
-            if obj in all_objects_in_godot_scenes_collection:
+            if obj.name in all_objects_in_godot_scenes_collection:
                 if obj.name in already_existing_objects:
                     panel = already_existing_objects.get(obj.name)
                     if panel:
@@ -103,12 +100,8 @@ def draw_bulk_add_godot_scenes_setting_via_object_menu(self: bpy.types.Menu, con
                 break
         if not godot_scenes:
             return
-        all_child_collections = godot_scenes.children_recursive if godot_scenes else []
+        # only show the menu if we right clicked an object inside a godot scenes collection
         # take all objects in godot_scenes collection into account (also indirect children)
-        all_objects_in_godot_scenes_collection: set[bpy.types.Object] = set(godot_scenes.objects)
-        for coll in all_child_collections:
-            all_objects_in_godot_scenes_collection.update(coll.objects)
-            # only show the menu if we right clicked an object inside a godot scenes collection
-        if obj_of_menu in all_objects_in_godot_scenes_collection:
+        if obj_of_menu.name in godot_scenes.all_objects:
             layout.separator()
             layout.menu("OUTLINER_MT_BulkAddGodotScenesSettingViaObject")

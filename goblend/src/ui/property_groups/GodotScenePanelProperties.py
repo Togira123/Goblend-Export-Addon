@@ -40,11 +40,7 @@ def is_godot_scene(self: bpy.types.PropertyGroup, obj: bpy.types.Object) -> bool
     if not godot_scenes:
         return False
     # take all objects in godot_scenes collection into account (also indirect children)
-    all_objects_in_godot_scenes_collection: set[bpy.types.Object] = set(godot_scenes.objects)
-    child_collections = godot_scenes.children_recursive
-    for coll in child_collections:
-        all_objects_in_godot_scenes_collection.update(coll.objects)
-    return obj in all_objects_in_godot_scenes_collection
+    return obj.name in godot_scenes.all_objects
 
 
 def scenes() -> list[tuple[str, str, str]]:
