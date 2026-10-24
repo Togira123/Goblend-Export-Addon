@@ -36,12 +36,22 @@ def can_add_object_constraint(self: bpy.types.PropertyGroup, object: bpy.types.O
     # but it only includes collections of the current scene
     # it shouldn't matter too much with a low collection count
     all_collections_in_scene = scene.collection.children_recursive
-    collision_collection = None
+    collision_collection: bpy.types.Collection | None = None
     for coll in all_collections_in_scene:
         if coll.name == bpy.context.scene.panel_props.collision_collection:
             collision_collection = coll
             break
     if collision_collection and object.name in collision_collection.all_objects:
+        return False
+    # this is much slower than a simple bpy.data.collections.get(bpy.context.scene.panel_props.godot_scenes_collection),
+    # but it only includes collections of the current scene
+    # it shouldn't matter too much with a low collection count
+    godot_scenes: bpy.types.Collection | None = None
+    for coll in all_collections_in_scene:
+        if coll.name == bpy.context.scene.panel_props.godot_scenes_collection:
+            godot_scenes = coll
+            break
+    if godot_scenes and object.name in godot_scenes.all_objects:
         return False
     for item in scene.object_panel_props:
         if item.obj == object:
