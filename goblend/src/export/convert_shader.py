@@ -1583,12 +1583,21 @@ def init_bright_contrast(node: bpy.types.Node) -> None:
 
 def init_gamma(node: bpy.types.Node) -> None:
     reset_is_constant()
-    create_var(node, node.outputs[0], DataTypes.VEC3)
     color = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
     # cast gamma to vec3 for the pow function below
     gamma = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3)
     out = create_var(node, node.outputs[0], DataTypes.VEC3)
     add_line("vec3 " + out + " = pow(" + color + ", " + gamma + ");", is_constant)
+
+
+def init_invert(node: bpy.types.Node) -> None:
+    reset_is_constant()
+    color = get_casted_var_or_constant(node, node.inputs[1], DataTypes.VEC3)
+    inv = create_var(node, None, DataTypes.VEC3)
+    add_line("vec3 " + inv + " = vec3(1.0) - " + color + ";", is_constant)
+    fac = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+    out = create_var(node, node.outputs[0], DataTypes.VEC3)
+    add_line("vec3 " + out + " = mix(" + color + ", " + inv + ", " + fac + ");", is_constant)
 
 
 def init_tex_image(node: bpy.types.Node, uv_index: int, type: str) -> None:
@@ -1992,6 +2001,7 @@ class SupportedNodes(TypedDict):
     ShaderNodeSeparateColor: Callable[[bpy.types.Node], None]
     ShaderNodeBrightContrast: Callable[[bpy.types.Node], None]
     ShaderNodeGamma: Callable[[bpy.types.Node], None]
+    ShaderNodeInvert: Callable[[bpy.types.Node], None]
     # texture
     ShaderNodeTexImage: Callable[[bpy.types.Node, int, str], None]
     # utilities/math
@@ -2025,6 +2035,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeSeparateColor": init_separate_color,
     "ShaderNodeBrightContrast": init_bright_contrast,
     "ShaderNodeGamma": init_gamma,
+    "ShaderNodeInvert": init_invert,
     # texture
     "ShaderNodeTexImage": init_tex_image,
     # utilities/math
