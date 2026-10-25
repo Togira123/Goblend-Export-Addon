@@ -1567,6 +1567,20 @@ def init_separate_xyz(node: bpy.types.Node) -> None:
         add_line("float " + varz + " = " + vec + ".z;", False)
 
 
+def init_bright_contrast(node: bpy.types.Node) -> None:
+    reset_is_constant()
+    contrast = get_casted_var_or_constant(node, node.inputs[2], DataTypes.FLOAT)
+    # from https://projects.blender.org/blender/blender/src/commit/0d0b51704b282011c4cd2403f737909d29ec78f7/intern/cycles/kernel/osl/shaders/node_brightness.osl
+    a = create_var(node, None, DataTypes.FLOAT)
+    add_line("float " + a + " = 1.0 + " + contrast + ";", is_constant)
+    brightness = get_casted_var_or_constant(node, node.inputs[1], DataTypes.FLOAT)
+    b = create_var(node, None, DataTypes.FLOAT)
+    add_line("float " + b + " = " + brightness + " - " + contrast + " * 0.5;", is_constant)
+    out = create_var(node, node.outputs[0], DataTypes.VEC3)
+    color_in = get_casted_var_or_constant(node, node.inputs[0], DataTypes.VEC3)
+    add_line("vec3 " + out + " = max(" + a + " * " + color_in + " + " + b + ", vec3(0.0));", is_constant)
+
+
 def init_tex_image(node: bpy.types.Node, uv_index: int, type: str) -> None:
     img = cast(bpy.types.ShaderNodeTexImage, node).image
     if img is None:
@@ -1952,45 +1966,64 @@ def init_group_output(_node: bpy.types.Node) -> None:
 
 
 class SupportedNodes(TypedDict):
+    # input
+    ShaderNodeValue: Callable[[bpy.types.Node], None]
+    ShaderNodeUVMap: Callable[[bpy.types.Node, int], None]
+    ShaderNodeRGB: Callable[[bpy.types.Node], None]
     ShaderNodeTexCoord: Callable[[bpy.types.Node, int], None]
+    # output
+    ShaderNodeOutputMaterial: Callable[[bpy.types.Node], None]
+    # shader
+    ShaderNodeBsdfPrincipled: Callable[[bpy.types.Node], None]
+    # displacement
+    ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
+    # color
+    ShaderNodeCombineColor: Callable[[bpy.types.Node], None]
+    ShaderNodeSeparateColor: Callable[[bpy.types.Node], None]
+    ShaderNodeBrightContrast: Callable[[bpy.types.Node], None]
+    # texture
+    ShaderNodeTexImage: Callable[[bpy.types.Node, int, str], None]
+    # utilities/math
     ShaderNodeMath: Callable[[bpy.types.Node], None]
-
+    ShaderNodeMix: Callable[[bpy.types.Node], None]
+    # utilities/vector_math
     ShaderNodeVectorMath: Callable[[bpy.types.Node], None]
     ShaderNodeMapping: Callable[[bpy.types.Node], None]
-    ShaderNodeCombineColor: Callable[[bpy.types.Node], None]
     ShaderNodeCombineXYZ: Callable[[bpy.types.Node], None]
-    ShaderNodeSeparateColor: Callable[[bpy.types.Node], None]
     ShaderNodeSeparateXYZ: Callable[[bpy.types.Node], None]
-    ShaderNodeBsdfPrincipled: Callable[[bpy.types.Node], None]
-    ShaderNodeOutputMaterial: Callable[[bpy.types.Node], None]
-    ShaderNodeValue: Callable[[bpy.types.Node], None]
-    ShaderNodeMix: Callable[[bpy.types.Node], None]
-    ShaderNodeRGB: Callable[[bpy.types.Node], None]
-    ShaderNodeTexImage: Callable[[bpy.types.Node, int, str], None]
-    ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
-    ShaderNodeUVMap: Callable[[bpy.types.Node, int], None]
+    # group
     ShaderNodeGroup: Callable[[bpy.types.Node, str], None]
     NodeGroupInput: Callable[[bpy.types.Node], None]
     NodeGroupOutput: Callable[[bpy.types.Node], None]
 
 
 supported_nodes: SupportedNodes = {
+    # input
+    "ShaderNodeValue": init_value,
+    "ShaderNodeUVMap": init_uv_map,
+    "ShaderNodeRGB": init_rgb,
     "ShaderNodeTexCoord": init_tex_coord,
+    # output
+    "ShaderNodeOutputMaterial": init_output_material,
+    # shader
+    "ShaderNodeBsdfPrincipled": init_bsdf_principled,
+    # displacement
+    "ShaderNodeNormalMap": init_normal_map,
+    # color
+    "ShaderNodeCombineColor": init_combine_color,
+    "ShaderNodeSeparateColor": init_separate_color,
+    "ShaderNodeBrightContrast": init_bright_contrast,
+    # texture
+    "ShaderNodeTexImage": init_tex_image,
+    # utilities/math
     "ShaderNodeMath": init_math,
+    "ShaderNodeMix": init_mix,
+    # utilities/vector_math
     "ShaderNodeVectorMath": init_vector_math,
     "ShaderNodeMapping": init_mapping,
-    "ShaderNodeCombineColor": init_combine_color,
     "ShaderNodeCombineXYZ": init_combine_xyz,
-    "ShaderNodeSeparateColor": init_separate_color,
     "ShaderNodeSeparateXYZ": init_separate_xyz,
-    "ShaderNodeBsdfPrincipled": init_bsdf_principled,
-    "ShaderNodeOutputMaterial": init_output_material,
-    "ShaderNodeValue": init_value,
-    "ShaderNodeMix": init_mix,
-    "ShaderNodeRGB": init_rgb,
-    "ShaderNodeTexImage": init_tex_image,
-    "ShaderNodeNormalMap": init_normal_map,
-    "ShaderNodeUVMap": init_uv_map,
+    # group
     "ShaderNodeGroup": init_group,
     "NodeGroupInput": init_group_input,
     "NodeGroupOutput": init_group_output,
