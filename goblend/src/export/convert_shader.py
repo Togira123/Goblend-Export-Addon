@@ -317,7 +317,7 @@ def get_constant(node: bpy.types.Node, input: bpy.types.NodeSocket) -> str:
                 + ")"
             )
         case "SHADER":
-            return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
+            return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
@@ -380,7 +380,7 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec4(" + var_name + ")"
                 case DataTypes.BSDF:
                     # puts float in color, uses defaults for rest
-                    return "BSDF(vec3(" + var_name + "), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
+                    return "BSDF(vec3(" + var_name + "), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
         case DataTypes.INT:
             match needed:
                 case DataTypes.FLOAT:
@@ -395,7 +395,7 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec4(" + var_name + ")"
                 case DataTypes.BSDF:
                     # puts int in color, uses defaults for rest
-                    return "BSDF(vec3(float(" + var_name + ")), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
+                    return "BSDF(vec3(float(" + var_name + ")), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
         case DataTypes.VEC2:
             match needed:
                 case DataTypes.FLOAT:
@@ -408,7 +408,7 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec4(" + var_name + ", 0, 0)"
                 case DataTypes.BSDF:
                     # puts red and green channels in color, uses defaults for rest
-                    return "BSDF(vec3(" + var_name + ", 0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
+                    return "BSDF(vec3(" + var_name + ", 0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
         case DataTypes.VEC3:
             match needed:
                 case DataTypes.FLOAT:
@@ -421,7 +421,7 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec4(" + var_name + ", 0)"
                 case DataTypes.BSDF:
                     # puts vec3 in color, uses defaults for rest
-                    return "BSDF(" + var_name + ", 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
+                    return "BSDF(" + var_name + ", 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
         case DataTypes.VEC4:
             match needed:
                 case DataTypes.FLOAT:
@@ -434,7 +434,7 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return var_name
                 case DataTypes.BSDF:
                     # puts vec3 in color, 4th channel for alpha, uses defaults for rest
-                    return "BSDF(" + var_name + ".rgb, 0.0, 0.5, " + var_name + ".a, vec3(0.0), vec3(0.0))"
+                    return "BSDF(" + var_name + ".rgb, 0.0, 0.5, " + var_name + ".a, vec3(0.0), vec3(0.0), 0.5)"
         case DataTypes.BSDF:
             match needed:
                 case DataTypes.BSDF:
@@ -1697,16 +1697,17 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
     emission_color = cast(bpy.types.NodeSocket, node.inputs.get("Emission Color"))
     emission_strength = cast(bpy.types.NodeSocket, node.inputs.get("Emission Strength"))
     # rest is ignored
-    dict = {
+    bsdf_dict = {
         "ALBEDO": "vec3",
         "METALLIC": "float",
         "ROUGHNESS": "float",
         "ALPHA": "float",
         "NORMAL": "vec3",
         "EMISSION": "vec3",
+        "SPECULAR": "float",
     }
     if "BSDF" not in added_structs:
-        add_struct("BSDF", dict)
+        add_struct("BSDF", bsdf_dict)
     var_bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
     has_alpha = get_casted_var_or_constant(node, alpha, DataTypes.FLOAT) != "1.0"
     has_normal = normal.is_linked
@@ -1741,9 +1742,52 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
         + get_casted_var_or_constant(node, emission_color, DataTypes.VEC3)
         + " * "
         + get_casted_var_or_constant(node, emission_strength, DataTypes.FLOAT)
-        + ");"
+        + ", 0.5);"
     )
     add_line(line, is_constant)
+
+
+def init_bsdf_diffuse(node: bpy.types.Node) -> None:
+    color = node.inputs[0]
+    roughness = node.inputs[1]
+    normal = node.inputs[2]
+    bsdf_dict = {
+        "ALBEDO": "vec3",
+        "METALLIC": "float",
+        "ROUGHNESS": "float",
+        "ALPHA": "float",
+        "NORMAL": "vec3",
+        "EMISSION": "vec3",
+        "SPECULAR": "float",
+    }
+    if "BSDF" not in added_structs:
+        add_struct("BSDF", bsdf_dict)
+    bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
+    # adding the same props as with BSDF to not get an error when reading them in mix shader or material output
+    add_prop_to_var(node, node.outputs[0], "has_alpha", False)
+    add_prop_to_var(node, node.outputs[0], "has_normal", normal.is_linked)
+    has_normal_map = False
+    if normal.is_linked:
+        link = cast(bpy.types.NodeLinks, normal.links)[0]
+        res = get_prop_from_any_child_of_var(
+            cast(bpy.types.Node, link.from_node), cast(bpy.types.NodeSocket, link.from_socket), "is_texture"
+        )
+        if res[1] and res[0]:
+            has_normal_map = True
+    add_prop_to_var(node, node.outputs[0], "has_normal_map", has_normal_map)
+    # diffuse bsdf sets specular to 0 to not get reflections
+    add_line(
+        "BSDF "
+        + bsdf
+        + " = BSDF("
+        + get_casted_var_or_constant(node, color, DataTypes.VEC3)
+        + ", 0.0, "
+        + get_casted_var_or_constant(node, roughness, DataTypes.FLOAT)
+        + ", 1.0, "
+        + get_casted_var_or_constant(node, normal, DataTypes.VEC3)
+        + ", vec3(0.0), 0.0);",
+        False,
+    )
 
 
 def init_mix_shader(node: bpy.types.Node) -> None:
@@ -1757,6 +1801,7 @@ def init_mix_shader(node: bpy.types.Node) -> None:
     alpha = create_var(node, None, DataTypes.FLOAT)
     normal = create_var(node, None, DataTypes.VEC3)
     emission = create_var(node, None, DataTypes.VEC3)
+    specular = create_var(node, None, DataTypes.FLOAT)
     # we just mix all of the attributes directly
     # this is not necessarily 100% accurate e.g. roughness is not linear like that
     # but it's the easiest we can do and fairly correct
@@ -1766,6 +1811,7 @@ def init_mix_shader(node: bpy.types.Node) -> None:
     add_line("float " + alpha + " = mix(" + shader1 + ".ALPHA, " + shader2 + ".ALPHA, " + fac + ");", False)
     add_line("vec3 " + normal + " = mix(" + shader1 + ".NORMAL, " + shader2 + ".NORMAL, " + fac + ");", False)
     add_line("vec3 " + emission + " = mix(" + shader1 + ".EMISSION, " + shader2 + ".EMISSION, " + fac + ");", False)
+    add_line("float " + specular + " = mix(" + shader1 + ".SPECULAR, " + shader2 + ".SPECULAR, " + fac + ");", False)
     add_line(
         "BSDF "
         + out
@@ -1781,6 +1827,8 @@ def init_mix_shader(node: bpy.types.Node) -> None:
         + normal
         + ", "
         + emission
+        + ", "
+        + specular
         + ");",
         False,
     )
@@ -1871,6 +1919,7 @@ def init_output_material(node: bpy.types.Node) -> None:
         if limit_normal_effect is not None:
             add_line("}", False)
     add_line("EMISSION = " + bsdf + ".EMISSION;", False)
+    add_line("SPECULAR = " + bsdf + ".SPECULAR;", False)
 
 
 def init_value(node: bpy.types.Node) -> None:
@@ -2073,6 +2122,7 @@ class SupportedNodes(TypedDict):
     # shader
     ShaderNodeBsdfPrincipled: Callable[[bpy.types.Node], None]
     ShaderNodeMixShader: Callable[[bpy.types.Node], None]
+    ShaderNodeBsdfDiffuse: Callable[[bpy.types.Node], None]
     # displacement
     ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
     # color
@@ -2111,6 +2161,7 @@ supported_nodes: SupportedNodes = {
     # shader
     "ShaderNodeBsdfPrincipled": init_bsdf_principled,
     "ShaderNodeMixShader": init_mix_shader,
+    "ShaderNodeBsdfDiffuse": init_bsdf_diffuse,
     # displacement
     "ShaderNodeNormalMap": init_normal_map,
     # color
