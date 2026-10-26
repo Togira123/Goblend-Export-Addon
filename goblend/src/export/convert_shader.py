@@ -1994,6 +1994,14 @@ def init_group_output(_node: bpy.types.Node) -> None:
     group_nodes_stack.pop()
 
 
+def init_reroute(node: bpy.types.Node) -> None:
+    if not node.inputs[0].is_linked:
+        raise Exception("Reroute Node with no input is not supported")
+    input = get_var(node, node.inputs[0])
+    for output in node.outputs:
+        set_var(node, output, input["type"], input["name"])
+
+
 class SupportedNodes(TypedDict):
     # input
     ShaderNodeValue: Callable[[bpy.types.Node], None]
@@ -2027,6 +2035,8 @@ class SupportedNodes(TypedDict):
     ShaderNodeGroup: Callable[[bpy.types.Node, str], None]
     NodeGroupInput: Callable[[bpy.types.Node], None]
     NodeGroupOutput: Callable[[bpy.types.Node], None]
+    # layout
+    NodeReroute: Callable[[bpy.types.Node], None]
 
 
 supported_nodes: SupportedNodes = {
@@ -2062,6 +2072,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeGroup": init_group,
     "NodeGroupInput": init_group_input,
     "NodeGroupOutput": init_group_output,
+    "NodeReroute": init_reroute,
 }
 
 needs_uv = set(("ShaderNodeTexCoord", "ShaderNodeUVMap"))
