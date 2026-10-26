@@ -192,7 +192,11 @@ def add_prop_to_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: str
 
 
 def get_prop_from_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: str) -> bool:
-    if node not in special_var_props or output not in special_var_props[node]:
+    if (
+        node not in special_var_props
+        or output not in special_var_props[node]
+        or key not in special_var_props[node][output]
+    ):
         raise Exception("No special properties for node " + node.name)
     return special_var_props[node][output][key]
 
@@ -200,7 +204,11 @@ def get_prop_from_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: s
 def get_prop_from_any_child_of_var(
     node: bpy.types.Node, output: bpy.types.NodeSocket, key: str
 ) -> tuple[bool | None, bool]:
-    if node not in special_var_props or output not in special_var_props[node]:
+    if (
+        node not in special_var_props
+        or output not in special_var_props[node]
+        or key not in special_var_props[node][output]
+    ):
         for inp in node.inputs:
             if inp.is_linked:
                 link = cast(bpy.types.NodeLinks, inp.links)[0]
@@ -1745,6 +1753,14 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
         + ", 0.5);"
     )
     add_line(line, is_constant)
+    # these props indicate to mix shader later on which properties to actually mix
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_albedo", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_metallic", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_roughness", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_alpha", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_normal", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_emission", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_specular", True)
 
 
 def init_bsdf_diffuse(node: bpy.types.Node) -> None:
@@ -1788,6 +1804,11 @@ def init_bsdf_diffuse(node: bpy.types.Node) -> None:
         + ", vec3(0.0), 0.0);",
         False,
     )
+    # these props indicate to mix shader later on which properties to actually mix
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_albedo", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_roughness", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_normal", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_specular", True)
 
 
 def init_mix_shader(node: bpy.types.Node) -> None:
@@ -1802,16 +1823,41 @@ def init_mix_shader(node: bpy.types.Node) -> None:
     normal = create_var(node, None, DataTypes.VEC3)
     emission = create_var(node, None, DataTypes.VEC3)
     specular = create_var(node, None, DataTypes.FLOAT)
+
+    shader_node1 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_node)
+    shader_node2 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_node)
+    shader_node_socket1 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_socket)
+    shader_node_socket2 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_socket)
     # we just mix all of the attributes directly
     # this is not necessarily 100% accurate e.g. roughness is not linear like that
     # but it's the easiest we can do and fairly correct
-    add_line("vec3 " + albedo + " = mix(" + shader1 + ".ALBEDO, " + shader2 + ".ALBEDO, " + fac + ");", False)
-    add_line("float " + metallic + " = mix(" + shader1 + ".METALLIC, " + shader2 + ".METALLIC, " + fac + ");", False)
-    add_line("float " + roughness + " = mix(" + shader1 + ".ROUGHNESS, " + shader2 + ".ROUGHNESS, " + fac + ");", False)
-    add_line("float " + alpha + " = mix(" + shader1 + ".ALPHA, " + shader2 + ".ALPHA, " + fac + ");", False)
-    add_line("vec3 " + normal + " = mix(" + shader1 + ".NORMAL, " + shader2 + ".NORMAL, " + fac + ");", False)
-    add_line("vec3 " + emission + " = mix(" + shader1 + ".EMISSION, " + shader2 + ".EMISSION, " + fac + ");", False)
-    add_line("float " + specular + " = mix(" + shader1 + ".SPECULAR, " + shader2 + ".SPECULAR, " + fac + ");", False)
+    props_and_bsdf_attributes = [
+        ("bsdf_use_albedo", "vec3", "ALBEDO", "vec3(0.0)", albedo),
+        ("bsdf_use_metallic", "float", "METALLIC", "0.0", metallic),
+        ("bsdf_use_roughness", "float", "ROUGHNESS", "0.5", roughness),
+        ("bsdf_use_alpha", "float", "ALPHA", "1.0", alpha),
+        ("bsdf_use_normal", "vec3", "NORMAL", "vec3(0.0)", normal),
+        ("bsdf_use_emission", "vec3", "EMISSION", "vec3(0.0)", emission),
+        ("bsdf_use_specular", "float", "SPECULAR", "0.5", specular),
+    ]
+    for prop, dtype, attr, default, var in props_and_bsdf_attributes:
+        exists1, used1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
+        exists2, used2 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
+        if used1 and exists1 and used2 and exists2:
+            add_line(
+                dtype + " " + var + " = mix(" + shader1 + "." + attr + ", " + shader2 + "." + attr + ", " + fac + ");",
+                False,
+            )
+            add_prop_to_var(node, node.outputs[0], prop, True)
+        elif used1 and exists1:
+            add_line(dtype + " " + var + " = " + shader1 + "." + attr + ";", False)
+            add_prop_to_var(node, node.outputs[0], prop, True)
+        elif used2 and exists2:
+            add_line(dtype + " " + var + " = " + shader2 + "." + attr + ";", False)
+            add_prop_to_var(node, node.outputs[0], prop, True)
+        else:
+            add_line(dtype + " " + var + " = " + default + ";", False)
+            # property is not used, do not set
     add_line(
         "BSDF "
         + out
@@ -1833,10 +1879,6 @@ def init_mix_shader(node: bpy.types.Node) -> None:
         False,
     )
     # merge var props from the two shader inputs and set them here again
-    shader_node1 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_node)
-    shader_node2 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_node)
-    shader_node_socket1 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_socket)
-    shader_node_socket2 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_socket)
     has_alpha1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_alpha")
     has_alpha2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_alpha")
     has_alpha = has_alpha1 or has_alpha2
@@ -2108,6 +2150,13 @@ def init_reroute(node: bpy.types.Node) -> None:
     input = get_var(node, node.inputs[0])
     for output in node.outputs:
         set_var(node, output, input["type"], input["name"])
+    # copy over all properties
+    from_node = cast(bpy.types.NodeLinks, node.inputs[0].links)[0].from_node
+    from_output = cast(bpy.types.NodeLinks, node.inputs[0].links)[0].from_socket
+    if from_node in special_var_props and from_output in special_var_props[from_node]:
+        for key in special_var_props[from_node][from_output]:
+            for output in node.outputs:
+                add_prop_to_var(node, output, key, special_var_props[from_node][from_output][key])
 
 
 class SupportedNodes(TypedDict):
