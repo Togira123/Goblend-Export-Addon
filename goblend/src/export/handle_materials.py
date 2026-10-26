@@ -511,6 +511,7 @@ def handle_materials(
         for mat in materials:
             if mat.name in settings_for_godot["use_shader_mats"]:
                 settings_for_godot["use_shader_mats"][mat.name] = obj
+                continue
             if mat.name in settings_for_godot["limit_uv_effect_normal"]:
                 settings_for_godot["limit_uv_effect_normal"][mat.name]["obj"] = obj
             material_output_and_bsdf = prepare_material(cast(bpy.types.Mesh, obj.data), mat, poly_indices)

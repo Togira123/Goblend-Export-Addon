@@ -168,34 +168,6 @@ class UnsupportedSocket(Exception):
         super().__init__("Connecting " + socket_name + " on " + node.bl_idname + " is not supported")
 
 
-def input_to_data_type(input: bpy.types.NodeSocket) -> DataTypes:
-    match input.type:
-        case "INT":  # assuming "value" is "float"
-            return DataTypes.INT
-        case "VALUE":
-            return DataTypes.FLOAT
-        case "BOOLEAN":
-            return DataTypes.INT
-        case "VECTOR":
-            match len(cast(list[float], cast(bpy.types.NodeSocketVector, input).default_value)):
-                case 2:
-                    return DataTypes.VEC2
-                case 3:
-                    return DataTypes.VEC3
-                case 4:
-                    return DataTypes.VEC4
-                case _:
-                    raise Exception(
-                        "Unsupported vector length of "
-                        + str(len(cast(list[float], cast(bpy.types.NodeSocketVector, input).default_value)))
-                        + ", please report on GitHub"
-                    )
-        case "RGBA":
-            return DataTypes.VEC3
-        case _:
-            raise Exception("Unsupported type: " + input.type)
-
-
 # pass None as output to indicate a helper variable
 def create_var(node: bpy.types.Node, output: bpy.types.NodeSocket | None, type: DataTypes) -> str:
     global next_num
@@ -344,6 +316,8 @@ def get_constant(node: bpy.types.Node, input: bpy.types.NodeSocket) -> str:
                 + beautify_float(cast(list[float], cast(bpy.types.NodeSocketVector, input).default_value)[2])
                 + ")"
             )
+        case "SHADER":
+            return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
@@ -370,6 +344,8 @@ def get_data_type(node: bpy.types.Node, input: bpy.types.NodeSocket) -> DataType
                     )
         case "RGBA":
             return DataTypes.VEC3
+        case "SHADER":
+            return DataTypes.BSDF
         case _:
             raise Exception("Unsupported constant value at " + node.name + " with socket " + input.name)
 
@@ -402,6 +378,9 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec3(" + var_name + ")"
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ")"
+                case DataTypes.BSDF:
+                    # puts float in color, uses defaults for rest
+                    return "BSDF(vec3(" + var_name + "), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
         case DataTypes.INT:
             match needed:
                 case DataTypes.FLOAT:
@@ -414,6 +393,9 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec3(" + var_name + ")"
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ")"
+                case DataTypes.BSDF:
+                    # puts int in color, uses defaults for rest
+                    return "BSDF(vec3(float(" + var_name + ")), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
         case DataTypes.VEC2:
             match needed:
                 case DataTypes.FLOAT:
@@ -424,6 +406,9 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return "vec3(" + var_name + ", 0)"
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ", 0, 0)"
+                case DataTypes.BSDF:
+                    # puts red and green channels in color, uses defaults for rest
+                    return "BSDF(vec3(" + var_name + ", 0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
         case DataTypes.VEC3:
             match needed:
                 case DataTypes.FLOAT:
@@ -434,6 +419,9 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                     return var_name
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ", 0)"
+                case DataTypes.BSDF:
+                    # puts vec3 in color, uses defaults for rest
+                    return "BSDF(" + var_name + ", 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0))"
         case DataTypes.VEC4:
             match needed:
                 case DataTypes.FLOAT:
@@ -443,6 +431,17 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC3:
                     return "(" + var_name + ".xyz)"
                 case DataTypes.VEC4:
+                    return var_name
+                case DataTypes.BSDF:
+                    # puts vec3 in color, 4th channel for alpha, uses defaults for rest
+                    return "BSDF(" + var_name + ".rgb, 0.0, 0.5, " + var_name + ".a, vec3(0.0), vec3(0.0))"
+        case DataTypes.BSDF:
+            match needed:
+                case DataTypes.BSDF:
+                    return var_name
+        case DataTypes.SAMPLER2D:
+            match needed:
+                case DataTypes.SAMPLER2D:
                     return var_name
     raise Exception("Unsupported cast: Cannot cast from " + actual.name + " to " + needed.name)
 
@@ -1711,6 +1710,7 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
     var_bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
     has_alpha = get_casted_var_or_constant(node, alpha, DataTypes.FLOAT) != "1.0"
     has_normal = normal.is_linked
+    # if we add more props here make sure to also propagate them in init_mix_shader
     add_prop_to_var(node, node.outputs[0], "has_alpha", has_alpha)
     add_prop_to_var(node, node.outputs[0], "has_normal", has_normal)
     has_normal_map = False
@@ -1746,6 +1746,63 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
     add_line(line, is_constant)
 
 
+def init_mix_shader(node: bpy.types.Node) -> None:
+    fac = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
+    shader1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.BSDF)
+    shader2 = get_casted_var_or_constant(node, node.inputs[2], DataTypes.BSDF)
+    out = create_var(node, node.outputs[0], DataTypes.BSDF)
+    albedo = create_var(node, None, DataTypes.VEC3)
+    metallic = create_var(node, None, DataTypes.FLOAT)
+    roughness = create_var(node, None, DataTypes.FLOAT)
+    alpha = create_var(node, None, DataTypes.FLOAT)
+    normal = create_var(node, None, DataTypes.VEC3)
+    emission = create_var(node, None, DataTypes.VEC3)
+    # we just mix all of the attributes directly
+    # this is not necessarily 100% accurate e.g. roughness is not linear like that
+    # but it's the easiest we can do and fairly correct
+    add_line("vec3 " + albedo + " = mix(" + shader1 + ".ALBEDO, " + shader2 + ".ALBEDO, " + fac + ");", False)
+    add_line("float " + metallic + " = mix(" + shader1 + ".METALLIC, " + shader2 + ".METALLIC, " + fac + ");", False)
+    add_line("float " + roughness + " = mix(" + shader1 + ".ROUGHNESS, " + shader2 + ".ROUGHNESS, " + fac + ");", False)
+    add_line("float " + alpha + " = mix(" + shader1 + ".ALPHA, " + shader2 + ".ALPHA, " + fac + ");", False)
+    add_line("vec3 " + normal + " = mix(" + shader1 + ".NORMAL, " + shader2 + ".NORMAL, " + fac + ");", False)
+    add_line("vec3 " + emission + " = mix(" + shader1 + ".EMISSION, " + shader2 + ".EMISSION, " + fac + ");", False)
+    add_line(
+        "BSDF "
+        + out
+        + " = BSDF("
+        + albedo
+        + ", "
+        + metallic
+        + ", "
+        + roughness
+        + ", "
+        + alpha
+        + ", "
+        + normal
+        + ", "
+        + emission
+        + ");",
+        False,
+    )
+    # merge var props from the two shader inputs and set them here again
+    shader_node1 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_node)
+    shader_node2 = cast(bpy.types.Node, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_node)
+    shader_node_socket1 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[1].links)[0].from_socket)
+    shader_node_socket2 = cast(bpy.types.NodeSocket, cast(bpy.types.NodeLinks, node.inputs[2].links)[0].from_socket)
+    has_alpha1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_alpha")
+    has_alpha2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_alpha")
+    has_alpha = has_alpha1 or has_alpha2
+    has_normal1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_normal")
+    has_normal2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_normal")
+    has_normal = has_normal1 or has_normal2
+    has_normal_map1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_normal_map")
+    has_normal_map2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_normal_map")
+    has_normal_map = has_normal_map1 or has_normal_map2
+    add_prop_to_var(node, node.outputs[0], "has_alpha", has_alpha)
+    add_prop_to_var(node, node.outputs[0], "has_normal", has_normal)
+    add_prop_to_var(node, node.outputs[0], "has_normal_map", has_normal_map)
+
+
 def init_output_material(node: bpy.types.Node) -> None:
     if not cast(bpy.types.ShaderNodeOutputMaterial, node).is_active_output:
         return
@@ -1754,11 +1811,13 @@ def init_output_material(node: bpy.types.Node) -> None:
     if not surface.is_linked:
         raise Exception("Surface of Material Output is not linked to anything")
 
-    connected_to = cast(bpy.types.Node, cast(bpy.types.NodeLinks, surface.links)[0].from_node)
-    if connected_to.bl_idname != "ShaderNodeBsdfPrincipled":
-        raise Exception("Material Output Surface must be connected to Principled BSDF node")
+    surface_var = get_var(node, surface)
+    if surface_var["type"] != DataTypes.BSDF:
+        raise Exception("Material Output Surface must be connected to a Shader Output")
+    bsdf = surface_var["name"]
 
-    bsdf = get_var_name(node, surface)
+    connected_to = cast(bpy.types.Node, cast(bpy.types.NodeLinks, surface.links)[0].from_node)
+
     add_line("ALBEDO = " + bsdf + ".ALBEDO;", False)
     add_line("METALLIC = " + bsdf + ".METALLIC;", False)
     add_line("ROUGHNESS = " + bsdf + ".ROUGHNESS;", False)
@@ -1965,7 +2024,7 @@ def init_group(node: bpy.types.Node, type: str | None) -> None:
             group_inp_var = get_var(group_output, group_output.inputs[i])
             set_var(node, node.outputs[i], group_inp_var["type"], group_inp_var["name"])
         else:
-            dtype = input_to_data_type(node.outputs[i])
+            dtype = get_data_type(node, node.outputs[i])
             var = create_var(node, node.outputs[i], dtype)
             add_line(
                 dtype.value + " " + var + " = " + get_constant(group_output, group_output.inputs[i]) + ";",
@@ -1982,10 +2041,10 @@ def init_group_input(node: bpy.types.Node) -> None:
             group_inp_var = get_var(group_node, group_node.inputs[i])
             set_var(node, node.outputs[i], group_inp_var["type"], group_inp_var["name"])
         else:
-            type = input_to_data_type(node.outputs[i])
-            var = create_var(node, node.outputs[i], type)
+            dtype = get_data_type(node, node.outputs[i])
+            var = create_var(node, node.outputs[i], dtype)
             add_line(
-                type.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";",
+                dtype.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";",
                 True,
             )
 
@@ -2013,6 +2072,7 @@ class SupportedNodes(TypedDict):
     ShaderNodeOutputMaterial: Callable[[bpy.types.Node], None]
     # shader
     ShaderNodeBsdfPrincipled: Callable[[bpy.types.Node], None]
+    ShaderNodeMixShader: Callable[[bpy.types.Node], None]
     # displacement
     ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
     # color
@@ -2050,6 +2110,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeOutputMaterial": init_output_material,
     # shader
     "ShaderNodeBsdfPrincipled": init_bsdf_principled,
+    "ShaderNodeMixShader": init_mix_shader,
     # displacement
     "ShaderNodeNormalMap": init_normal_map,
     # color
