@@ -228,6 +228,12 @@ def export(
         export_pointer_animation=True,
         export_convert_animation_pointer=True,
         use_active_scene=True,
+        # this always exports the active vertex color if it exists
+        # we need this because a color attribute node deeply nested in a shader node tree
+        # can use a vertex color in blender but the glTF exporter will put a white vertex color
+        # in position 1 because it doesn't detect it being used
+        # this setting makes sure the vertex color is always exported, so deeply nested color attribute node will still work correctly
+        export_vertex_color="ACTIVE",
     )
 
     # import into godot

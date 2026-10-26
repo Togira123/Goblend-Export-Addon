@@ -550,6 +550,16 @@ def init_tex_coord(node: bpy.types.Node, uv_index: int) -> None:
                     raise UnsupportedSocket(node, output.name)
 
 
+def init_vertex_color(node: bpy.types.Node) -> None:
+    # this only supports using the active vertex color, so we ignore the input
+    if node.outputs[0].is_linked:
+        color = create_var(node, node.outputs[0], DataTypes.VEC3)
+        add_line("vec3 " + color + " = COLOR.rgb;", False)
+    if node.outputs[1].is_linked:
+        alpha = create_var(node, node.outputs[1], DataTypes.FLOAT)
+        add_line("float " + alpha + " = COLOR.a;", False)
+
+
 def init_math(node: bpy.types.Node) -> None:
     line = ""
     var_name = create_var(node, node.outputs[0], DataTypes.FLOAT)  # math nodes only have one output
@@ -1990,6 +2000,7 @@ class SupportedNodes(TypedDict):
     ShaderNodeUVMap: Callable[[bpy.types.Node, int], None]
     ShaderNodeRGB: Callable[[bpy.types.Node], None]
     ShaderNodeTexCoord: Callable[[bpy.types.Node, int], None]
+    ShaderNodeVertexColor: Callable[[bpy.types.Node], None]
     # output
     ShaderNodeOutputMaterial: Callable[[bpy.types.Node], None]
     # shader
@@ -2024,6 +2035,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeUVMap": init_uv_map,
     "ShaderNodeRGB": init_rgb,
     "ShaderNodeTexCoord": init_tex_coord,
+    "ShaderNodeVertexColor": init_vertex_color,
     # output
     "ShaderNodeOutputMaterial": init_output_material,
     # shader
