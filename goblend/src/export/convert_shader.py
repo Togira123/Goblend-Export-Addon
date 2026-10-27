@@ -84,6 +84,11 @@ uniform_vars: set[tuple[str, str, str, str]] = set()
 has_img_texture_as_child: dict[bpy.types.Node, bool] = {}
 
 
+# used to check whether a node was already visited in the dfs
+# if it was, we may use it to not visit it a second time
+seen_nodes: set[bpy.types.Node] = set()
+
+
 class SpecialVars(TypedDict, total=False):
     uv_flipped: dict[int, str]
     uv: dict[int, str]
@@ -556,6 +561,7 @@ def init_tex_coord(node: bpy.types.Node, uv_index: int) -> None:
                     if "uv_flipped" in special_vars and uv_index in special_vars["uv_flipped"]:
                         uv_var = special_vars["uv_flipped"][uv_index]
                         set_var(node, output, DataTypes.VEC2, uv_var)
+                        add_prop_to_var(node, output, "is_uv_value", True)
                     else:
                         var_name = create_var(node, output, DataTypes.VEC2)
                         add_uv_line(var_name, uv_index, True)
@@ -2305,11 +2311,6 @@ def initialize_vars(node: bpy.types.Node, type: str | None) -> None:
         raise Exception(node.bl_idname + " not supported yet!")
 
 
-# used to check whether a node was already visited
-# if it was, we may use it to not visit it a second time
-seen_nodes: set[bpy.types.Node] = set()
-
-
 # path is used for group nodes
 def dfs(node: bpy.types.Node, path: str, type: str | None) -> None:
     if node.bl_idname not in supported_nodes:
@@ -2397,6 +2398,8 @@ def convert_to_godot_shader(
     global group_nodes_stack
     global visited
     global uniform_vars
+    global has_img_texture_as_child
+    global seen_nodes
     global limit_normal_effect
     global obj
     global special_vars
@@ -2418,6 +2421,8 @@ def convert_to_godot_shader(
     visited = set()
     uniform_vars = set()
 
+    has_img_texture_as_child = {}
+    seen_nodes = set()
     limit_normal_effect = limit_normal
     obj = object
     special_vars = {}
