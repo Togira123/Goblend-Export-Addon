@@ -47,6 +47,16 @@ structs_code = ""
 vertex_code = ""
 globals_code = ""
 
+bsdf_dict = {
+    "ALBEDO": "vec3",
+    "METALLIC": "float",
+    "ROUGHNESS": "float",
+    "ALPHA": "float",
+    "NORMAL": "vec3",
+    "EMISSION": "vec3",
+    "SPECULAR": "float",
+}
+
 added_structs: set[str] = set()
 
 
@@ -1705,15 +1715,6 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
     emission_color = cast(bpy.types.NodeSocket, node.inputs.get("Emission Color"))
     emission_strength = cast(bpy.types.NodeSocket, node.inputs.get("Emission Strength"))
     # rest is ignored
-    bsdf_dict = {
-        "ALBEDO": "vec3",
-        "METALLIC": "float",
-        "ROUGHNESS": "float",
-        "ALPHA": "float",
-        "NORMAL": "vec3",
-        "EMISSION": "vec3",
-        "SPECULAR": "float",
-    }
     if "BSDF" not in added_structs:
         add_struct("BSDF", bsdf_dict)
     var_bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
@@ -1767,19 +1768,10 @@ def init_bsdf_diffuse(node: bpy.types.Node) -> None:
     color = node.inputs[0]
     roughness = node.inputs[1]
     normal = node.inputs[2]
-    bsdf_dict = {
-        "ALBEDO": "vec3",
-        "METALLIC": "float",
-        "ROUGHNESS": "float",
-        "ALPHA": "float",
-        "NORMAL": "vec3",
-        "EMISSION": "vec3",
-        "SPECULAR": "float",
-    }
     if "BSDF" not in added_structs:
         add_struct("BSDF", bsdf_dict)
     bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
-    # adding the same props as with BSDF to not get an error when reading them in mix shader or material output
+    # adding the same props as with BSDF Principled to not get an error when reading them in mix shader or material output
     add_prop_to_var(node, node.outputs[0], "has_alpha", False)
     add_prop_to_var(node, node.outputs[0], "has_normal", normal.is_linked)
     has_normal_map = False
@@ -1809,6 +1801,30 @@ def init_bsdf_diffuse(node: bpy.types.Node) -> None:
     add_prop_to_var(node, node.outputs[0], "bsdf_use_roughness", True)
     add_prop_to_var(node, node.outputs[0], "bsdf_use_normal", True)
     add_prop_to_var(node, node.outputs[0], "bsdf_use_specular", True)
+
+
+def init_bsdf_transparent(node: bpy.types.Node) -> None:
+    # goblend only supports grayscale values for this node for simplicity
+    # because then it just makes it scale the alpha value
+    color = node.inputs[0]
+    if "BSDF" not in added_structs:
+        add_struct("BSDF", bsdf_dict)
+    bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
+    # adding the same props as with BSDF Principled to not get an error when reading them in mix shader or material output
+    add_prop_to_var(node, node.outputs[0], "has_alpha", True)
+    add_prop_to_var(node, node.outputs[0], "has_normal", False)
+    add_prop_to_var(node, node.outputs[0], "has_normal_map", False)
+    # cast the color input to float for alpha
+    add_line(
+        "BSDF "
+        + bsdf
+        + " = BSDF(vec3(0.0), 0.0, 0.5, 1.0 - ("
+        + get_casted_var_or_constant(node, color, DataTypes.FLOAT)
+        + "), vec3(0.0), vec3(0.0), 0.5);",
+        False,
+    )
+    # these props indicate to mix shader later on which properties to actually mix
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_alpha", True)
 
 
 def init_mix_shader(node: bpy.types.Node) -> None:
@@ -2172,6 +2188,7 @@ class SupportedNodes(TypedDict):
     ShaderNodeBsdfPrincipled: Callable[[bpy.types.Node], None]
     ShaderNodeMixShader: Callable[[bpy.types.Node], None]
     ShaderNodeBsdfDiffuse: Callable[[bpy.types.Node], None]
+    ShaderNodeBsdfTransparent: Callable[[bpy.types.Node], None]
     # displacement
     ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
     # color
@@ -2211,6 +2228,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeBsdfPrincipled": init_bsdf_principled,
     "ShaderNodeMixShader": init_mix_shader,
     "ShaderNodeBsdfDiffuse": init_bsdf_diffuse,
+    "ShaderNodeBsdfTransparent": init_bsdf_transparent,
     # displacement
     "ShaderNodeNormalMap": init_normal_map,
     # color
