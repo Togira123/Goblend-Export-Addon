@@ -76,6 +76,13 @@ visited: set[str] = set()
 
 uniform_vars: set[tuple[str, str, str, str]] = set()
 
+# for each node stores whether its inputs eventually connect to an image texture's color output
+# needed to optimize duplicate code away since as of right now there is no reason to duplicate code
+# if it does not have values coming from an image texture
+# the reason that we might want duplication if there are values coming from an image texture is due to
+# the uniform hints such as `source_color`
+has_img_texture_as_child: dict[bpy.types.Node, bool] = {}
+
 
 class SpecialVars(TypedDict, total=False):
     uv_flipped: dict[int, str]
@@ -1799,6 +1806,7 @@ def init_bsdf_diffuse(node: bpy.types.Node) -> None:
     # these props indicate to mix shader later on which properties to actually mix
     add_prop_to_var(node, node.outputs[0], "bsdf_use_albedo", True)
     add_prop_to_var(node, node.outputs[0], "bsdf_use_roughness", True)
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_alpha", True)
     add_prop_to_var(node, node.outputs[0], "bsdf_use_normal", True)
     add_prop_to_var(node, node.outputs[0], "bsdf_use_specular", True)
 
@@ -1858,7 +1866,7 @@ def init_mix_shader(node: bpy.types.Node) -> None:
     ]
     for prop, dtype, attr, default, var in props_and_bsdf_attributes:
         exists1, used1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
-        exists2, used2 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
+        exists2, used2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, prop)
         if used1 and exists1 and used2 and exists2:
             add_line(
                 dtype + " " + var + " = mix(" + shader1 + "." + attr + ", " + shader2 + "." + attr + ", " + fac + ");",
@@ -2297,13 +2305,19 @@ def initialize_vars(node: bpy.types.Node, type: str | None) -> None:
         raise Exception(node.bl_idname + " not supported yet!")
 
 
+# used to check whether a node was already visited
+# if it was, we may use it to not visit it a second time
+seen_nodes: set[bpy.types.Node] = set()
+
+
+# path is used for group nodes
 def dfs(node: bpy.types.Node, path: str, type: str | None) -> None:
     if node.bl_idname not in supported_nodes:
         raise Exception("Node " + node.bl_idname + " is not supported")
     for input in node.inputs:
         if input.is_linked:
             for link in cast(bpy.types.NodeLinks, input.links):
-                visited_name = path + separator + cast(bpy.types.Node, link.from_node).name
+                visited_name = path + separator + cast(bpy.types.Node, link.from_node).name + str(type)
                 if link.is_valid and not link.is_muted and visited_name not in visited:
                     visited.add(visited_name)
                     from_node = cast(bpy.types.Node, link.from_node)
@@ -2322,10 +2336,43 @@ def dfs(node: bpy.types.Node, path: str, type: str | None) -> None:
                             dfs(from_node, path, "Normal")
                         else:
                             dfs(from_node, path, type)
+                    elif node.bl_idname == "ShaderNodeBsdfDiffuse" and type is None:
+                        base_color = node.inputs.get("Color")
+                        roughness = node.inputs.get("Roughness")
+                        normal = node.inputs.get("Normal")
+                        if input == base_color:
+                            dfs(from_node, path, "BaseColor")
+                        elif input == roughness:
+                            dfs(from_node, path, "Roughness")
+                        elif input == normal:
+                            dfs(from_node, path, "Normal")
+                        else:
+                            dfs(from_node, path, type)
                     else:
                         dfs(from_node, path, type)
 
-    initialize_vars(node, type)
+    # run this separately because we want to have all children processed
+    if node.bl_idname == "ShaderNodeTexImage":
+        # mark the tex image node too because we want to process it twice potentially
+        has_img_texture_as_child[node] = True
+    else:
+        for input in node.inputs:
+            if input.is_linked:
+                for link in cast(bpy.types.NodeLinks, input.links):
+                    if link.is_valid and not link.is_muted:
+                        from_node = cast(bpy.types.Node, link.from_node)
+                        if from_node.bl_idname == "ShaderNodeTexImage":
+                            from_socket = cast(bpy.types.NodeSocket, link.from_socket)
+                            if from_socket == from_node.outputs[0]:
+                                # this node has one of its inputs connected to the color output of an image texture node
+                                has_img_texture_as_child[node] = True
+                                break
+                        if from_node in has_img_texture_as_child and has_img_texture_as_child[from_node]:
+                            has_img_texture_as_child[node] = True
+
+    if node not in seen_nodes or (node in has_img_texture_as_child and has_img_texture_as_child[node]):
+        initialize_vars(node, type)
+    seen_nodes.add(node)
 
 
 def convert_to_godot_shader(
