@@ -57,18 +57,22 @@ def material_prep_gltf_data(mat: bpy.types.Material, settings_for_godot: Setting
 
 def get_bsdf_and_mat_output_node_of_mat(mat: bpy.types.Material) -> tuple[bpy.types.ShaderNode, bpy.types.Node]:
     node_tree = cast(bpy.types.ShaderNodeTree, mat.node_tree)
-    mat_output_node = cast(bpy.types.ShaderNode | None, node_tree.nodes.get("Material Output"))
+    mat_output_node = node_tree.get_output_node("ALL")
     if not mat_output_node:
         raise Exception('Material "' + mat.name + '" has no "Material Output" shader node')
-    if mat_output_node.type != "OUTPUT_MATERIAL":
+    if mat_output_node.bl_idname != "ShaderNodeOutputMaterial":
         raise Exception('A node is named "Material Output" but is not actually the material output')
     surface_input = cast(bpy.types.NodeSocket, mat_output_node.inputs.get("Surface"))
     if not surface_input.is_linked:
         raise Exception('Surface input of "Material Output" node is not linked to anything!')
     link = cast(bpy.types.NodeLinks, surface_input.links)[0]
     bsdf = link.from_node
-    if not bsdf or bsdf.type != "BSDF_PRINCIPLED":
-        raise Exception("Material Output is connected to non-bsdf node, currently not supported")
+    if not bsdf or bsdf.bl_idname != "ShaderNodeBsdfPrincipled":
+        raise Exception(
+            "Active material output is not directly connected to a Principled BSDF node in material "
+            + mat.name
+            + ", currently not supported"
+        )
     return mat_output_node, bsdf
 
 
@@ -81,7 +85,7 @@ def prepare_material(
     for poly in mesh.polygons:
         poly.material_index = poly_indices[poly.index]
     if not mat.use_nodes:
-        log("Material not using nodes", "WARNING")
+        log("Material " + mat.name + " not using nodes", "WARNING")
         return None
     return get_bsdf_and_mat_output_node_of_mat(mat)
 
