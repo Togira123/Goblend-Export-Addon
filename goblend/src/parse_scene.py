@@ -37,7 +37,7 @@ class Node(TypedDict):
 
 
 class Scene(TypedDict):
-    nodes: dict[str, Node]
+    nodes: dict[int, Node]
     ext_resources: dict
     sub_resources: dict
     connections: dict
@@ -340,9 +340,9 @@ def parse_node(scene: str, data: Scene, state: State, idx: int) -> int:
     meta = state["last_read_kv_pairs"]
     if "name" not in meta:
         raise Exception("Missing name attribute in node header")
-    val = meta["name"]["value"]
-    if type(val) is not str:
-        raise Exception("Node name should be string")
+    val = meta["unique_id"]["value"]
+    if type(val) is not int:
+        raise Exception("Node unique_id should be int")
     i = parse_kv_pairs(scene, state, i)
     node_dict: Node = {"meta": meta, "props": state["last_read_kv_pairs"]}
     data["nodes"][val] = node_dict

@@ -67,20 +67,27 @@ class SCENE_OT_SyncLights(bpy.types.Operator):
                 validated_obj_name = obj.name
                 for char in '.:@/"%':
                     validated_obj_name = validated_obj_name.replace(char, "_")
-                if validated_obj_name in nodes:
-                    node_props = nodes[validated_obj_name]["props"]
+                id_of_node = None
+                for id in nodes:
+                    if nodes[id]["meta"]["name"]["value"] == validated_obj_name:
+                        node_meta = nodes[id]["meta"]
+                        node_type = node_meta["type"]["value"]
+                        if type(node_type) is not str or (
+                            node_type != "DirectionalLight3D"
+                            and node_type != "OmniLight3D"
+                            and node_type != "SpotLight3D"
+                        ):
+                            continue
+                        id_of_node = id
+                        break
+                if id_of_node:
+                    node_props = nodes[id_of_node]["props"]
+                    node_meta = nodes[id_of_node]["meta"]
                     light_panel = scene.light_panel_props.add()
                     light_panel.light = obj
-                    node_type = nodes[validated_obj_name]["meta"]["type"]["value"]
-                    if type(node_type) is not str or (
-                        node_type != "DirectionalLight3D" and node_type != "OmniLight3D" and node_type != "SpotLight3D"
-                    ):
-                        continue
+                    node_type = cast(str, node_meta["type"]["value"])
                     light_panel.type = node_type
-                    if (
-                        "light_specular" not in node_props
-                        and nodes[validated_obj_name]["meta"]["type"] == "DirectionalLight3D"
-                    ):
+                    if "light_specular" not in node_props and node_meta["type"] == "DirectionalLight3D":
                         # has a different default value for DirecitonalLight3D's than OmniLight3D's or SpotLight3D's
                         node_props["light_specular"] = {"type": "number", "value": 1.0}
                     if "light_cull_mask" in node_props:
