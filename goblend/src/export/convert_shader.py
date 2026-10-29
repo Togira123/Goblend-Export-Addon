@@ -1841,6 +1841,30 @@ def init_bsdf_transparent(node: bpy.types.Node) -> None:
     add_prop_to_var(node, node.outputs[0], "bsdf_use_alpha", True)
 
 
+def init_emission(node: bpy.types.Node) -> None:
+    color = node.inputs[0]
+    strength = node.inputs[1]
+    if "BSDF" not in added_structs:
+        add_struct("BSDF", bsdf_dict)
+    bsdf = create_var(node, node.outputs[0], DataTypes.BSDF)
+    # adding the same props as with BSDF Principled to not get an error when reading them in mix shader or material output
+    add_prop_to_var(node, node.outputs[0], "has_alpha", False)
+    add_prop_to_var(node, node.outputs[0], "has_normal", False)
+    add_prop_to_var(node, node.outputs[0], "has_normal_map", False)
+    add_line(
+        "BSDF "
+        + bsdf
+        + " = BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), "
+        + get_casted_var_or_constant(node, color, DataTypes.VEC3)
+        + " * "
+        + get_casted_var_or_constant(node, strength, DataTypes.FLOAT)
+        + ", 0.5);",
+        False,
+    )
+    # these props indicate to mix shader later on which properties to actually mix
+    add_prop_to_var(node, node.outputs[0], "bsdf_use_emission", True)
+
+
 def init_mix_shader(node: bpy.types.Node) -> None:
     fac = get_casted_var_or_constant(node, node.inputs[0], DataTypes.FLOAT)
     shader1 = get_casted_var_or_constant(node, node.inputs[1], DataTypes.BSDF)
@@ -2203,6 +2227,7 @@ class SupportedNodes(TypedDict):
     ShaderNodeMixShader: Callable[[bpy.types.Node], None]
     ShaderNodeBsdfDiffuse: Callable[[bpy.types.Node], None]
     ShaderNodeBsdfTransparent: Callable[[bpy.types.Node], None]
+    ShaderNodeEmission: Callable[[bpy.types.Node], None]
     # displacement
     ShaderNodeNormalMap: Callable[[bpy.types.Node], None]
     # color
@@ -2243,6 +2268,7 @@ supported_nodes: SupportedNodes = {
     "ShaderNodeMixShader": init_mix_shader,
     "ShaderNodeBsdfDiffuse": init_bsdf_diffuse,
     "ShaderNodeBsdfTransparent": init_bsdf_transparent,
+    "ShaderNodeEmission": init_emission,
     # displacement
     "ShaderNodeNormalMap": init_normal_map,
     # color
