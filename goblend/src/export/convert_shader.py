@@ -213,19 +213,7 @@ def add_prop_to_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: str
         special_var_props[node][output] = dict([(key, val)])
 
 
-def get_prop_from_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: str) -> bool:
-    if (
-        node not in special_var_props
-        or output not in special_var_props[node]
-        or key not in special_var_props[node][output]
-    ):
-        raise Exception("No special properties for node " + node.name)
-    return special_var_props[node][output][key]
-
-
-def get_prop_from_any_child_of_var(
-    node: bpy.types.Node, output: bpy.types.NodeSocket, key: str
-) -> tuple[bool | None, bool]:
+def get_prop_from_any_child_of_var(node: bpy.types.Node, output: bpy.types.NodeSocket, key: str) -> bool | None:
     if (
         node not in special_var_props
         or output not in special_var_props[node]
@@ -237,10 +225,22 @@ def get_prop_from_any_child_of_var(
                 socket = cast(bpy.types.NodeSocket, link.from_socket)
                 parent = cast(bpy.types.Node, link.from_node)
                 res = get_prop_from_any_child_of_var(parent, socket, key)
-                if res[1]:
+                if res is not None:
                     return res
-        return (None, False)
-    return (special_var_props[node][output][key], True)
+        return None
+    return special_var_props[node][output][key]
+
+
+# copy the props associated with the node and the output connected to the given input
+# to the given target_node and output
+def copy_prop_from_input_to_output(
+    input: bpy.types.NodeSocket, target_node: bpy.types.Node, output: bpy.types.NodeSocket
+) -> None:
+    from_node = cast(bpy.types.NodeLinks, input.links)[0].from_node
+    from_output = cast(bpy.types.NodeLinks, input.links)[0].from_socket
+    if from_node in special_var_props and from_output in special_var_props[from_node]:
+        for key in special_var_props[from_node][from_output]:
+            add_prop_to_var(target_node, output, key, special_var_props[from_node][from_output][key])
 
 
 def set_var(node: bpy.types.Node, output: bpy.types.NodeSocket, type: DataTypes, name: str) -> None:
@@ -1668,7 +1668,7 @@ def init_tex_image(node: bpy.types.Node, uv_index: int, type: str) -> None:
         res = get_prop_from_any_child_of_var(
             cast(bpy.types.Node, node_link.from_node), cast(bpy.types.NodeSocket, node_link.from_socket), "is_uv_value"
         )
-        if res[1] and res[0]:
+        if res is not None:
             vec = "vec2(" + vec + ".x, 1.0 - " + vec + ".y)"
     else:
         if "uv" in special_vars and uv_index in special_vars["uv"]:
@@ -1742,7 +1742,7 @@ def init_bsdf_principled(node: bpy.types.Node) -> None:
         res = get_prop_from_any_child_of_var(
             cast(bpy.types.Node, link.from_node), cast(bpy.types.NodeSocket, link.from_socket), "is_texture"
         )
-        if res[1] and res[0]:
+        if res is not None:
             has_normal_map = True
     add_prop_to_var(node, node.outputs[0], "has_normal_map", has_normal_map)
     reset_is_constant()
@@ -1793,7 +1793,7 @@ def init_bsdf_diffuse(node: bpy.types.Node) -> None:
         res = get_prop_from_any_child_of_var(
             cast(bpy.types.Node, link.from_node), cast(bpy.types.NodeSocket, link.from_socket), "is_texture"
         )
-        if res[1] and res[0]:
+        if res is not None:
             has_normal_map = True
     add_prop_to_var(node, node.outputs[0], "has_normal_map", has_normal_map)
     # diffuse bsdf sets specular to 0 to not get reflections
@@ -1895,18 +1895,18 @@ def init_mix_shader(node: bpy.types.Node) -> None:
         ("bsdf_use_specular", "float", "SPECULAR", "0.5", specular),
     ]
     for prop, dtype, attr, default, var in props_and_bsdf_attributes:
-        exists1, used1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
-        exists2, used2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, prop)
-        if used1 and exists1 and used2 and exists2:
+        used1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, prop)
+        used2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, prop)
+        if used1 and used2:
             add_line(
                 dtype + " " + var + " = mix(" + shader1 + "." + attr + ", " + shader2 + "." + attr + ", " + fac + ");",
                 False,
             )
             add_prop_to_var(node, node.outputs[0], prop, True)
-        elif used1 and exists1:
+        elif used1:
             add_line(dtype + " " + var + " = " + shader1 + "." + attr + ";", False)
             add_prop_to_var(node, node.outputs[0], prop, True)
-        elif used2 and exists2:
+        elif used2:
             add_line(dtype + " " + var + " = " + shader2 + "." + attr + ";", False)
             add_prop_to_var(node, node.outputs[0], prop, True)
         else:
@@ -1933,18 +1933,18 @@ def init_mix_shader(node: bpy.types.Node) -> None:
         False,
     )
     # merge var props from the two shader inputs and set them here again
-    has_alpha1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_alpha")
-    has_alpha2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_alpha")
+    has_alpha1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, "has_alpha")
+    has_alpha2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, "has_alpha")
     has_alpha = has_alpha1 or has_alpha2
-    has_normal1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_normal")
-    has_normal2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_normal")
+    has_normal1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, "has_normal")
+    has_normal2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, "has_normal")
     has_normal = has_normal1 or has_normal2
-    has_normal_map1 = get_prop_from_var(shader_node1, shader_node_socket1, "has_normal_map")
-    has_normal_map2 = get_prop_from_var(shader_node2, shader_node_socket2, "has_normal_map")
+    has_normal_map1 = get_prop_from_any_child_of_var(shader_node1, shader_node_socket1, "has_normal_map")
+    has_normal_map2 = get_prop_from_any_child_of_var(shader_node2, shader_node_socket2, "has_normal_map")
     has_normal_map = has_normal_map1 or has_normal_map2
-    add_prop_to_var(node, node.outputs[0], "has_alpha", has_alpha)
-    add_prop_to_var(node, node.outputs[0], "has_normal", has_normal)
-    add_prop_to_var(node, node.outputs[0], "has_normal_map", has_normal_map)
+    add_prop_to_var(node, node.outputs[0], "has_alpha", False if has_alpha is None else has_alpha)
+    add_prop_to_var(node, node.outputs[0], "has_normal", False if has_normal is None else has_normal)
+    add_prop_to_var(node, node.outputs[0], "has_normal_map", False if has_normal_map is None else has_normal_map)
 
 
 def init_output_material(node: bpy.types.Node) -> None:
@@ -1965,11 +1965,11 @@ def init_output_material(node: bpy.types.Node) -> None:
     add_line("ALBEDO = " + bsdf + ".ALBEDO;", False)
     add_line("METALLIC = " + bsdf + ".METALLIC;", False)
     add_line("ROUGHNESS = " + bsdf + ".ROUGHNESS;", False)
-    has_alpha = get_prop_from_var(connected_to, connected_to.outputs[0], "has_alpha")
+    has_alpha = get_prop_from_any_child_of_var(connected_to, connected_to.outputs[0], "has_alpha")
     if has_alpha:
         add_line("ALPHA = " + bsdf + ".ALPHA;", False)
-    has_normal = get_prop_from_var(connected_to, connected_to.outputs[0], "has_normal")
-    has_normal_map = get_prop_from_var(connected_to, connected_to.outputs[0], "has_normal_map")
+    has_normal = get_prop_from_any_child_of_var(connected_to, connected_to.outputs[0], "has_normal")
+    has_normal_map = get_prop_from_any_child_of_var(connected_to, connected_to.outputs[0], "has_normal_map")
     if has_normal:
         tab = ""
         if limit_normal_effect is not None:
@@ -2151,12 +2151,16 @@ def init_rgb(node: bpy.types.Node) -> None:
 
 def init_group(node: bpy.types.Node, type: str | None) -> None:
     group_nodes_stack.append(node)
-    group_output = cast(
-        bpy.types.Node,
-        cast(bpy.types.ShaderNodeTree, cast(bpy.types.ShaderNodeGroup, node).node_tree).nodes.get("Group Output"),
-    )
-    if group_output.bl_idname != "NodeGroupOutput":
-        raise Exception('A node is named "Group Output" but is not actually the group output')
+    group_output: bpy.types.NodeGroupOutput | None = None
+    group_node = cast(bpy.types.ShaderNodeGroup, node)
+    if not group_node.node_tree:
+        raise Exception("Group with node '" + node.name + "' has no node tree")
+    for n in group_node.node_tree.nodes:
+        if isinstance(n, bpy.types.NodeGroupOutput) and n.is_active_output:
+            group_output = n
+            break
+    if not group_output:
+        raise Exception("Group with node '" + node.name + "' has no active group output node")
     pre_node_names = ""
     for no in group_nodes_stack:
         pre_node_names += no.name + separator  # choose some separator that is unlikely to be used in node names
@@ -2175,6 +2179,9 @@ def init_group(node: bpy.types.Node, type: str | None) -> None:
                 dtype.value + " " + var + " = " + get_constant(group_output, group_output.inputs[i]) + ";",
                 True,
             )
+        # copy over all properties from the group output node (the one in the layer deeper) inputs
+        # since they don't propagate automatically through groups
+        copy_prop_from_input_to_output(group_output.inputs[i], node, node.outputs[i])
 
 
 def init_group_input(node: bpy.types.Node) -> None:
@@ -2192,10 +2199,14 @@ def init_group_input(node: bpy.types.Node) -> None:
                 dtype.value + " " + var + " = " + get_constant(group_node, group_node.inputs[i]) + ";",
                 True,
             )
+        # copy over all properties from the group node (the one in the layer higher) inputs
+        # since they don't propagate automatically through groups
+        copy_prop_from_input_to_output(group_node.inputs[i], node, node.outputs[i])
 
 
 def init_group_output(_node: bpy.types.Node) -> None:
     group_nodes_stack.pop()
+    # routing the outputs to the group node in the layer above is handled by the function handling the group node (init_group)
 
 
 def init_reroute(node: bpy.types.Node) -> None:
@@ -2204,13 +2215,6 @@ def init_reroute(node: bpy.types.Node) -> None:
     input = get_var(node, node.inputs[0])
     for output in node.outputs:
         set_var(node, output, input["type"], input["name"])
-    # copy over all properties
-    from_node = cast(bpy.types.NodeLinks, node.inputs[0].links)[0].from_node
-    from_output = cast(bpy.types.NodeLinks, node.inputs[0].links)[0].from_socket
-    if from_node in special_var_props and from_output in special_var_props[from_node]:
-        for key in special_var_props[from_node][from_output]:
-            for output in node.outputs:
-                add_prop_to_var(node, output, key, special_var_props[from_node][from_output][key])
 
 
 class SupportedNodes(TypedDict):
