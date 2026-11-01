@@ -394,6 +394,8 @@ def get_casted_var_or_constant(node: bpy.types.Node, input: bpy.types.NodeSocket
     return cast_var(get_data_type(node, input), needed_data_type, get_constant(node, input))
 
 
+# when converting to shader it goes to emission
+# see https://docs.blender.org/manual/en/5.2/interface/controls/nodes/parts.html#nodes-sockets-conversion
 def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
     match actual:
         case DataTypes.FLOAT:
@@ -409,8 +411,8 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ")"
                 case DataTypes.BSDF:
-                    # puts float in color, uses defaults for rest
-                    return "BSDF(vec3(" + var_name + "), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
+                    # puts float in emission, uses defaults for rest
+                    return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(" + var_name + "), 0.5)"
         case DataTypes.INT:
             match needed:
                 case DataTypes.FLOAT:
@@ -424,8 +426,8 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ")"
                 case DataTypes.BSDF:
-                    # puts int in color, uses defaults for rest
-                    return "BSDF(vec3(float(" + var_name + ")), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
+                    # puts int in emission, uses defaults for rest
+                    return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(float(" + var_name + ")), 0.5)"
         case DataTypes.VEC2:
             match needed:
                 case DataTypes.FLOAT:
@@ -437,8 +439,8 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ", 0, 0)"
                 case DataTypes.BSDF:
-                    # puts red and green channels in color, uses defaults for rest
-                    return "BSDF(vec3(" + var_name + ", 0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
+                    # puts red and green channels in emission, uses defaults for rest
+                    return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), vec3(" + var_name + ", 0.0), 0.5)"
         case DataTypes.VEC3:
             match needed:
                 case DataTypes.FLOAT:
@@ -450,8 +452,8 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC4:
                     return "vec4(" + var_name + ", 0)"
                 case DataTypes.BSDF:
-                    # puts vec3 in color, uses defaults for rest
-                    return "BSDF(" + var_name + ", 0.0, 0.5, 1.0, vec3(0.0), vec3(0.0), 0.5)"
+                    # puts vec3 in emission, uses defaults for rest
+                    return "BSDF(vec3(0.0), 0.0, 0.5, 1.0, vec3(0.0), " + var_name + ", 0.5)"
         case DataTypes.VEC4:
             match needed:
                 case DataTypes.FLOAT:
@@ -463,8 +465,8 @@ def cast_var(actual: DataTypes, needed: DataTypes, var_name: str) -> str:
                 case DataTypes.VEC4:
                     return var_name
                 case DataTypes.BSDF:
-                    # puts vec3 in color, 4th channel for alpha, uses defaults for rest
-                    return "BSDF(" + var_name + ".rgb, 0.0, 0.5, " + var_name + ".a, vec3(0.0), vec3(0.0), 0.5)"
+                    # puts vec3 in emission, 4th channel for alpha, uses defaults for rest
+                    return "BSDF(vec3(0.0), 0.0, 0.5, " + var_name + ".a, vec3(0.0), " + var_name + ".rgb, 0.5)"
         case DataTypes.BSDF:
             match needed:
                 case DataTypes.BSDF:
