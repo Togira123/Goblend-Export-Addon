@@ -15,6 +15,7 @@ Goblend is a [Blender](https://www.blender.org) addon and a [Godot](https://godo
 - High customizability by defining default settings with a config file
 - More settings like transparency mode, cull mode, or groups to set in Blender
 - Including existing Godot scenes in the exported scene
+- Export curves as `Curve3D` objects together with `Path3D` nodes
 
 ## Documentation
 
