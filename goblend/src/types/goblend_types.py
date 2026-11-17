@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 
-from typing import TYPE_CHECKING, Any, Callable, NotRequired, TypedDict, Literal
+from typing import TYPE_CHECKING, Any, Callable, NotRequired, TypedDict, Literal, TypeAlias
 
 from .blender_types import OperatorReturnItems, ObjectModifierTypeItems
 
@@ -115,7 +115,7 @@ class SettingsForGodot(TypedDict):
     lights: dict[str, dict[str, str | list[str]]]
 
 
-type UvMapOverrideValueKeys = Literal["Base Color", "Metallic/Roughness", "Normal"]
+UvMapOverrideValueKeys: TypeAlias = Literal["Base Color", "Metallic/Roughness", "Normal"]
 
 
 UvMapOverrideValue = TypedDict(
@@ -128,7 +128,7 @@ UvMapOverrideValue = TypedDict(
     },
 )
 
-type UvMapOverride = dict[str, UvMapOverrideValue]
+UvMapOverride: TypeAlias = dict[str, UvMapOverrideValue]
 
 
 class ModifierData(TypedDict):

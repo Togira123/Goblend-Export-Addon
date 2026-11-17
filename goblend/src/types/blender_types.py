@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-from typing import Literal
+from typing import Literal, TypeAlias
 
-type OperatorReturnItems = Literal["RUNNING_MODAL", "CANCELLED", "FINISHED", "PASS_THROUGH", "INTERFACE"]
+OperatorReturnItems: TypeAlias = Literal["RUNNING_MODAL", "CANCELLED", "FINISHED", "PASS_THROUGH", "INTERFACE"]
 
-type ObjectModifierTypeItems = Literal[
+ObjectModifierTypeItems: TypeAlias = Literal[
     "GREASE_PENCIL_VERTEX_WEIGHT_PROXIMITY",  # Vertex Weight Proximity.Generate vertex weights based on distance to object.
     "DATA_TRANSFER",  # Data Transfer.Transfer several types of data (vertex groups, UV maps, vertex colors, custom normals) from one mesh to another.
     "MESH_CACHE",  # Mesh Cache.Deform the mesh using an external frame-by-frame vertex transform cache.
@@ -105,7 +105,7 @@ type ObjectModifierTypeItems = Literal[
     "SURFACE",  # Surface.
 ]
 
-type ColorSpaceConvertDefaultItems = Literal[
+ColorSpaceConvertDefaultItems: TypeAlias = Literal[
     "NONE",  # None.Do not perform any color transform on load, treat colors as in scene linear space already.
 ]
 
@@ -115,7 +115,7 @@ class NodesModifierProperties:
     outputs: object
 
 
-type BakePassTypeItems = Literal[
+BakePassTypeItems: TypeAlias = Literal[
     "COMBINED",  # Combined.
     "AO",  # Ambient Occlusion.
     "SHADOW",  # Shadow.
